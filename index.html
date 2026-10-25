@@ -2097,7 +2097,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.34.6",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.34.7",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2962,7 +2962,7 @@ function showInstallHelp(){
 // ניהול (מנהלת) – גרסה 1.1: תצוגה למחשב (תפריט צד, רשימה + תוכנית זה לצד זה, חלונית מאגר)
 // ותצוגה לנייד (תפריט תחתון, מסך אחרי מסך)
 // ======================================================================
-const AD = { codeReqs: [], groups: null, loaded: false, view: "wait",   /* 1.26.4 (נועה): נפתח על "ממתינים" */ students: [], plan: [], ws: null, wsById: new Map(), filter: "all", q: "",
+const AD = { codeReqs: [], groups: null, loaded: false, view: (["att", "wait", "bank"].includes(store("telem_portal_view")) ? store("telem_portal_view") : "wait"),   /* 1.34.7 (נועה): נפתח על המסך האחרון */ students: [], plan: [], ws: null, wsById: new Map(), filter: "all", q: "",
              st: null, subj: null, sel: new Set(), showDone: false, waitMode: store("telem_portal_waitmode") === "list" ? "list" : "groups", waitCity: store("telem_portal_waitcity") || "*", waitToday: false, waitPresent: false, waitIns: "__me"   /* 1.34.2 (נועה): כל כניסה – "הקבוצות שלי" */, present: null,
              bank: { book: null, kind: "summary", topic: null, tab: "page", pick: null, sel: new Set() } };
 const WS_CACHE = "telem_portal_ws2";
@@ -3011,8 +3011,11 @@ function adminStart(fast){
   insBtn();
   $("drawerClose").onclick = $("drawerBg").onclick = () => closeDrawer();
   renderNav();
+  if (!AD.waitTab) AD.waitTab = store("telem_portal_waittab") || "req";
   if (fast && AD.loaded) { adRender(); adBusy(true); }
   adLoad();
+  // 1.34.7 (נועה): אם יצאתי באמצע דף נוכחות (של היום) – חוזרים אליו
+  if (!EMBED && AD.view === "att" && typeof ATTM !== "undefined") { const m = ATTM.last(); if (m) loadGroups().then(gs => { if (AD.view === "att" && !ATTM.isOpen && !SHEET) ATTM.open(m.sid, m.date, (gs || []).find(g => g.id === String(m.sid))); }).catch(() => {}); }
   rtStart("portal:staff", () => adPoll());
 }
 // ---------- התראות במסך הניהול: בדיקה כל 15 שניות ----------
@@ -3145,7 +3148,7 @@ function adGo(v){
   if (typeof ATTM !== "undefined" && ATTM.isOpen) ATTM.detach();
   try { if (CBM.viewerOpen()) CBM.wsViewerOff(); } catch(e) {}   // 1.26.2 (נועה): מעבר ללשונית אחרת סוגר את הדף הפתוח
   if (VIEWER) closeViewer(true);
-  AD.view = v; AD.sel.clear();
+  AD.view = v; AD.sel.clear(); if (!EMBED) store("telem_portal_view", v);
   if (!isDesk()) AD.st = null;
   if (v !== "bank" || isDesk()) AD.bank.pick = null;
   if (v === "bank" && !AD.bank.pick) { AD.bank.topic = null; AD.bank.from = null; AD.bank.showAll = false; AD.bank.sel.clear(); if (CBM.WS.sel) CBM.WS.sel = new Set(); CBM.WS.topic = null; }
@@ -3353,7 +3356,7 @@ async function renderWait(){
   B.querySelectorAll("[data-ndis]").forEach(b => b.onclick = () => confirmSheet("לסגור את הבקשה בלי לשלוח משימה?", "סגירה", async () => {
     try { await rpc("portal_request_dismiss", { p_id: Number(b.dataset.ndis) }); const r0 = (AD.nreq || []).find(r => String(r.id) === b.dataset.ndis); if (r0) { AD.ndis = AD.ndis || new Map(); AD.ndis.set(r0.student_id + "|" + r0.subject, new Date().toISOString()); }
     AD.nreq = (AD.nreq || []).filter(r => String(r.id) !== b.dataset.ndis); renderNav(); renderWait(); toast("הבקשה נסגרה."); } catch(e) { toast(errText(e)); } }));
-  B.querySelectorAll("[data-wt]").forEach(b => b.onclick = () => { AD.waitTab = b.dataset.wt; renderWait(); });
+  B.querySelectorAll("[data-wt]").forEach(b => b.onclick = () => { AD.waitTab = b.dataset.wt; store("telem_portal_waittab", AD.waitTab); renderWait(); });
   B.querySelectorAll("[data-wlive]").forEach(b => b.onclick = () => { const v = b.dataset.wlive; AD.waitLive = AD.waitLive === v && v ? "" : v; renderWait(); });
   B.querySelectorAll("[data-wm]").forEach(b => b.onclick = () => { AD.waitMode = b.dataset.wm; store("telem_portal_waitmode", AD.waitMode); renderWait(); });
   B.querySelectorAll("[data-wcity]").forEach(b => b.onclick = () => { AD.waitCity = b.dataset.wcity; store("telem_portal_waitcity", AD.waitCity); renderWait(); });
@@ -6035,9 +6038,11 @@ function updateCount(){
   const rows = A.rows.filter(shVisible), p = rows.filter(r => r.present === true).length, x = rows.filter(r => r.present === false).length, n = rows.filter(r => r.present == null).length;
   // 5.19.73 (נועה): מקום אחד ברור לכמה ילדים / נוכחים / חסרים / לא סומנו - למעלה, בצבעים (היה בשלושה מקומות)
   const nSk = A.rows.filter(r => r.skip).length;
-  $("shTopCnt").innerHTML = `<span><b>${rows.length}</b> ילדים</span> · <b class="c-yes">${p} נוכחים</b> · <b class="c-no">${x} חסרים</b>` + (n ? ` · <span class="c-un">${n} לא סומנו</span>` : "");
+  // 1.34.7 (נועה): "לא מגיעים היום" – בסוגריים ליד מספר הילדים (לא נספרים בו), באותה שורה
+  $("shTopCnt").innerHTML = `<span><b>${rows.length}</b> ילדים${nSk ? ` <span class="c-un" title="הוסרו מהשיעור הזה בלבד (⊘) – מופיעים בסוף הרשימה">(+${nSk} ${nSk === 1 ? "לא מגיע/ה" : "לא מגיעים"} היום)</span>` : ""}</span> · <b class="c-yes">${p} נוכחים</b> · <b class="c-no">${x} חסרים</b>` + (n ? ` · <span class="c-un">${n} לא סומנו</span>` : "");
   $("shCount").innerHTML = "";
-  $("shTotal").innerHTML = (nSk ? `${nSk} לא מגיעים היום` : "") + (A.splitView && rows.length !== A.rows.length - nSk ? `${nSk ? " · " : ""}${rows.length} בתת-הקבוצה המוצגת` : "");
+  const tot = A.splitView && rows.length !== A.rows.length - nSk ? `${rows.length} בתת-הקבוצה המוצגת` : "";
+  $("shTotal").innerHTML = tot;
 }
 const subjMiniTxt = (s) => ["מת'", "אנג'", "משולב", ""][subjGrp(s)];
 async function loadHistory(sessionId, date){
@@ -6072,13 +6077,13 @@ async function loadHistory(sessionId, date){
   // "אחורה" של הטלפון
   async function onPop(){ if (!isOpen) return false;
     if (attChanged() && !await uiConfirm("יש סימון נוכחות שעוד לא נשמר. לצאת בלי לשמור?")) { history.pushState({ ad: "att", d: navD() + 1 }, ""); return true; }
-    attDraftClear(); close(false); return true; }
+    attDraftClear(); store("telem_att_last", null); close(false); return true; }
   // מעבר למסך אחר (תלמידים / מאגר) – בלי לרנדר את הקבוצות
   const refresh = () => { if (isOpen && A.sheet) renderSheetRows(); };
   const detach = () => { isOpen = false; delete document.body.dataset.att; };
   const HOLX = { load: () => loadHol(), cx: (g, d) => lessonCx(g, d, g.cancelled, g.cancel_reason),
     chips: (d) => (HOL.rows || []).filter(h => d >= h.date_from && d <= h.date_to && !h.city && !h.school).map(h => `<span class="hol-chip hol-${h.kind}">${esc(h.name)}</span>`).join("") };
-  return { HOLX, open, close, onPop, detach, refresh, get isOpen(){ return isOpen; } };
+  return { HOLX, open, close, onPop, detach, refresh, last: attLast, get isOpen(){ return isOpen; } };
 })();
 // ===================== /נוכחות =====================
 // עדכון אוטומטי: בכל חזרה לאפליקציה (וכל חצי שעה) בודקים אם יש גרסה חדשה.
