@@ -2105,7 +2105,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.34.12",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -3035,8 +3035,7 @@ async function adPoll(){
   if (AD_POLLING || $("adminView").hidden || !AD.loaded || !auth) return;
   AD_POLLING = true;
   try {
-    const plan = (await getAll("portal_plan_items", "select=id,student_id,worksheet_id,subject,position,status,released_at,released_by,done_at,seen_at&order=position,id"))
-      .map(p => Object.assign(p, { student_id: String(p.student_id) }));
+    const plan = await planSync(AD.plan);
     let reqs = AD.codeReqs || [];
     try { reqs = (await get("portal_code_requests", "select=id,student_id,phone,created_at&handled_at=is.null&matched=is.true&order=created_at"))
             .map(r => Object.assign(r, { student_id: String(r.student_id) })).filter(r => stById(r.student_id)); } catch(e) {}
@@ -3089,9 +3088,9 @@ function renderNav(){
 // 1.16.1: כל הבקשות בבת אחת (לא אחת אחרי השנייה), והמסך מהפעם הקודמת מוצג מיד
 const AD_CACHE = {
   key: "telem_portal_adcache",
-  save(){ try { store(this.key, JSON.stringify({ t: Date.now(), students: AD.students, plan: AD.plan, settings: AD.settings, codeReqs: AD.codeReqs })); } catch(e) {} },
+  save(){ try { store(this.key, JSON.stringify({ t: Date.now(), students: AD.students, plan: AD.plan, planSince: AD.planSince || null, settings: AD.settings, codeReqs: AD.codeReqs })); } catch(e) {} },
   load(){ try { const c = JSON.parse(store(this.key) || "null"); if (!c || !c.students || Date.now() - c.t > 3 * 864e5) return false;
-    AD.students = c.students; AD.plan = c.plan || []; AD.settings = c.settings || null; AD.codeReqs = c.codeReqs || [];
+    AD.students = c.students; AD.plan = c.plan || []; AD.planSince = c.planSince || null; AD.settings = c.settings || null; AD.codeReqs = c.codeReqs || [];
     let ws = null; try { ws = JSON.parse(store(WS_CACHE) || "null"); } catch(e) {}
     if (!ws || !ws.rows || !ws.rows.length) return false;
     AD.ws = ws.rows.map(r => Object.assign(r, { id: String(r.id) })); AD.wsById = new Map(AD.ws.map(r => [r.id, r]));
@@ -3100,6 +3099,27 @@ const AD_CACHE = {
 };
 function adBusy(on){ document.body.classList.toggle("ad-busy", !!on); }
 // 1.34.3 (נועה): גם בקשות שסגרתי (✕) – מי שסגרתי לו/ה לא עובר/ת ל"סיימו ולא ביקשו" (עד שיסיים/תסיים עוד דף)
+// 1.35 (נועה, מנ-136): ביצועים – התוכניות נטענות פעם אחת, ואחר כך רק מה שהשתנה (TS-12: updated_at + portal_plan_sync)
+const PLAN_SEL = "select=id,student_id,worksheet_id,subject,position,status,released_at,released_by,done_at,seen_at";
+const planNorm = (p) => Object.assign(p, { student_id: String(p.student_id) });
+const planMax = (L) => (L || []).reduce((m, p) => p.updated_at && p.updated_at > m ? p.updated_at : m, "");
+async function planFull(){
+  try { const L = (await getAll("portal_plan_items", PLAN_SEL + ",updated_at&order=position,id")).map(planNorm); AD.planSince = planMax(L) || null; return L; }
+  catch(e) { if (e && e.message === "not signed in") throw e; AD.planSince = null; return (await getAll("portal_plan_items", PLAN_SEL + "&order=position,id")).map(planNorm); }   // TS-12 לא הורץ – כמו קודם
+}
+// רק מה שהשתנה מאז הפעם הקודמת; נמחקו דפים (המספר לא מתאים) – הכול מחדש
+async function planSync(base){
+  if (!AD.planSince) return planFull();
+  let r; try { r = await rpc("portal_plan_sync", { p_since: AD.planSince }); } catch(e) { if (e && e.message === "not signed in") throw e; return planFull(); }
+  if (!r || !Array.isArray(r.rows)) return planFull();
+  const byId = new Map((base || []).map(p => [String(p.id), Object.assign({}, p)]));
+  r.rows.forEach(x => byId.set(String(x.id), planNorm(Object.assign({}, x))));
+  const L = [...byId.values()];
+  if (L.length !== Number(r.n)) return planFull();
+  L.sort((a, b) => (a.position || 0) - (b.position || 0) || a.id - b.id);
+  const m = planMax(r.rows); if (m && m > AD.planSince) AD.planSince = m;
+  return L;
+}
 const getNreq = () => { const since = new Date(Date.now() - 60 * 864e5).toISOString();
   return get("portal_next_requests", "select=id,student_id,subject,requested_at,handled_at,how&or=" + encodeURIComponent(`(handled_at.is.null,and(how.eq.נסגר,handled_at.gt.${since}))`) + "&order=requested_at")
     .then(r => { r = (r || []).map(x => Object.assign(x, { student_id: String(x.student_id) }));
@@ -3113,7 +3133,7 @@ async function adLoad(){
   try {
     const [students, plan, settings, reqs, nreq] = await Promise.all([
       rpc("portal_students"),
-      getAll("portal_plan_items", "select=id,student_id,worksheet_id,subject,position,status,released_at,released_by,done_at,seen_at&order=position,id"),
+      AD.fromCache && AD.planSince ? planSync(AD.plan) : planFull(),
       opt(rpc("portal_settings_get")),   // קוד ראשוני לכולם (TS-05; אם לא הורץ – null)
       opt(get("portal_code_requests", "select=id,student_id,phone,created_at&handled_at=is.null&matched=is.true&order=created_at")),   // "שכחתי את הקוד"
       opt(getNreq()),   // 1.33: "שלחו לי את המשימה הבאה" (TS-08; אם לא הורץ – כמו קודם)
@@ -3121,7 +3141,7 @@ async function adLoad(){
     ]);
     AD.nreq = nreq === undefined ? null : nreq;
     AD.students = (students || []).map(s => Object.assign(s, { student_id: String(s.student_id) }));
-    AD.plan = (plan || []).map(p => Object.assign(p, { student_id: String(p.student_id) }));
+    AD.plan = (plan || []).map(planNorm);
     AD.settings = settings === undefined ? null : settings;
     AD.codeReqs = (reqs || []).map(r => Object.assign(r, { student_id: String(r.student_id) })).filter(r => stById(r.student_id));
     AD.loaded = true;
@@ -3874,7 +3894,9 @@ async function loadInfo(force){
   try { (await Promise.all(chunks.map(c => get("students", "select=id,grade,class_num,math_level,english_level,school,school_ref:schools(name,city)&id=in.(" + c.join(",") + ")")
           .catch(() => get("students", "select=id,grade,class_num,math_level,english_level,school&id=in.(" + c.join(",") + ")"))))).flat()
           .forEach(r => { if (r && r.id != null) I.st.set(String(r.id), r); }); } catch(e) {}
-  try { I.ex = await get("school_exams", "select=id,school_name,grade,class_num,subject,exam_date,kind,source,material,topics,school:schools(city,name)&order=exam_date,id"); } catch(e) {}
+  // 1.35 (מנ-136): רק מבחנים מ-90 יום אחורה ואילך (המבחן הבא + "לומדים עכשיו" האחרון) – לא כל השנה
+  const exFrom = isoOf(new Date(Date.now() - 90 * 864e5));
+  try { I.ex = await get("school_exams", "select=id,school_name,grade,class_num,subject,exam_date,kind,source,material,topics,school:schools(city,name)&exam_date=gte." + exFrom + "&order=exam_date,id"); } catch(e) {}
   if (!Array.isArray(I.ex)) I.ex = [];
   AD.info = I; return I;
 }
@@ -5158,13 +5180,22 @@ let GR_P = null;
 function grSave(){ try { store(GR_CACHE, JSON.stringify({ t: Date.now(), g: (AD.groups || []).map(g => Object.assign({}, g, { kids: [...g.kids] })) })); } catch(e) {} }
 function grLoadCache(){ try { const x = JSON.parse(store(GR_CACHE) || "null"); if (!x || !Array.isArray(x.g) || Date.now() - x.t > 7 * 864e5) return false;
   AD.groups = x.g.map(g => Object.assign(g, { kids: new Set(g.kids || []) })); AD.groupsAt = x.t; return true; } catch(e) { return false; } }
-async function grFetch(){
-  const yr = encodeURIComponent('תשפ"ז');
+// 1.35 (מנ-136): רק העמודות שצריך, ושיבוצים רק של קבוצות השנה. today = רק הקבוצות של היום (כניסה ראשונה בלי שמירה בטלפון)
+async function grFetch(today){
+  const yr = encodeURIComponent('תשפ"ז'), td0 = new Date(), tIso0 = isoOf(td0);
+  const SS = "select=session_id,city,location,day,time_label,start_time,end_time,kind,meeting_dates,meetings&school_year=eq." + yr
+    + (today ? "&or=" + encodeURIComponent(`(and(kind.neq.מרתון,day.eq.${DAY_L[td0.getDay()]}),meeting_dates.cs.{${tIso0}})`) : "");
+  const ss0 = await get("session_summary", SS).catch(() => get("session_summary", "select=*&school_year=eq." + yr));
+  const ids = (ss0 || []).map(g => g.session_id);
+  if (today && !ids.length) return [];
+  const sidF = today ? "&session_id=in.(" + ids.join(",") + ")" : "";
     const [ss, sins, ssp, asg] = await Promise.all([
-      get("session_summary", "select=*&school_year=eq." + yr),
-      get("session_instructors", "select=session_id,staff(full_name)").catch(() => []),
-      get("session_splits", "select=session_id,date_to,staff(full_name)").catch(() => []),
-      getAll("assignments", "select=session_id,student_id&status=in.(" + encodeURIComponent("משובץ") + "," + encodeURIComponent("ממתין") + ")")
+      Promise.resolve(ss0),
+      get("session_instructors", "select=session_id,staff(full_name)" + sidF).catch(() => []),
+      get("session_splits", "select=session_id,date_to,staff(full_name)" + sidF).catch(() => []),
+      getAll("assignments", (today ? "select=session_id,student_id" : "select=session_id,student_id,session:sessions!inner(school_year)&session.school_year=eq." + yr)
+        + "&status=in.(" + encodeURIComponent("משובץ") + "," + encodeURIComponent("ממתין") + ")" + sidF)
+        .catch(() => getAll("assignments", "select=session_id,student_id&status=in.(" + encodeURIComponent("משובץ") + "," + encodeURIComponent("ממתין") + ")" + sidF))
     ]);
     const kids = new Map(); (asg || []).forEach(a => { const k = String(a.session_id); if (!kids.has(k)) kids.set(k, new Set()); kids.get(k).add(String(a.student_id)); });
     // 1.18.3: מתרגלים לכל קבוצה (כמו בנוכחות: מתרגלי הקבוצה + מתרגלי חלוקות שעוד בתוקף)
@@ -5191,6 +5222,8 @@ function grRefresh(){
 }
 async function loadGroups(){
   if (!AD.groups) grLoadCache();
+  // 1.35: בלי שמירה בטלפון – קודם הקבוצות של היום (מהר), וכל השנה ברקע
+  if (!AD.groups && !GR_P) { try { const t = await grFetch(true); if (!AD.groups) { AD.groups = t; AD.groupsAt = 0; } grRefresh(); return AD.groups; } catch(e) {} }
   if (AD.groups) { if (Date.now() - (AD.groupsAt || 0) > 10 * 60e3) grRefresh(); return AD.groups; }   // יש – מיד; ישן – מתעדכן ברקע
   return grRefresh();
 }
