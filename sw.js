@@ -3,7 +3,7 @@
 //  - קבצי האפליקציה – קודם מהשמור (נפתח מיד), ובמקביל בודקים ברשת. גרסה חדשה מגיעה עם sw חדש (CACHE חדש) → רענון אוטומטי.
 //  - תמונות הדפים (Supabase Storage, קישור חתום) – קודם מהשמור; בלי אינטרנט / בפעם השנייה – מיד. עד ~600 תמונות.
 //  - הנתונים עצמם (רשימות, תוכנית, נוכחות) – תמיד מהשרת, לא נשמרים כאן.
-const CACHE = "telem-portal-1.34.1";   // לשנות יחד עם הגרסה ב-index.html
+const CACHE = "telem-portal-1.34.2";   // לשנות יחד עם הגרסה ב-index.html
 const IMG = "telem-img-v1";          // תמונות הדפים – לא נמחק בכל גרסה
 const IMG_MAX = 600;
 const SHELL = ["./", "index.html", "manifest.webmanifest", "logo.png", "favicon.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png"];
