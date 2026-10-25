@@ -2105,7 +2105,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.34.9",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.34.10",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -3329,7 +3329,7 @@ async function renderWait(){
     if (AD.waitLive && !live.length) AD.waitLive = "";
     if (AD.waitLive) { const gs = AD.waitLive === "*" ? live : live.filter(gr => gr.id === AD.waitLive), kids = new Set(gs.flatMap(gr => [...grNowKids(gr, now)]));
       liveKids = kids; list = list.filter(w => kids.has(String(w.s.student_id))); fresh = fresh.filter(s => kids.has(String(s.student_id)));
-      h += `<div class="lb-note">מוצגים רק הממתינים מ${AD.waitLive === "*" ? "הקבוצות הפעילות" : "-" + esc(gs[0].loc) + " " + esc(gs[0].time)} (${waitingKids(list).length}) · <button type="button" class="lnk" data-wlive="">הצגת כולם</button></div>`; } }   // 1.18.3 (נועה): בתצוגת קבוצות – בלי הפס; הקבוצה שמתנהלת עכשיו ראשונה ברשימה, אחרי הסינונים (כמו בנוכחות)
+      h += `<div class="lb-note">מוצגים רק הממתינים מ${AD.waitLive === "*" ? "הקבוצות הפעילות" : "-" + esc(gs[0].loc) + " " + esc(grRange(gs[0]))} (${waitingKids(list).length}) · <button type="button" class="lnk" data-wlive="">הצגת כולם</button></div>`; } }   // 1.18.3 (נועה): בתצוגת קבוצות – בלי הפס; הקבוצה שמתנהלת עכשיו ראשונה ברשימה, אחרי הסינונים (כמו בנוכחות)
   // 1.34 (נועה): שתי לשוניות נפרדות – "ביקשו משימה" / "סיימו ולא ביקשו" (שלא ייעלמו)
   let idle = [];
   if (AD.nreq && !byGroup) { idle = idleList(); const nI = waitingKids(idle).length, nF = fresh.length, tab = ["idle", "oth", "new"].includes(AD.waitTab) ? AD.waitTab : "req";
@@ -3428,6 +3428,8 @@ function grNowKids(gr, now){
   return out;
 }
 // 1.34.5: האם הקבוצה מתקיימת בתאריך d (מרתון – לפי תאריכי המפגשים; שוטף – לפי היום בשבוע), והשעות באותו יום
+// 1.34.10 (נועה): שעות הקבוצה פעם אחת (time_label כבר "15:30-16:15")
+const grRange = (gr) => { gr = grAt(gr); return gr.start ? gr.start + (gr.end ? "–" + gr.end : "") : (gr.time || ""); };
 function grOn(gr, d){ d = d || new Date(); if (gr.kind === "מרתון") return (gr.dates || []).includes(isoOf(d)); return gr.day === DAY_L[d.getDay()]; }
 function grAt(gr, d){ if (gr.kind !== "מרתון") return gr; const m = (gr.meet || []).find(x => x.date === isoOf(d || new Date())); if (!m) return gr;
   const hm = (t) => String(t || "").slice(0, 5); return Object.assign({}, gr, { start: hm(m.start) || gr.start, end: hm(m.end) || gr.end, time: hm(m.start) || gr.time }); }
@@ -3464,14 +3466,14 @@ function liveBar(list){
   if (!live.length) {
     const today = DAY_L[now.getDay()], hm = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
     const next = gs.filter(gr => grOn(gr, now)).map(gr => grAt(gr, now)).filter(gr => String(gr.start || gr.time) > hm && (!want || (gr.ins || []).includes(want))).sort((a, b) => String(a.start).localeCompare(String(b.start)))[0];
-    return next ? `<div class="live-bar idle"><span class="muted">אין קבוצה פעילה עכשיו · הבאה היום: <b>${esc(next.loc)} ${esc(next.time)}</b></span></div>` : "";
+    return next ? `<div class="live-bar idle"><span class="muted">אין קבוצה פעילה עכשיו · הבאה היום: <b>${esc(next.loc)} ${esc(grRange(next))}</b></span></div>` : "";
   }
   const inLesson = (gr) => waitingKids(list.filter(w => { const x = doneInGroup(w.s.student_id, w.done_at); return x && x.id === gr.id && new Date(w.done_at).toDateString() === now.toDateString(); })).length;
   const sel = AD.waitLive || "";
   return `<div class="live-bar"><div class="lb-h"><span class="live-dot"></span><b>${live.length === 1 ? "קבוצה פעילה עכשיו" : "קבוצות פעילות עכשיו"}</b><span class="lb-hint">לחיצה – רק הממתינים ממנה</span></div>
     <div class="lb-f"><button type="button" class="${!sel ? "on" : ""}" data-wlive="">כל הממתינים</button>${live.length > 1 ? `<button type="button" class="${sel === "*" ? "on" : ""}" data-wlive="*">כל הקבוצות הפעילות</button>` : ""}</div><div class="lb-list">` +
     live.map(gr => { const nk = grNowKids(gr, now), w = waitingKids(list.filter(x => nk.has(String(x.s.student_id)))).length, n = inLesson(gr);
-      return `<button class="lb-g${sel === gr.id ? " on" : ""}" data-wlive="${esc(gr.id)}"><span class="t"><b>${esc(gr.loc)}</b> · <span class="nw">${esc(gr.time)}${gr.end ? "–" + esc(gr.end) : ""}</span><small>${esc(gr.city)}</small></span>
+      return `<button class="lb-g${sel === gr.id ? " on" : ""}" data-wlive="${esc(gr.id)}"><span class="t"><b>${esc(gr.loc)}</b> · <span class="nw">${esc(grRange(gr))}</span><small>${esc(gr.city)}</small></span>
         <span class="c"><b>${w}</b> ממתינים${n ? `<small>${n} סיימו בשיעור</small>` : ""}</span></button>`; }).join("") + `</div></div>`;
 }
 // 1.19 (נועה): לפי קבוצות = כמו בנוכחות – יום אחד (→ / תאריך / להיום / ←), הקבוצות של היום לפי השעה,
@@ -5222,7 +5224,7 @@ async function bulkSheet(){
   const status = (sid) => { const pl = planOf(sid); const st = wids.map(w => (pl.find(p => String(p.worksheet_id) === w) || {}).status).filter(Boolean);
     return st.length === wids.length && wids.length ? (st.every(x => x !== "מתוכנן") ? "יש" : "בתור") : st.length ? "חלק" : ""; };
   const B = { q: "", grp: nowG ? nowG.id : "", sel: new Set() };
-  const gLbl = (g) => `${g.kind === "מרתון" ? "🏁 " : ""}${g.start || g.time} · ${g.loc}${g.end && g.start <= nowHm && nowHm <= g.end ? " (עכשיו)" : ""}`;
+  const gLbl = (g) => `${g.kind === "מרתון" ? "🏁 " : ""}${grRange(g)} · ${g.loc}${g.end && g.start <= nowHm && nowHm <= g.end ? " (עכשיו)" : ""}`;
   const g0 = await sign(wids.map(w => (AD.wsById.get(w) || {}).storage_path));
   attSideH();   // גובה הכותרת – החלון נפתח מתחתיה
   openSheet(`
