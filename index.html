@@ -2096,7 +2096,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.34.4",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.34.5",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -3409,16 +3409,20 @@ function grNowKids(gr, now){
   const out = new Set(), P = AD.present;
   if (isLive(gr, now)) { gr.kids.forEach(k => { if (!(P && P.absent && P.absent.has(String(k)))) out.add(String(k)); });
     if (P && P.marks) P.marks.forEach(m => { if (m.gid === gr.id && presentNow(m.sid) === gr.id) out.add(m.sid); }); return out; }
-  const w = gr.day === DAY_L[now.getDay()] && groupWindow(gr, now);
+  const w = grOn(gr, now) && groupWindow(grAt(gr, now), now);
   if (w && now > w[1] && P && P.marks) P.marks.forEach(m => { if (m.gid === gr.id && presentNow(m.sid) === gr.id) out.add(m.sid); });
   return out;
 }
-const isLive = (gr, now) => { now = now || new Date(); if (gr.day !== DAY_L[now.getDay()]) return false; const w = groupWindow(gr, now); return !!w && now >= w[0] && now <= w[1]; };
+// 1.34.5: האם הקבוצה מתקיימת בתאריך d (מרתון – לפי תאריכי המפגשים; שוטף – לפי היום בשבוע), והשעות באותו יום
+function grOn(gr, d){ d = d || new Date(); if (gr.kind === "מרתון") return (gr.dates || []).includes(isoOf(d)); return gr.day === DAY_L[d.getDay()]; }
+function grAt(gr, d){ if (gr.kind !== "מרתון") return gr; const m = (gr.meet || []).find(x => x.date === isoOf(d || new Date())); if (!m) return gr;
+  const hm = (t) => String(t || "").slice(0, 5); return Object.assign({}, gr, { start: hm(m.start) || gr.start, end: hm(m.end) || gr.end, time: hm(m.start) || gr.time }); }
+const isLive = (gr, now) => { now = now || new Date(); if (!grOn(gr, now)) return false; const w = groupWindow(grAt(gr, now), now); return !!w && now >= w[0] && now <= w[1]; };
 // באיזה שיעור נלחץ "סיימתי": קבוצה של התלמיד/ה שהזמן מתאים לה, או null (= מחוץ לשיעור)
 function doneInGroup(sid, doneAt){
   if (!doneAt || !AD.groups) return null;
   const d = new Date(doneAt);
-  return AD.groups.find(gr => gr.kids.has(String(sid)) && gr.day === DAY_L[d.getDay()] && (w => w && d >= w[0] && d <= w[1])(groupWindow(gr, d))) || null;
+  return AD.groups.find(gr => gr.kids.has(String(sid)) && grOn(gr, d) && (w => w && d >= w[0] && d <= w[1])(groupWindow(grAt(gr, d), d))) || null;
 }
 function doneChip(sid, doneAt, gr){
   if (!doneAt) return "";
@@ -3445,7 +3449,7 @@ function liveBar(list){
   const want = insWant(), live = gs.filter(gr => (isLive(gr, now) || grNowKids(gr, now).size) && (!want || (gr.ins || []).includes(want)));   // 1.31: לפי סינון המתרגלים; 1.33: גם לפי הנוכחות
   if (!live.length) {
     const today = DAY_L[now.getDay()], hm = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
-    const next = gs.filter(gr => gr.day === today && String(gr.start || gr.time) > hm && (!want || (gr.ins || []).includes(want))).sort((a, b) => String(a.start).localeCompare(String(b.start)))[0];
+    const next = gs.filter(gr => grOn(gr, now)).map(gr => grAt(gr, now)).filter(gr => String(gr.start || gr.time) > hm && (!want || (gr.ins || []).includes(want))).sort((a, b) => String(a.start).localeCompare(String(b.start)))[0];
     return next ? `<div class="live-bar idle"><span class="muted">אין קבוצה פעילה עכשיו · הבאה היום: <b>${esc(next.loc)} ${esc(next.time)}</b></span></div>` : "";
   }
   const inLesson = (gr) => waitingKids(list.filter(w => { const x = doneInGroup(w.s.student_id, w.done_at); return x && x.id === gr.id && new Date(w.done_at).toDateString() === now.toDateString(); })).length;
@@ -3665,7 +3669,7 @@ const ST_LEG = `<div class="st-leg"><span><b class="si-ex-l">24.10</b> מבחן<
 // 1.16: קודם מי שיש לו/ה קבוצה היום (לפי שעה; בתוך הקבוצה – מי שסומן/ה "נוכח/ת" קודם), אחר כך כל השאר
 function todaySections(list, rowFn){
   const today = DAY_L[new Date().getDay()];
-  const gs = (AD.groups || []).filter(g => g.day === today).sort((a, b) => String(a.start || a.time).localeCompare(String(b.start || b.time)));
+  const gs = (AD.groups || []).filter(g => grOn(g)).map(g => grAt(g)).sort((a, b) => String(a.start || a.time).localeCompare(String(b.start || b.time)));
   if (!gs.length) return list.map(rowFn).join("");
   const used = new Set(), here = (id) => !!(AD.present && AD.present.any.has(id));
   let h = "";
@@ -5158,7 +5162,9 @@ async function grFetch(){
     (ssp || []).filter(x => !x.date_to || x.date_to >= tIso).forEach(x => addI(x.session_id, x.staff && x.staff.full_name));
     const DO = { "א":1,"ב":2,"ג":3,"ד":4,"ה":5,"ו":6 };
     return (ss || []).map(g => ({ id: String(g.session_id), city: g.city || "", day: g.day || "", time: g.time_label || String(g.start_time || "").slice(0, 5), loc: g.location || "",
-                                        start: String(g.start_time || "").slice(0, 5), end: String(g.end_time || "").slice(0, 5), kids: kids.get(String(g.session_id)) || new Set(), ins: [...(ins.get(String(g.session_id)) || [])] }))
+                                        start: String(g.start_time || "").slice(0, 5), end: String(g.end_time || "").slice(0, 5), kids: kids.get(String(g.session_id)) || new Set(), ins: [...(ins.get(String(g.session_id)) || [])],
+                                        // 1.34.5 (נועה): קבוצות מרתון – לפי התאריכים (לא יום בשבוע), ושעות לכל מפגש
+                                        kind: g.kind || "שוטף", dates: (g.meeting_dates || []).map(String), meet: (Array.isArray(g.meetings) ? g.meetings : []).filter(m => m && m.date) }))
       .filter(g => g.kids.size).sort((a, b) => a.city.localeCompare(b.city) || (DO[a.day] || 9) - (DO[b.day] || 9) || String(a.start).localeCompare(String(b.start)));
 }
 function grRefresh(){
@@ -5199,14 +5205,14 @@ async function bulkSheet(){
   const groups = await loadGroups();
   const elig = AD.students.filter(s => (s.subjects || []).includes(subj));
   const want = insWant(), tdL = DAY_L[new Date().getDay()], nowHm = new Date().toTimeString().slice(0, 5);
-  const mineToday = groups.filter(g => g.day === tdL && (!want || (g.ins || []).includes(want)) && elig.some(s => g.kids.has(s.student_id)))
-    .sort((a, b) => String(a.start).localeCompare(String(b.start)));
+  const mineToday = groups.filter(g => grOn(g) && (!want || (g.ins || []).includes(want)) && elig.some(s => g.kids.has(s.student_id)))
+    .map(g => grAt(g)).sort((a, b) => String(a.start).localeCompare(String(b.start)));
   // הקבוצה של עכשיו: מתקיימת עכשיו → הבאה היום → האחרונה שהייתה היום
   const nowG = mineToday.find(g => g.start <= nowHm && (!g.end || nowHm <= g.end)) || mineToday.find(g => g.start > nowHm) || mineToday[mineToday.length - 1] || null;
   const status = (sid) => { const pl = planOf(sid); const st = wids.map(w => (pl.find(p => String(p.worksheet_id) === w) || {}).status).filter(Boolean);
     return st.length === wids.length && wids.length ? (st.every(x => x !== "מתוכנן") ? "יש" : "בתור") : st.length ? "חלק" : ""; };
   const B = { q: "", grp: nowG ? nowG.id : "", sel: new Set() };
-  const gLbl = (g) => `${g.start || g.time} · ${g.loc}${g.end && g.start <= nowHm && nowHm <= g.end ? " (עכשיו)" : ""}`;
+  const gLbl = (g) => `${g.kind === "מרתון" ? "🏁 " : ""}${g.start || g.time} · ${g.loc}${g.end && g.start <= nowHm && nowHm <= g.end ? " (עכשיו)" : ""}`;
   const g0 = await sign(wids.map(w => (AD.wsById.get(w) || {}).storage_path));
   attSideH();   // גובה הכותרת – החלון נפתח מתחתיה
   openSheet(`
