@@ -169,6 +169,7 @@
 
   /* sheet */
   .sheet-bg{ position:fixed; inset:0; z-index:80; background:rgba(0,0,0,.45); display:flex; align-items:flex-end; justify-content:center; }
+  .sheet{ position:relative; } .sheet-x{ position:absolute; top:12px; inset-inline-end:12px; width:36px; height:36px; border-radius:50%; border:1px solid var(--border); background:var(--paper); color:var(--ink); display:grid; place-items:center; cursor:pointer; z-index:2; padding:0; } .sheet-x svg{ width:18px; height:18px; } .sheet > h2:first-of-type{ padding-inline-end:44px; }
   .sheet{ background:var(--paper); width:100%; max-width:560px; max-height:92vh; overflow:auto; border-radius:22px 22px 0 0; padding:18px 18px calc(20px + var(--safe-b)); }
   @media (min-width:700px){ .sheet-bg{ align-items:center; } .sheet{ border-radius:22px; } }
   .sheet h2{ font-size:21px; margin-bottom:10px; }
@@ -468,6 +469,7 @@
   .stm-sec-h b.sn{ font-size:12.5px; padding:1px 8px; border-radius:999px; margin-inline-start:4px; }
   .stm-sec-h b.sn.s-m, .stm-sec-h b.sn.subj-m{ background:#DDF5D6; color:#1F6B17; } .stm-sec-h b.sn.s-e, .stm-sec-h b.sn.subj-e{ background:#FFF6B8; color:#6B5600; }
   .lvl-chip{ display:inline-block; font-size:12px; font-weight:700; line-height:1.5; border-radius:999px; padding:0 8px; margin-inline-start:4px; background:#EEF0FA; color:#3F4FA8; vertical-align:middle; }
+  .att-group.part{ border-color:#E0B44A !important; background:#FFF8E6 !important; } .att-group .ag-st .pt{ color:#8A5A00; font-weight:700; }
   .lb-g.on{ border:2px solid var(--ok); box-shadow:0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent); }
   .lb-hint{ margin-inline-start:auto; font-family:var(--font-body, inherit); font-size:12px; color:var(--ink-soft); font-weight:400; }
   .lb-f{ display:flex; gap:6px; flex-wrap:wrap; margin:0 0 8px; }
@@ -751,6 +753,7 @@
   /* 1.25.1 (נועה): בלי כותרת "מאגר תרגולים" (כמו הלשונית); יציאה וגרסה – ב-⚙ (מתרגלים: נשאר בפס / למטה) */
   .crmws #view-ws > .page-head h1{ display:none; } .crmws #view-ws > .page-head:not(:has(button, a, input, select)){ display:none; }
   body:not(.v-ins) #adLogout, body:not(.v-ins) .ad-ver{ display:none !important; }
+  .ic-row{ width:100%; text-align:start; font:inherit; font-size:14px; color:var(--ink); cursor:pointer; }   /* 1.34.9 (נועה): יציאה – שורה בתפריט */
   .tools-foot{ display:flex; gap:8px; margin-top:12px; } .tools-foot .btn{ flex:1; }
   /* 1.30: הטמעה במערכת הניהול – רק הנוכחות, בלי הכותרת והתפריט, רקע שקוף */
   html.embed, html.embed body{ background:transparent !important; background-image:none !important; }
@@ -2102,7 +2105,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.34.8",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.34.9",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2923,9 +2926,11 @@ async function toPng(blob){
 let SHEET = null;
 function openSheet(html, wire, cls){
   closeSheet(true);
-  $("sheetHost").innerHTML = `<div class="sheet-bg"><div class="sheet ${cls || ""}" role="dialog" aria-modal="true">${html}</div></div>`;
+  // 1.34.9 (נועה): בכל חלון – ✕ לסגירה (כמו ב"לתלמידים…"), במקום כפתור "סגירה"
+  const x = /id="bkClose"/.test(html) ? "" : `<button type="button" class="sheet-x" aria-label="סגירה">${IC.x}</button>`;
+  $("sheetHost").innerHTML = `<div class="sheet-bg"><div class="sheet ${cls || ""}" role="dialog" aria-modal="true">${x}${html}</div></div>`;
   SHEET = $("sheetHost").firstElementChild;
-  SHEET.addEventListener("click", (e) => { if (e.target === SHEET) closeSheet(); });
+  SHEET.addEventListener("click", (e) => { if (e.target === SHEET || e.target.closest(".sheet-x")) closeSheet(); });
   if (wire) wire(SHEET.querySelector(".sheet"));
 }
 function closeSheet(){ if (!SHEET) return; $("sheetHost").innerHTML = ""; SHEET = null; }
@@ -3738,8 +3743,7 @@ async function bulkResult(r, st){
     ${sk.length ? `<p style="margin:0"><b>לא נוצרו (${sk.length}):</b></p><ul class="res-list">${sk.map(x => `<li>${esc(x.name || x.student_id)} – <span class="muted">${esc(x.reason)}</span></li>`).join("")}</ul>` : ""}
     <p class="muted" style="margin:8px 0 0">הודעה לקבוצה (אחת לכולם):</p>
     <pre class="msg">${esc(msg)}</pre>
-    <button class="btn primary block" id="cpBulk" style="margin-bottom:8px">${IC.copy} העתקת ההודעה</button>
-    <button class="btn ghost block" onclick="closeSheet()">סגירה</button>`, (sh) => {
+    <button class="btn primary block" id="cpBulk" style="margin-bottom:8px">${IC.copy} העתקת ההודעה</button>`, (sh) => {
       sh.querySelector("#cpBulk").onclick = async () => { try { await navigator.clipboard.writeText(msg); toast("ההודעה הועתקה."); } catch(e) { toast("לא הצלחנו להעתיק."); } };
     });
 }
@@ -3896,8 +3900,7 @@ function exSheet(id){
   openSheet(`<h2>${st ? "📓 לומדים עכשיו" : "📝 " + esc(e.kind)}</h2>
     <p class="muted small" style="margin:-6px 0 10px">${esc((e.school && e.school.name) || e.school_name || "")} · ${esc(gradeKey(e.grade))}'${esc(e.class_num || "")} · ${st ? "התקבל" : "בתאריך"} ${esc(fmtDM(e.exam_date))}</p>
     <div class="ex-topics-full">${e.topics ? esc(e.topics) : `<span class="muted">${st ? "לא נכתבו נושאים." : "עוד לא התקבלו נושאים למבחן הזה."}</span>`}</div>
-    ${e.material || e.source ? `<p class="small muted">${[e.material ? "קובץ: " + esc(e.material) : "", e.source ? "מקור: " + esc(e.source) : ""].filter(Boolean).join(" · ")}</p>` : ""}
-    <button class="btn ghost block" onclick="closeSheet()">סגירה</button>`);
+    ${e.material || e.source ? `<p class="small muted">${[e.material ? "קובץ: " + esc(e.material) : "", e.source ? "מקור: " + esc(e.source) : ""].filter(Boolean).join(" · ")}</p>` : ""}`);
 }
 const wireExLines = (T) => T.querySelectorAll("[data-exl]").forEach(b => b.onclick = () => exSheet(b.dataset.exl));
 // ---------- 1.15: מסך התלמיד/ה בנייד ----------
@@ -4056,7 +4059,6 @@ function planSheet(id, s){
       ${p.status === "נשלח" ? `<button class="btn block" data-a="unrel">${IC.undo} ביטול שליחה (חזרה לתור)</button>` : ""}
       <button class="btn block" data-a="view">צפייה בדף</button>
       ${q ? `<button class="btn block acc-del" data-a="rm">${IC.x} הסרה מהתור</button>` : ""}
-      <button class="btn ghost block" data-a="close">סגירה</button>
     </div>`, (sh) => {
       sh.querySelectorAll("[data-a]").forEach(b => b.onclick = () => { const a = b.dataset.a; closeSheet();
         if (a === "up") movePlan(id, -1); else if (a === "down") movePlan(id, 1); else if (a === "rel") releaseItems([id]);
@@ -4150,8 +4152,7 @@ async function sendCodeSheet(s, phone, code, reset){
     <p class="muted" style="margin:0">ההודעה לשליחה לתלמיד/ה:</p>
     <pre class="msg">${esc(msg)}</pre>
     <a class="btn primary block" href="${esc(wa)}" target="_blank" rel="noopener" style="margin-bottom:8px">${IC.wa} שליחה בוואטסאפ</a>
-    <button class="btn block" id="cpMsg" style="margin-bottom:8px">${IC.copy} העתקת ההודעה</button>
-    <button class="btn ghost block" onclick="closeSheet()">סגירה</button>`, (sh) => {
+    <button class="btn block" id="cpMsg" style="margin-bottom:8px">${IC.copy} העתקת ההודעה</button>`, (sh) => {
       sh.querySelector("#cpMsg").onclick = async () => { try { await navigator.clipboard.writeText(msg); toast("ההודעה הועתקה."); } catch(e) { toast("לא הצלחנו להעתיק."); } };
     });
 }
@@ -4172,7 +4173,7 @@ function toolsSheet(){
     <h3 class="tl-h">ייבוא דפים מהמחשב</h3>
     <p class="muted small" style="margin-top:-4px">בוחרים במחשב את התיקייה הראשית של דפי התרגול. המערכת מוצאת לבד את הדפים שברשימה, מעלה אותם ומחליפה דפים קיימים בגרסה החדשה. ${isDesk() ? "" : "<b>רק מהמחשב.</b>"}</p>
     ${isDesk() ? `<input type="file" id="wsFolderP" webkitdirectory directory multiple><div id="wsImportMsgP" class="small" style="margin-top:6px"></div>` : ""}
-    <div class="tools-foot"><button class="btn ghost" onclick="closeSheet()">סגירה</button><button class="btn ghost" id="tsOut">יציאה</button></div>
+    <button type="button" class="ic-line ic-row" id="tsOut">🚪 <span>יציאה מהחשבון</span></button>
     <p class="muted small" style="text-align:center;margin:10px 0 0">תלם שלי · גרסה ${esc(CONFIG.version)}</p>`, (sh) => {
       sh.querySelector("#tsOut").onclick = () => { closeSheet(); logout(); };
       appLink().then(L => { const b = sh.querySelector("#tsLink"); if (b) b.textContent = L.replace(/^https?:\/\//, ""); });
@@ -5400,10 +5401,21 @@ async function insRender(){
     ${sel || ""}</div>`;
   if (!T.querySelector("#attListV")) { T.innerHTML = top() + `<div class="att-groups"><div class="muted">טוען...</div></div></div></div>`; wireIns(T); }
   let list = [];
-  try { [list] = await Promise.all([rpc("attendance_groups", { p_date: iso, p_city: null }), ATTM.HOLX.load().catch(() => {})]); list = list || []; if (!Array.isArray(list)) list = []; }
+  let mk = null;   // 1.34.9 (נועה): כמה ילדים סומנו (נוכח/ת או חסר/ה) בכל קבוצה – ירוק רק כשסומנו כולם
+  let skp = null;
+  try { [list, , mk, skp] = await Promise.all([rpc("attendance_groups", { p_date: iso, p_city: null }), ATTM.HOLX.load().catch(() => {}),
+          get("attendance", "select=session_id,student_id,present&lesson_date=eq." + iso + "&present=not.is.null").catch(() => null),
+          get("attendance_plan", "select=session_id,student_id&kind=eq.skip&lesson_date=eq." + iso).catch(() => [])]); list = list || []; if (!Array.isArray(list)) list = []; }
   catch(e) { T.innerHTML = top() + `<div class="card err">לא ניתן לטעון את הקבוצות.</div></div></div>`; wireIns(T); return; }
   // 1.24 (נועה): חגים וחופשות – כמו במערכת הניהול (תגית ליד היום; קבוצה ביום חג – "לא התקיים")
   holC = ATTM.HOLX.chips(iso);
+  if (Array.isArray(mk)) { const c = new Map(); mk.forEach(r => { const k = String(r.session_id); if (!c.has(k)) c.set(k, new Set()); c.get(k).add(String(r.student_id)); });
+    const sk = new Map(); (Array.isArray(skp) ? skp : []).forEach(r => { const k = String(r.session_id); sk.set(k, (sk.get(k) || 0) + 1); });   // "לא מגיעים היום" – לא צריך לסמן
+    list.forEach(g => { const k = String(g.session_id), gr = (AD.groups || []).find(x => x.id === k), m = c.get(k) || new Set();
+      g.n_marked = m.size; g.n_need = Math.max(0, (g.kids || 0) - (sk.get(k) || 0));
+      const mAssigned = gr ? [...m].filter(id => gr.kids.has(id)).length : m.size;   // ילד/ה שנוסף/ה לשיעור לא משלים/ה ילד/ה שחסר/ה בסימון
+      g.all = g.marked && mAssigned >= g.n_need; }); }
+  else list.forEach(g => { g.all = g.marked; });
   list.forEach(g => { g.cx = g.marked ? null : ATTM.HOLX.cx({ kind: g.kind, city: g.city, location: g.location, cancelled: g.cancelled, cancel_reason: g.cancel_reason }, iso); });
   if (iso !== AD.waitDate || (!ins && AD.view !== "att") || (typeof ATTM !== "undefined" && ATTM.isOpen)) return;
   AD.attG = { iso, at: Date.now(), m: new Map(list.map(x => [String(x.session_id), x])) };
@@ -5417,11 +5429,11 @@ async function insRender(){
     if (AD.waitIns === "__me" && !AD.myName) gs = list;   // עוד לא ידוע מי נכנס/ה
   }
   gs = gs.slice().sort((a, b) => String(a.start_time).localeCompare(String(b.start_time)) || String(a.location).localeCompare(String(b.location), "he"));
-  const card = (g) => `<button type="button" class="att-group ${scCls(g.location)} ${g.marked ? "done" : ""}${g.cx ? " hol-fade" : ""}" data-att="${esc(String(g.session_id))}">
+  const card = (g) => `<button type="button" class="att-group ${scCls(g.location)} ${g.all ? "done" : g.marked ? "part" : ""}${g.cx ? " hol-fade" : ""}" data-att="${esc(String(g.session_id))}">
       <span class="t">${g.kind === "מרתון" ? "🏁 מרתון · " + esc(g.time_label || "") + (g.start_time ? ` <span class="m">${rng(hm(g.start_time), hm(g.end_time))}</span>` : "") : rng(hm(g.start_time), hm(g.end_time))}</span>
       <span class="w">${scChip(g.location)}${!ins ? " · " + esc(g.city || "") : ""}</span><span class="ag-br"></span>${g.room ? `<span class="m">חדר: <b><bdi>${esc(g.room)}</bdi></b></span>` : ""}
       ${!ins && g.instructors ? `<span class="ag-ins">${esc(g.instructors)}</span>` : ""}
-      <span class="ag-st">${g.marked ? `<span class="ok">✓ סומן · <b>${g.marked_count}</b> נוכחים מתוך ${g.kids}</span>` : `<span class="m kn">${g.kids} ילדים</span> · ${g.cx ? `<span class="cx-tag" title="לא התקיים${g.cx.reason ? " · " + esc(g.cx.reason) : ""}">לא התקיים${g.cx.reason ? " · " + esc(g.cx.reason) : ""}</span>` : `<span class="m">טרם סומן</span>`}`}</span></button>`;
+      <span class="ag-st">${g.all ? `<span class="ok">✓ סומן · <b>${g.marked_count}</b> נוכחים מתוך ${g.kids}</span>` : g.marked ? `<span class="pt">סומנו ${g.n_marked} מתוך ${g.n_need != null ? g.n_need : g.kids} · <b>${g.marked_count}</b> נוכחים</span>` : `<span class="m kn">${g.kids} ילדים</span> · ${g.cx ? `<span class="cx-tag" title="לא התקיים${g.cx.reason ? " · " + esc(g.cx.reason) : ""}">לא התקיים${g.cx.reason ? " · " + esc(g.cx.reason) : ""}</span>` : `<span class="m">טרם סומן</span>`}`}</span></button>`;
   paint(T, top(sel) + `<div class="att-groups">${gs.length ? gs.map(card).join("") : `<div class="card muted">${ins ? "אין לך קבוצות ביום הזה." : AD.waitIns && list.length ? "אין קבוצות ביום הזה למתרגל/ת שנבחר/ה." : "אין קבוצות ביום הזה."}</div>`}</div></div></div>`);
   wireIns(T); attSideH();
   T.querySelectorAll("[data-att]").forEach(b => b.onclick = () => { const x = gs.find(g => String(g.session_id) === b.dataset.att) || {};
