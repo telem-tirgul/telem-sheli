@@ -467,6 +467,7 @@
   .pa-st{ display:inline-flex; align-items:center; font-weight:800; font-size:14px; color:#3F4FA8; background:#EEF0FA; border-radius:999px; padding:6px 12px; white-space:nowrap; }
   .stm-sec-h b.sn{ font-size:12.5px; padding:1px 8px; border-radius:999px; margin-inline-start:4px; }
   .stm-sec-h b.sn.s-m, .stm-sec-h b.sn.subj-m{ background:#DDF5D6; color:#1F6B17; } .stm-sec-h b.sn.s-e, .stm-sec-h b.sn.subj-e{ background:#FFF6B8; color:#6B5600; }
+  .lvl-chip{ display:inline-block; font-size:12px; font-weight:700; line-height:1.5; border-radius:999px; padding:0 8px; margin-inline-start:4px; background:#EEF0FA; color:#3F4FA8; vertical-align:middle; }
   .lb-g.on{ border:2px solid var(--ok); box-shadow:0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent); }
   .lb-hint{ margin-inline-start:auto; font-family:var(--font-body, inherit); font-size:12px; color:var(--ink-soft); font-weight:400; }
   .lb-f{ display:flex; gap:6px; flex-wrap:wrap; margin:0 0 8px; }
@@ -2096,7 +2097,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.34.5",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.34.6",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -5490,6 +5491,17 @@ function pastBadge(st){
   const lbl = (reg ? "נרשם/ה בעבר" : "פנה/תה בעבר") + "\n" + tip;
   return `<span class="past-ic ${reg ? "reg" : ""}" title="${esc(lbl)}" aria-label="${esc(reg ? "נרשם/ה בעבר" : "פנה/תה בעבר")}" role="img"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
 }
+// 1.34.6 (נועה): הקבצה בנוכחות – רק כשיש מידע. מרתון – מההרשמה למרתון; קבוצה רגילה – מהכרטיס (מת' / אנג' לפי המקצוע)
+function lvlTag(r, sessId, isMar){
+  const sid = String(r.student_id), out = [];
+  if (isMar) { const regs = ((typeof L !== "undefined" && L.mar && L.mar[sid]) || []).filter(x => x.status !== "בוטל" && x.hakbatsa);
+    const reg = regs.find(x => String(x.session_id) === String(sessId)) || regs[regs.length - 1]; if (reg) out.push(reg.hakbatsa); }
+  else { const I = AD.info && AD.info.st.get(sid); if (I) { const sj = rowSubj(r) || "", g = subjGrp(sj);
+      const m = I.math_level, e = I.english_level;
+      if (g === 2) { if (m) out.push("מת' " + m); if (e) out.push("אנג' " + e); }
+      else if (/אנגלית/.test(sj)) { if (e) out.push(e); } else if (m) out.push(m); } }
+  return out.length ? `<span class="lvl-chip" title="הקבצה">${esc(out.join(" · "))}</span>` : "";
+}
 function marFlag(sid){
   const m = ((typeof L !== "undefined" && L.mar && L.mar[sid]) || []).filter(x => x.status !== "בוטל"); if (!m.length) return "";
   return ` <span class="mar-ic" title="${esc("רשום/ה למרתון: " + m.map(x => x.marathon ? [x.marathon.name, x.marathon.school].filter(Boolean).join(" · ") : "מרתון").join(", "))}">🏁</span>`;
@@ -5506,7 +5518,7 @@ function payPend(stId, sessId, isMar){
     ids.forEach(id => TAGS_DONE.add(id)); const inn = "in.(" + ids.join(",") + ")", adm = ME.role !== "instructor";
     const [h, m, pr] = await Promise.all([
       adm ? get("student_history", "select=student_id,school_year,year_start,status&student_id=" + inn + "&order=year_start").catch(() => []) : [],
-      get("marathon_registrations", "select=id,student_id,session_id,status,payment_method,paid_at,amount,created_at,marathon:marathons(name,city,school)&student_id=" + inn + "&status=neq." + encodeURIComponent("בוטל") + "&order=id").catch(() => []),
+      get("marathon_registrations", "select=id,student_id,session_id,hakbatsa,status,payment_method,paid_at,amount,created_at,marathon:marathons(name,city,school)&student_id=" + inn + "&status=neq." + encodeURIComponent("בוטל") + "&order=id").catch(() => get("marathon_registrations", "select=id,student_id,session_id,status,payment_method,paid_at,amount,created_at,marathon:marathons(name,city,school)&student_id=" + inn + "&status=neq." + encodeURIComponent("בוטל") + "&order=id")).catch(() => []),
       adm ? get("pending_phone_payments", "select=kind,order_id,student_id,what,amount&kind=eq.registration&student_id=" + inn).catch(() => []) : []]);
     const arr = (v) => Array.isArray(v) ? v : [];
     arr(h).forEach(x => (L.hist[x.student_id] = L.hist[x.student_id] || []).push(x));
@@ -5976,7 +5988,7 @@ function renderSheetRows(){
       head = `<li class="att-sec att-tsec"><span>⏰ <bdi>${minHm(t)}</bdi>${t === attGrpStart() ? " · שעת הקבוצה" : ""}</span><span>${n === 1 ? "ילד/ה 1" : n + " ילדים"}</span></li>`; prevT = t; }
     return head + `<li data-i="${i}">${gradeBadge(r.grade, r.class_num)}
     <div class="att-name"><b class="att-nm"><span${!!stById(r.student_id) ? ` class="att-kl" data-kl="${r.student_id}" role="button" tabindex="0" title="פרטים ושיבוצים"` : ""}>${esc(r.first_name)} ${esc(r.last_name || "")}</span>${ME.role !== "instructor" ? pastBadge({ id: r.student_id }) + (((G.sessions || []).find(x => x.session_id === A.sheet.session_id) || {}).kind === "מרתון" ? "" : marFlag(r.student_id)) : ""}${payPendChip(r.student_id, A.sheet.session_id, ((G.sessions || []).find(x => x.session_id === A.sheet.session_id) || {}).kind === "מרתון")}${dblStar(!!r.dbl_from || isDouble(r.student_id, A.sheet.day || dayLetter(A.sheet.date), A.sheet.location, r.arrival_time, r.personal_end))}</b>
-      <span class="meta">${r.school ? `<span class="school-chip sch-sm ${scCls(r.school)}">${esc(r.school)}</span>` : ""}${attPtHtml(r)}${subjGrp(rowSubj(r)) === 2 ? prevTag(r) : ""}${r.in_group ? "" : r.added ? ` · <b class="added-tag">נוסף/ה לשיעור</b>` : " · <b>כבר לא בקבוצה</b>"}</span>
+      <span class="meta">${r.school ? `<span class="school-chip sch-sm ${scCls(r.school)}">${esc(r.school)}</span>` : ""}${lvlTag(r, A.sheet.session_id, ((G.sessions || []).find(x => x.session_id === A.sheet.session_id) || {}).kind === "מרתון" || !!(A.gref && A.gref.mar) || ((AD.groups || []).find(g => g.id === String(A.sheet.session_id)) || {}).kind === "מרתון")}${attPtHtml(r)}${subjGrp(rowSubj(r)) === 2 ? prevTag(r) : ""}${r.in_group ? "" : r.added ? ` · <b class="added-tag">נוסף/ה לשיעור</b>` : " · <b>כבר לא בקבוצה</b>"}</span>
       </div>
     <div class="att-ctl">
       ${subjGrp(rowSubj(r)) === 2 && r.present !== false ? `<span class="att-sj2${r.present && !r.did_math && !r.did_english ? " need" : ""}" title="משולב - לסמן מה עשה/תה היום"><label><input type="checkbox" data-m ${r.did_math ? "checked" : ""} ${can ? "" : "disabled"}>מת'</label><label><input type="checkbox" data-e ${r.did_english ? "checked" : ""} ${can ? "" : "disabled"}>אנג'</label></span>` : subjMini(rowSubj(r))}
