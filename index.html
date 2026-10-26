@@ -470,6 +470,7 @@
   .stm-sec-h b.sn.s-m, .stm-sec-h b.sn.subj-m{ background:#DDF5D6; color:#1F6B17; } .stm-sec-h b.sn.s-e, .stm-sec-h b.sn.subj-e{ background:#FFF6B8; color:#6B5600; }
   .lvl-chip{ display:inline-block; font-size:12px; font-weight:700; line-height:1.5; border-radius:999px; padding:0 8px; margin-inline-start:4px; background:#EEF0FA; color:#3F4FA8; vertical-align:middle; }
   .att-group.part{ border-color:#E0B44A !important; background:#FFF8E6 !important; } .att-group .ag-st .pt{ color:#8A5A00; font-weight:700; }
+  .att-upd .att-groups{ opacity:.85; }
   .lb-g.on{ border:2px solid var(--ok); box-shadow:0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent); }
   .lb-hint{ margin-inline-start:auto; font-family:var(--font-body, inherit); font-size:12px; color:var(--ink-soft); font-weight:400; }
   .lb-f{ display:flex; gap:6px; flex-wrap:wrap; margin:0 0 8px; }
@@ -2105,7 +2106,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.1",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -3450,6 +3451,10 @@ function grNowKids(gr, now){
 // 1.34.5: האם הקבוצה מתקיימת בתאריך d (מרתון – לפי תאריכי המפגשים; שוטף – לפי היום בשבוע), והשעות באותו יום
 // 1.34.10 (נועה): שעות הקבוצה פעם אחת (time_label כבר "15:30-16:15")
 const grRange = (gr) => { gr = grAt(gr); return gr.start ? gr.start + (gr.end ? "–" + gr.end : "") : (gr.time || ""); };
+// 1.35.1 (נועה): במרתון – מספר המפגש לפי התאריך ("מפגש 2")
+function marMeetNo(sessionId, iso){ const g = (AD.groups || []).find(x => x.id === String(sessionId)); if (!g || !g.dates || !g.dates.length) return 0;
+  const i = g.dates.slice().sort().indexOf(String(iso).slice(0, 10)); return i < 0 ? 0 : i + 1; }
+const marMeetTxt = (sessionId, iso) => { const n = marMeetNo(sessionId, iso); return n ? "מפגש " + n + " · " : ""; };
 function grOn(gr, d){ d = d || new Date(); if (gr.kind === "מרתון") return (gr.dates || []).includes(isoOf(d)); return gr.day === DAY_L[d.getDay()]; }
 function grAt(gr, d){ if (gr.kind !== "מרתון") return gr; const m = (gr.meet || []).find(x => x.date === isoOf(d || new Date())); if (!m) return gr;
   const hm = (t) => String(t || "").slice(0, 5); return Object.assign({}, gr, { start: hm(m.start) || gr.start, end: hm(m.end) || gr.end, time: hm(m.start) || gr.time }); }
@@ -4197,6 +4202,7 @@ function toolsSheet(){
     <h3 class="tl-h">ייבוא דפים מהמחשב</h3>
     <p class="muted small" style="margin-top:-4px">בוחרים במחשב את התיקייה הראשית של דפי התרגול. המערכת מוצאת לבד את הדפים שברשימה, מעלה אותם ומחליפה דפים קיימים בגרסה החדשה. ${isDesk() ? "" : "<b>רק מהמחשב.</b>"}</p>
     ${isDesk() ? `<input type="file" id="wsFolderP" webkitdirectory directory multiple><div id="wsImportMsgP" class="small" style="margin-top:6px"></div>` : ""}
+    ${Object.keys(TM).length ? `<div class="ic-line small muted">⏱ טעינה אחרונה: ${Object.entries(TM).map(([k, v]) => esc(k) + " " + v + " שנ'").join(" · ")}</div>` : ""}
     <button type="button" class="ic-line ic-row" id="tsOut">🚪 <span>יציאה מהחשבון</span></button>
     <p class="muted small" style="text-align:center;margin:10px 0 0">תלם שלי · גרסה ${esc(CONFIG.version)}</p>`, (sh) => {
       sh.querySelector("#tsOut").onclick = () => { closeSheet(); logout(); };
@@ -5418,7 +5424,13 @@ function instructorStart(role){
 }
 // 1.20.1 (נועה): מסך הנוכחות – כמו בנוכחות במערכת הניהול: יום (→ / תאריך / להיום / ←), מתרגלים, ערים, ולכל קבוצה כרטיס
 // (שעה, בית ספר, עיר, חדר, מתרגלים, כמה ילדים, מצב הסימון). לחיצה – דף הנוכחות. מתרגלים רואים רק את הקבוצות שלהם (השרת מסנן).
-async function insRender(){
+// 1.35.1 (נועה): הנוכחות נטענה לאט – רשימת הקבוצות של היום נשמרת בטלפון ומוצגת מיד, ומתעדכנת ברקע; ומודדים כמה זמן לוקחת כל טעינה (בהגדרות ⚙)
+const ATT_LC = "telem_portal_attlist";
+function attListCache(iso, v){ try { if (v === undefined) { const c = JSON.parse(store(ATT_LC) || "null"); return c && c.iso === iso && Date.now() - c.t < 3 * 864e5 ? c.v : null; }
+  store(ATT_LC, JSON.stringify({ iso, t: Date.now(), v })); } catch(e) { return null; } }
+const TM = {};
+const tmMark = (k, t0) => { TM[k] = Math.round((performance.now() - t0) / 100) / 10; };
+async function insRender(pre){
   if (typeof ATTM !== "undefined" && ATTM.isOpen) return;
   // 1.23 (נועה): בדיוק כמו "נוכחות" במערכת הניהול בנייד – פס יום + מתרגל/ת קבוע למעלה, כרטיס לכל קבוצה (ירוק כשסומן)
   const T = $("adBody"), ins = AD.role === "instructor", iso = AD.waitDate || (AD.waitDate = todayIso()), isToday = iso === todayIso();
@@ -5434,14 +5446,20 @@ async function insRender(){
         <button class="btn today-btn${isToday ? " is-today" : ""}" type="button" data-wd="0" title="חזרה לתאריך של היום">להיום</button>
         <button class="btn" type="button" data-wd="1" aria-label="יום הבא"><span class="lg-t">יום הבא </span>←</button></div></div>
     ${sel || ""}</div>`;
-  if (!T.querySelector("#attListV")) { T.innerHTML = top() + `<div class="att-groups"><div class="muted">טוען...</div></div></div></div>`; wireIns(T); }
+  if (!pre && !T.querySelector("#attListV")) { const c = attListCache(iso);
+    if (c) await insRender(c); else { T.innerHTML = top() + `<div class="att-groups"><div class="muted">טוען...</div></div></div></div>`; wireIns(T); } }
+  if (!pre && T.querySelector("#attListV")) T.classList.add("att-upd");
   let list = [];
   let mk = null;   // 1.34.9 (נועה): כמה ילדים סומנו (נוכח/ת או חסר/ה) בכל קבוצה – ירוק רק כשסומנו כולם
   let skp = null;
-  try { [list, , mk, skp] = await Promise.all([rpc("attendance_groups", { p_date: iso, p_city: null }), ATTM.HOLX.load().catch(() => {}),
+  const t0 = performance.now();
+  if (pre) { [list, mk, skp] = pre; await ATTM.HOLX.load().catch(() => {}); }
+  else try { [list, , mk, skp] = await Promise.all([rpc("attendance_groups", { p_date: iso, p_city: null }).then(r => { tmMark("קבוצות", t0); return r; }), ATTM.HOLX.load().catch(() => {}),
           get("attendance", "select=session_id,student_id,present&lesson_date=eq." + iso + "&present=not.is.null").catch(() => null),
           get("attendance_plan", "select=session_id,student_id&kind=eq.skip&lesson_date=eq." + iso).catch(() => [])]); list = list || []; if (!Array.isArray(list)) list = []; }
   catch(e) { T.innerHTML = top() + `<div class="card err">לא ניתן לטעון את הקבוצות.</div></div></div>`; wireIns(T); return; }
+  T.classList.remove("att-upd");
+  if (!pre) { tmMark("נוכחות – כל הרשימה", t0); attListCache(iso, [list, mk, skp]); }
   // 1.24 (נועה): חגים וחופשות – כמו במערכת הניהול (תגית ליד היום; קבוצה ביום חג – "לא התקיים")
   holC = ATTM.HOLX.chips(iso);
   if (Array.isArray(mk)) { const c = new Map(); mk.forEach(r => { const k = String(r.session_id); if (!c.has(k)) c.set(k, new Set()); c.get(k).add(String(r.student_id)); });
@@ -5465,7 +5483,7 @@ async function insRender(){
   }
   gs = gs.slice().sort((a, b) => String(a.start_time).localeCompare(String(b.start_time)) || String(a.location).localeCompare(String(b.location), "he"));
   const card = (g) => `<button type="button" class="att-group ${scCls(g.location)} ${g.all ? "done" : g.marked ? "part" : ""}${g.cx ? " hol-fade" : ""}" data-att="${esc(String(g.session_id))}">
-      <span class="t">${g.kind === "מרתון" ? "🏁 מרתון · " + esc(g.time_label || "") + (g.start_time ? ` <span class="m">${rng(hm(g.start_time), hm(g.end_time))}</span>` : "") : rng(hm(g.start_time), hm(g.end_time))}</span>
+      <span class="t">${g.kind === "מרתון" ? "🏁 מרתון · " + esc(marMeetTxt(g.session_id, iso)) + esc(g.time_label || "") + (g.start_time ? ` <span class="m">${rng(hm(g.start_time), hm(g.end_time))}</span>` : "") : rng(hm(g.start_time), hm(g.end_time))}</span>
       <span class="w">${scChip(g.location)}${!ins ? " · " + esc(g.city || "") : ""}</span><span class="ag-br"></span>${g.room ? `<span class="m">חדר: <b><bdi>${esc(g.room)}</bdi></b></span>` : ""}
       ${!ins && g.instructors ? `<span class="ag-ins">${esc(g.instructors)}</span>` : ""}
       <span class="ag-st">${g.all ? `<span class="ok">✓ סומן · <b>${g.marked_count}</b> נוכחים מתוך ${g.kids}</span>` : g.marked ? `<span class="pt">סומנו ${g.n_marked} מתוך ${g.n_need != null ? g.n_need : g.kids} · <b>${g.marked_count}</b> נוכחים</span>` : `<span class="m kn">${g.kids} ילדים</span> · ${g.cx ? `<span class="cx-tag" title="לא התקיים${g.cx.reason ? " · " + esc(g.cx.reason) : ""}">לא התקיים${g.cx.reason ? " · " + esc(g.cx.reason) : ""}</span>` : `<span class="m">טרם סומן</span>`}`}</span></button>`;
@@ -5707,7 +5725,7 @@ async function openSheet(sessionId, retry){
   try {
     // 5.19.29: לא מחכים ללוח המבחנים (טעינה ארוכה בפעם הראשונה) - הרשימה מוצגת מיד, תגיות המבחן מתווספות כשהוא מגיע
     const exReady = !!EX.rows, exP = loadExams();
-    const sh = await rpc("attendance_sheet", { p_session: sessionId, p_date: A.date });
+    const tS = performance.now(); const sh = await rpc("attendance_sheet", { p_session: sessionId, p_date: A.date }); tmMark("דף נוכחות", tS);
     if (!exReady) exP.then(() => { if (A.sheet && A.sheet.session_id === sessionId && !$("attSheet").hidden) renderSheetRows(); });
     A.sheet = sh;
     // 5.19.15: זוכרים את הקבוצה הפתוחה (עד סוף היום) - "נוכחות" בתפריט חוזר ישר אליה
@@ -5728,7 +5746,7 @@ async function openSheet(sessionId, retry){
     $("shAddPanel").hidden = true; $("shAddQ").value = ""; $("shAddRes").innerHTML = ""; $("shAddBox").hidden = !sh.can_edit;
     // 5.19.47 (הלקוחה): בקבוצת מרתון - "מרתון" בשם הקבוצה
     const gMar = (A.groups || []).find(g => g.session_id === sessionId), isMarSh = (gMar && gMar.kind === "מרתון") || (!sh.day && !!(G.sessions || []).find(x => x.session_id === sessionId && x.kind === "מרתון"));
-    $("shTitle").textContent = `${isMarSh ? "🏁 מרתון · " : ""}${sh.time_label} · ${sh.location}`;
+    $("shTitle").textContent = `${isMarSh ? "🏁 מרתון · " + marMeetTxt(sessionId, A.date) : ""}${sh.time_label} · ${sh.location}`;
     const mySp = null;
     $("shSub").innerHTML = `יום <b>${DAY_FULL[sh.day || dayLetter(sh.date)]}</b> · <b>${fmtIso(sh.date)}</b> · ${esc(sh.city)}${mySp ? ` · תת-קבוצה <b>${esc(mySp.name)}</b>` : ""}${(mySp && mySp.room) || sh.room ? ` · חדר <b><bdi>${esc((mySp && mySp.room) || sh.room)}</bdi></b>` : ""}`;
     $("shLocked").hidden = !!sh.can_edit;
