@@ -2106,7 +2106,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.1",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.2",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -3451,6 +3451,14 @@ function grNowKids(gr, now){
 // 1.34.5: האם הקבוצה מתקיימת בתאריך d (מרתון – לפי תאריכי המפגשים; שוטף – לפי היום בשבוע), והשעות באותו יום
 // 1.34.10 (נועה): שעות הקבוצה פעם אחת (time_label כבר "15:30-16:15")
 const grRange = (gr) => { gr = grAt(gr); return gr.start ? gr.start + (gr.end ? "–" + gr.end : "") : (gr.time || ""); };
+// 1.35.2 (נועה): במרתון – השכבה (מהמרתון: grade, ואם אין – מהשם, כמו באתר)
+let MAR_GR = null, MAR_GR_P = null;
+function loadMarGrades(){ if (MAR_GR) return Promise.resolve(MAR_GR); if (MAR_GR_P) return MAR_GR_P;
+  MAR_GR_P = get("marathons", "select=id,name,grade").then(r => { MAR_GR = new Map((r || []).map(m => { let g = String(m.grade || "").replace(/['׳"]/g, "");
+      if (!g) { const x = /(?:שכבת|מרתון)\s+(?:\S+\s+)?(יב|יא|[הוזחטי])['׳]?(?:\s|$|·)/.exec(m.name || ""); g = x ? x[1] : ""; }
+      return [String(m.id), g]; })); return MAR_GR; }).catch(() => (MAR_GR = new Map())).finally(() => { MAR_GR_P = null; });
+  return MAR_GR_P; }
+const marGradeTxt = (sessionId) => { const g = (AD.groups || []).find(x => x.id === String(sessionId)); const gr = g && g.mid && MAR_GR && MAR_GR.get(String(g.mid)); return gr ? "שכבה " + gr + "' · " : ""; };
 // 1.35.1 (נועה): במרתון – מספר המפגש לפי התאריך ("מפגש 2")
 function marMeetNo(sessionId, iso){ const g = (AD.groups || []).find(x => x.id === String(sessionId)); if (!g || !g.dates || !g.dates.length) return 0;
   const i = g.dates.slice().sort().indexOf(String(iso).slice(0, 10)); return i < 0 ? 0 : i + 1; }
@@ -5189,7 +5197,7 @@ function grLoadCache(){ try { const x = JSON.parse(store(GR_CACHE) || "null"); i
 // 1.35 (מנ-136): רק העמודות שצריך, ושיבוצים רק של קבוצות השנה. today = רק הקבוצות של היום (כניסה ראשונה בלי שמירה בטלפון)
 async function grFetch(today){
   const yr = encodeURIComponent('תשפ"ז'), td0 = new Date(), tIso0 = isoOf(td0);
-  const SS = "select=session_id,city,location,day,time_label,start_time,end_time,kind,meeting_dates,meetings&school_year=eq." + yr
+  const SS = "select=session_id,city,location,day,time_label,start_time,end_time,kind,marathon_id,meeting_dates,meetings&school_year=eq." + yr
     + (today ? "&or=" + encodeURIComponent(`(and(kind.neq.מרתון,day.eq.${DAY_L[td0.getDay()]}),meeting_dates.cs.{${tIso0}})`) : "");
   const ss0 = await get("session_summary", SS).catch(() => get("session_summary", "select=*&school_year=eq." + yr));
   const ids = (ss0 || []).map(g => g.session_id);
@@ -5213,7 +5221,7 @@ async function grFetch(today){
     return (ss || []).map(g => ({ id: String(g.session_id), city: g.city || "", day: g.day || "", time: g.time_label || String(g.start_time || "").slice(0, 5), loc: g.location || "",
                                         start: String(g.start_time || "").slice(0, 5), end: String(g.end_time || "").slice(0, 5), kids: kids.get(String(g.session_id)) || new Set(), ins: [...(ins.get(String(g.session_id)) || [])],
                                         // 1.34.5 (נועה): קבוצות מרתון – לפי התאריכים (לא יום בשבוע), ושעות לכל מפגש
-                                        kind: g.kind || "שוטף", dates: (g.meeting_dates || []).map(String), meet: (Array.isArray(g.meetings) ? g.meetings : []).filter(m => m && m.date) }))
+                                        kind: g.kind || "שוטף", mid: g.marathon_id || null, dates: (g.meeting_dates || []).map(String), meet: (Array.isArray(g.meetings) ? g.meetings : []).filter(m => m && m.date) }))
       .filter(g => g.kids.size).sort((a, b) => a.city.localeCompare(b.city) || (DO[a.day] || 9) - (DO[b.day] || 9) || String(a.start).localeCompare(String(b.start)));
 }
 function grRefresh(){
@@ -5452,6 +5460,7 @@ async function insRender(pre){
   let list = [];
   let mk = null;   // 1.34.9 (נועה): כמה ילדים סומנו (נוכח/ת או חסר/ה) בכל קבוצה – ירוק רק כשסומנו כולם
   let skp = null;
+  if (!MAR_GR || !AD.groups) await Promise.race([Promise.all([loadMarGrades(), loadGroups()]).catch(() => {}), new Promise(r => setTimeout(r, 1200))]);   // 1.35.2: שכבה ומספר מפגש במרתון
   const t0 = performance.now();
   if (pre) { [list, mk, skp] = pre; await ATTM.HOLX.load().catch(() => {}); }
   else try { [list, , mk, skp] = await Promise.all([rpc("attendance_groups", { p_date: iso, p_city: null }).then(r => { tmMark("קבוצות", t0); return r; }), ATTM.HOLX.load().catch(() => {}),
@@ -5483,7 +5492,7 @@ async function insRender(pre){
   }
   gs = gs.slice().sort((a, b) => String(a.start_time).localeCompare(String(b.start_time)) || String(a.location).localeCompare(String(b.location), "he"));
   const card = (g) => `<button type="button" class="att-group ${scCls(g.location)} ${g.all ? "done" : g.marked ? "part" : ""}${g.cx ? " hol-fade" : ""}" data-att="${esc(String(g.session_id))}">
-      <span class="t">${g.kind === "מרתון" ? "🏁 מרתון · " + esc(marMeetTxt(g.session_id, iso)) + esc(g.time_label || "") + (g.start_time ? ` <span class="m">${rng(hm(g.start_time), hm(g.end_time))}</span>` : "") : rng(hm(g.start_time), hm(g.end_time))}</span>
+      <span class="t">${g.kind === "מרתון" ? "🏁 " + esc(marGradeTxt(g.session_id)) + esc(marMeetTxt(g.session_id, iso)) + esc(g.time_label || "") + (g.start_time ? ` <span class="m">${rng(hm(g.start_time), hm(g.end_time))}</span>` : "") : rng(hm(g.start_time), hm(g.end_time))}</span>
       <span class="w">${scChip(g.location)}${!ins ? " · " + esc(g.city || "") : ""}</span><span class="ag-br"></span>${g.room ? `<span class="m">חדר: <b><bdi>${esc(g.room)}</bdi></b></span>` : ""}
       ${!ins && g.instructors ? `<span class="ag-ins">${esc(g.instructors)}</span>` : ""}
       <span class="ag-st">${g.all ? `<span class="ok">✓ סומן · <b>${g.marked_count}</b> נוכחים מתוך ${g.kids}</span>` : g.marked ? `<span class="pt">סומנו ${g.n_marked} מתוך ${g.n_need != null ? g.n_need : g.kids} · <b>${g.marked_count}</b> נוכחים</span>` : `<span class="m kn">${g.kids} ילדים</span> · ${g.cx ? `<span class="cx-tag" title="לא התקיים${g.cx.reason ? " · " + esc(g.cx.reason) : ""}">לא התקיים${g.cx.reason ? " · " + esc(g.cx.reason) : ""}</span>` : `<span class="m">טרם סומן</span>`}`}</span></button>`;
@@ -5746,7 +5755,8 @@ async function openSheet(sessionId, retry){
     $("shAddPanel").hidden = true; $("shAddQ").value = ""; $("shAddRes").innerHTML = ""; $("shAddBox").hidden = !sh.can_edit;
     // 5.19.47 (הלקוחה): בקבוצת מרתון - "מרתון" בשם הקבוצה
     const gMar = (A.groups || []).find(g => g.session_id === sessionId), isMarSh = (gMar && gMar.kind === "מרתון") || (!sh.day && !!(G.sessions || []).find(x => x.session_id === sessionId && x.kind === "מרתון"));
-    $("shTitle").textContent = `${isMarSh ? "🏁 מרתון · " + marMeetTxt(sessionId, A.date) : ""}${sh.time_label} · ${sh.location}`;
+    $("shTitle").textContent = `${isMarSh ? "🏁 " + marGradeTxt(sessionId) + marMeetTxt(sessionId, A.date) : ""}${sh.time_label} · ${sh.location}`;
+    if (isMarSh && (!MAR_GR || !AD.groups)) Promise.all([loadMarGrades(), loadGroups()]).then(() => { if (A.sheet === sh) $("shTitle").textContent = `🏁 ${marGradeTxt(sessionId)}${marMeetTxt(sessionId, A.date)}${sh.time_label} · ${sh.location}`; }).catch(() => {});
     const mySp = null;
     $("shSub").innerHTML = `יום <b>${DAY_FULL[sh.day || dayLetter(sh.date)]}</b> · <b>${fmtIso(sh.date)}</b> · ${esc(sh.city)}${mySp ? ` · תת-קבוצה <b>${esc(mySp.name)}</b>` : ""}${(mySp && mySp.room) || sh.room ? ` · חדר <b><bdi>${esc((mySp && mySp.room) || sh.room)}</bdi></b>` : ""}`;
     $("shLocked").hidden = !!sh.can_edit;
