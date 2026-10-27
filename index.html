@@ -2109,7 +2109,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.4",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.5",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -4208,7 +4208,7 @@ function toolsSheet(){
   openSheet(`<h2>⚙ הגדרות</h2>
     ${st ? `<div class="ic-line">🔑 <span>קוד ראשוני לכולם:</span>${st.initial_code ? `<b class="code">${esc(st.initial_code)}</b><span class="muted small">· תקף ${esc(st.initial_days)} ימים</span>` : `<span class="muted">עוד לא נקבע</span>`}<span style="flex:1"></span><button class="btn sm" id="icEdit">${st.initial_code ? "שינוי" : "קביעת קוד"}</button></div>` : ""}
     ${(() => { const n = (AD.students || []).filter(x => !x.has_account).length, m = (AD.students || []).filter(x => x.has_account).length;
-      return `<div class="ic-line">📱 <span>חשבונות בתלם שלי:</span><b>${m}</b><span class="muted small">· ${n} רשומים בלי חשבון (יוצרים במערכת הניהול)</span></div>`; })()}
+      return `<div class="ic-line">📱 <span>חשבונות בתלם שלי:</span><b>${m}</b><span class="muted small">· ${n} רשומים בלי חשבון (יוצרים מכרטיס הילד/ה – גם מהנוכחות – או במערכת הניהול, גם לכל הקבוצה יחד)</span></div>`; })()}
     <div class="ic-line">🔗 <span>קישור לתלמידים:</span><b class="ltr" id="tsLink">${esc((APP_SHORT || CONFIG.appUrl).replace(/^https?:\/\//, ""))}</b><button class="btn sm" id="tsLinkCp">${IC.copy} העתקה</button></div>
     <details class="ic-line ic-det"><summary>📥 <span>ייבוא דפים מהמחשב</span><span class="ic-car">▾</span></summary>
       <p class="muted small">בוחרים במחשב את התיקייה הראשית של דפי התרגול. המערכת מוצאת לבד את הדפים שברשימה, מעלה אותם ומחליפה דפים קיימים בגרסה החדשה.</p>
@@ -4227,10 +4227,11 @@ function toolsSheet(){
 // 1.24 (נועה): ייבוא דפים מהמחשב – הועבר מהמאגר להגדרות (⚙). אותו קוד כמו במערכת הניהול (5.19.90).
 async function wsImportFolder(input, msg){
   const files = [...input.files].filter(f => /\.(png|jpe?g)$/i.test(f.name));
-  let rows = AD.ws || [];
-  if (!rows.length) { msg.textContent = "המאגר עוד לא נטען – לנסות שוב בעוד רגע."; return; }
   msg.textContent = "מכין…";
-  let src = new Map(); try { src = new Map((await getAll("worksheets", "select=id,source_path&is_active=eq.true")).map(x => [String(x.id), x.source_path])); } catch(e) { msg.textContent = "לא הצלחנו לקרוא את רשימת הקבצים."; return; }
+  // 1.35.4: הרשימה טרייה מהשרת (לא מהטלפון) – כך גם דפים שנוספו עכשיו ב-SQL (למשל 93.1) נמצאים
+  let rows = [], src = new Map();
+  try { rows = (await getAll("worksheets", "select=id,source_path,storage_path&is_active=eq.true")).map(x => Object.assign(x, { id: String(x.id) })); src = new Map(rows.map(x => [x.id, x.source_path])); }
+  catch(e) { msg.textContent = "לא הצלחנו לקרוא את רשימת הקבצים."; return; }
   const rel = (f) => (f.webkitRelativePath || f.name).replace(/\\/g, "/");
   const jobs = [];
   rows.forEach(r => { const s = (src.get(String(r.id)) || "").normalize("NFC"); if (!s) return;
@@ -4255,6 +4256,7 @@ async function wsImportFolder(input, msg){
   for (let i = 0; i < jobs.length; i += 4) await Promise.all(jobs.slice(i, i + 4).map(one));
   await flush().catch(() => { failed++; });
   wsVer(AD.ws); try { store(WS_CACHE, JSON.stringify({ t: Date.now(), rows: AD.ws })); } catch(e) {}
+  loadWs(true).then(() => { try { CBM.WS.rows = null; } catch(e) {} }).catch(() => {});   // דפים חדשים – מופיעים במאגר בלי לצאת ולהיכנס
   msg.innerHTML = `הסתיים: עלו <b>${done - failed}</b> דפים${failed ? `, <b>${failed}</b> נכשלו - אפשר לבחור את התיקייה שוב` : ""}.`;
   input.disabled = false; input.value = "";
 }
