@@ -2109,7 +2109,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.5",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.6",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -3165,13 +3165,20 @@ async function adLoad(){
   loadGroups().then(() => { if (insWant()) insChanged(); }).catch(() => {});
   Promise.all([loadGroups(), presentAllToday(), loadInfo()]).then(() => { if (AD.view === "students" && !AD.st && !SHEET) adRender(); }).catch(() => {});
 }
+// 1.35.6: המאגר (CBM) בונה את הרשימה פעם אחת מ-AD.ws – כשמגיעה רשימה חדשה, בונים מחדש. אם המאגר פתוח (ולא באמצע דף / בחירה) – מציגים מיד.
+function wsBankRefresh(){
+  try { if (!CBM.WS.rows) return; CBM.WS.rows = null;
+    if (CB_VIS() && !CBM.viewerOpen() && !(CBM.WS.sel && CBM.WS.sel.size)) CBM.loadWs(); } catch(e) {}
+}
 async function loadWs(force){
   if (AD.ws && !force) return;
   let cached = null; try { cached = JSON.parse(store(WS_CACHE) || "null"); } catch(e) {}
   const setWs = (rows) => { AD.ws = rows.map(r => Object.assign(r, { id: String(r.id) })); AD.wsById = new Map(AD.ws.map(r => [r.id, r])); };
   if (cached && cached.rows && cached.rows.length && !force) {
     setWs(cached.rows);
-    wsFetch().then(fresh => { try { store(WS_CACHE, JSON.stringify({ t: Date.now(), rows: fresh })); } catch(e) {} setWs(fresh); }).catch(() => {});
+    const raw0 = JSON.stringify(cached.rows);
+    wsFetch().then(fresh => { const raw = JSON.stringify(fresh); try { store(WS_CACHE, JSON.stringify({ t: Date.now(), rows: fresh })); } catch(e) {} setWs(fresh);
+      if (raw !== raw0) wsBankRefresh(); }).catch(() => {});   // 1.35.6 (נועה): רשימה חדשה מהשרת – המאגר מתעדכן לבד
     return;
   }
   try { const fresh = await wsFetch(); try { store(WS_CACHE, JSON.stringify({ t: Date.now(), rows: fresh })); } catch(e) {} setWs(fresh); }
