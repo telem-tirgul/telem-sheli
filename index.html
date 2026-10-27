@@ -754,6 +754,9 @@
   /* 1.25.1 (נועה): בלי כותרת "מאגר תרגולים" (כמו הלשונית); יציאה וגרסה – ב-⚙ (מתרגלים: נשאר בפס / למטה) */
   .crmws #view-ws > .page-head h1{ display:none; } .crmws #view-ws > .page-head:not(:has(button, a, input, select)){ display:none; }
   body:not(.v-ins) #adLogout, body:not(.v-ins) .ad-ver{ display:none !important; }
+  .ic-det{ display:block; } .ic-det > summary{ display:flex; align-items:center; gap:8px; cursor:pointer; list-style:none; } .ic-det > summary::-webkit-details-marker{ display:none; }
+  .ic-det .ic-car{ margin-inline-start:auto; color:var(--ink-soft); transition:transform .15s; } .ic-det[open] .ic-car{ transform:rotate(180deg); }
+  .ic-det p{ margin:8px 0; } .ic-pick{ cursor:pointer; }   /* 1.35.4 (נועה): ייבוא דפים – שורה שנפתחת בלחיצה */
   .ic-row{ width:100%; text-align:start; font:inherit; font-size:14px; color:var(--ink); cursor:pointer; }   /* 1.34.9 (נועה): יציאה – שורה בתפריט */
   .tools-foot{ display:flex; gap:8px; margin-top:12px; } .tools-foot .btn{ flex:1; }
   /* 1.30: הטמעה במערכת הניהול – רק הנוכחות, בלי הכותרת והתפריט, רקע שקוף */
@@ -2106,7 +2109,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.3",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.4",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -4207,9 +4210,10 @@ function toolsSheet(){
     ${(() => { const n = (AD.students || []).filter(x => !x.has_account).length, m = (AD.students || []).filter(x => x.has_account).length;
       return `<div class="ic-line">📱 <span>חשבונות בתלם שלי:</span><b>${m}</b><span class="muted small">· ${n} רשומים בלי חשבון (יוצרים במערכת הניהול)</span></div>`; })()}
     <div class="ic-line">🔗 <span>קישור לתלמידים:</span><b class="ltr" id="tsLink">${esc((APP_SHORT || CONFIG.appUrl).replace(/^https?:\/\//, ""))}</b><button class="btn sm" id="tsLinkCp">${IC.copy} העתקה</button></div>
-    <h3 class="tl-h">ייבוא דפים מהמחשב</h3>
-    <p class="muted small" style="margin-top:-4px">בוחרים במחשב את התיקייה הראשית של דפי התרגול. המערכת מוצאת לבד את הדפים שברשימה, מעלה אותם ומחליפה דפים קיימים בגרסה החדשה. ${isDesk() ? "" : "<b>רק מהמחשב.</b>"}</p>
-    ${isDesk() ? `<input type="file" id="wsFolderP" webkitdirectory directory multiple><div id="wsImportMsgP" class="small" style="margin-top:6px"></div>` : ""}
+    <details class="ic-line ic-det"><summary>📥 <span>ייבוא דפים מהמחשב</span><span class="ic-car">▾</span></summary>
+      <p class="muted small">בוחרים במחשב את התיקייה הראשית של דפי התרגול. המערכת מוצאת לבד את הדפים שברשימה, מעלה אותם ומחליפה דפים קיימים בגרסה החדשה.</p>
+      ${isDesk() ? `<label class="btn sm ic-pick">📁 בחירת תיקייה…<input type="file" id="wsFolderP" webkitdirectory directory multiple hidden></label><div id="wsImportMsgP" class="small" style="margin-top:6px"></div>` : `<p class="small"><b>אפשר רק מהמחשב.</b></p>`}
+    </details>
     ${Object.keys(TM).length ? `<div class="ic-line small muted">⏱ טעינה אחרונה: ${Object.entries(TM).map(([k, v]) => esc(k) + " " + v + " שנ'").join(" · ")}</div>` : ""}
     <button type="button" class="ic-line ic-row" id="tsOut">🚪 <span>יציאה מהחשבון</span></button>
     <p class="muted small" style="text-align:center;margin:10px 0 0">תלם שלי · גרסה ${esc(CONFIG.version)}</p>`, (sh) => {
