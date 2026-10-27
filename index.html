@@ -839,7 +839,7 @@
   
   /* צבע לכל סוג דפים: סיכום זהב, לפי נושאים כחול-אפור, ובאנגלית - דקדוק ורוד, אנסין כחול, כללי אפור */
   .ws-task-n{ font-style:normal; font-size:12px; font-weight:700; color:#5B6BC0; background:#EEF0FA; border-radius:999px; padding:1px 8px; margin-inline-start:8px; white-space:nowrap; }   /* 5.19.107 */
-  .k-summary{ --kc:var(--gold); } .k-topic{ --kc:#5B7FAE; } .k-grammar{ --kc:#C0607F; } .k-unseen{ --kc:#5B6BC0; } .k-general{ --kc:#8A817B; }
+  .k-summary{ --kc:var(--gold); } .k-topic{ --kc:#5B7FAE; } .k-grammar{ --kc:#C0607F; } .k-unseen{ --kc:#5B6BC0; } .k-general{ --kc:#8A817B; } .k-basic{ --kc:#3E8E7E; }
   
   #wsKind button[class*="k-"][aria-pressed="true"]{ background:color-mix(in srgb, var(--kc) 32%, var(--paper)); }
   
@@ -2106,7 +2106,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.2",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.3",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2690,7 +2690,7 @@ function doneByOrder(done, kick){
 function doneByTopic(done){
   done = stTaskColl(done);   // 1.30.2: משימה של כמה דפים = שורה אחת
   const num = (x) => { const n = parseFloat(x); return isNaN(n) ? 1e9 : n; };
-  const kOrd = (k) => { const i = ["topic", "summary", "grammar", "unseen", "vocab", "general"].indexOf(k); return i < 0 ? 9 : i; };
+  const kOrd = (k) => { const i = ["topic", "summary", "grammar", "general", "vocab", "unseen", "basic"].indexOf(k); return i < 0 ? 9 : i; };
   const rows = done.slice().sort((a, b) =>
     bookRank(a.book || "") - bookRank(b.book || "") || String(a.book || "").localeCompare(String(b.book || "")) ||
     kOrd(a.kind) - kOrd(b.kind) || num(a.topic_no) - num(b.topic_no) || String(a.topic_name || "").localeCompare(String(b.topic_name || "")) ||
@@ -4334,8 +4334,8 @@ function bankBooks(){
 // בתוך נושא: דפים / פתרונות, ⭐ חשובים בנושא, תתי-נושאים, ו"📘 דפי סיכום" בסוף
 // עיון: לחיצה על דף פותחת אותו · בחירה לתלמיד / שליחה: לחיצה מסמנת
 // ======================================================================
-const WS_KIND = { summary: "דפי סיכום", topic: "תרגול לפי נושאים", grammar: "דקדוק", unseen: "אנסין", vocab: "אוצר מילים", general: "כללי" };
-const WS_KIND_ORD = ["topic", "summary", "grammar", "unseen", "vocab", "general"];
+const WS_KIND = { summary: "דפי סיכום", topic: "תרגול לפי נושאים", basic: "בסיסי", grammar: "דקדוק", unseen: "אנסין", vocab: "מילים", general: "מילים" };   // 1.35.3 (דפ-08 + נועה): בסיסי; general = "מילים"
+const WS_KIND_ORD = ["topic", "summary", "grammar", "general", "vocab", "unseen", "basic"];   // 1.35.3 (דפ-08 + נועה): באנגלית – דקדוק · מילים · אנסין · בסיסי
 const wsNorm = (s) => String(s || "").toLowerCase().replace(/[ךםןףץ]/g, c => ({ "ך":"כ", "ם":"מ", "ן":"נ", "ף":"פ", "ץ":"צ" }[c]));
 function bankInfo(){
   const info = {}; (AD.ws || []).forEach(r => { if (!info[r.book]) info[r.book] = { subj: /^ENG/i.test(r.book) ? "eng" : "math", grade: r.grade || "", part: r.part || ({ A: "א", B: "ב" })[String(r.book).slice(-1)] || "", label: r.book_label || r.book }; });
@@ -4419,12 +4419,12 @@ function buildXlsx(tables){
 }
 function bkDownload(blob, name){ const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); }
 const WS = { rows: null, book: store("telem_ws_book") || "", kind: "topic", topic: null, tab: "page", urls: URLS, list: [], idx: 0 };   // 1.24: אותם קישורים שמורים
-const WS_KIND = { summary: "דפי סיכום", topic: "תרגול לפי נושאים", grammar: "דקדוק", unseen: "אנסין", vocab: "אוצר מילים", general: "כללי" };
-const WS_KIND_ORD = ["topic", "summary", "grammar", "unseen", "vocab", "general"];
+const WS_KIND = { summary: "דפי סיכום", topic: "תרגול לפי נושאים", basic: "בסיסי", grammar: "דקדוק", unseen: "אנסין", vocab: "מילים", general: "מילים" };   // 1.35.3 (דפ-08 + נועה): בסיסי; general = "מילים"
+const WS_KIND_ORD = ["topic", "summary", "grammar", "general", "vocab", "unseen", "basic"];   // 1.35.3 (דפ-08 + נועה): באנגלית – דקדוק · מילים · אנסין · בסיסי
 // 5.19.14: אנגלית - "אוצר מילים" (Vocabulary) בנפרד מ"כללי" (בלי שינוי במסד: מזהים לפי שם הנושא)
 const WS_VOCAB = /vocab|אוצר מילים/i;   // תמיד קודם "לפי נושא"
 // בתוצאות החיפוש: קודם "תרגול לפי נושאים", אחר כך דפי הסיכום
-const WS_SEARCH_ORD = ["topic", "summary", "grammar", "unseen", "vocab", "general"];
+const WS_SEARCH_ORD = ["topic", "summary", "grammar", "general", "vocab", "unseen", "basic"];
 // 5.19.24: טעינה מהירה - הרשימה נשמרת בטלפון/במחשב ומוצגת מיד; ברקע נטענת גרסה עדכנית ומתחלפת אם יש שינוי.
 // source_path (רק לייבוא מהמחשב) לא נטען כאן - נשלף רק בייבוא.
 const WS_CACHE = "telem_ws_cache_v1";
@@ -4751,7 +4751,7 @@ function wsQuickRender(info, books, kinds){
   const grades = [...new Set(inSubj.map(([b]) => info[b].grade).filter(Boolean))];
   const parts = inSubj.filter(([b]) => info[b].grade === cur.grade).map(([b]) => b);
   const seg = (items) => items.length > 1 ? `<div class="gseg">${items.map(x => `<button type="button" ${x.a} aria-pressed="${x.on}">${esc(x.t)}</button>`).join("")}</div>` : "";
-  const QK = { grammar: "דקדוק", unseen: "אנסין", vocab: "מילים", general: "כללי" };
+  const QK = { basic: "בסיסי", grammar: "דקדוק", unseen: "אנסין", vocab: "מילים", general: "מילים" };
   box.innerHTML = `<div class="wq-row">${seg(subjs.map(x => ({ a: `data-qs="${x}"`, on: x === subj, t: x === "eng" ? "אנג'" : "מת'" })))}${subj === "eng"
       ? seg(kinds.map(k => ({ a: `data-qk="${esc(k)}"`, on: k === WS.kind, t: QK[k] || WS_KIND[k] || k })))
       : seg(grades.map(g => ({ a: `data-qg="${esc(g)}"`, on: g === cur.grade, t: g + "'" }))) + seg(parts.map(b => ({ a: `data-qb="${esc(b)}"`, on: b === WS.book, t: (info[b].part || "") + "'" })))}</div>`;
