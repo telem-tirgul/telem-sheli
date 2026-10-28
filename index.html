@@ -1078,7 +1078,8 @@
   :root{ --grid:#EBE2D8; --accent-2:#8B1E23; --mark:#E9C77E; }
   @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){ --grid:#241B18; --accent-2:#EF8C94; --mark:#8C6A2A; } }
   :root[data-theme="dark"]{ --grid:#241B18; --accent-2:#EF8C94; --mark:#8C6A2A; }
-  body.v-bank, body.v-student, body.v-stm, .drawer{ background-color:var(--bg); background-image:linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size:22px 22px; }
+  /* 1.35.9 (נועה): רקע המחברת בכל האפליקציה – כדי להבחין בינה לבין מערכת הניהול (בהטמעה במערכת הניהול – שקוף, html.embed) */
+  body, body.v-bank, body.v-student, body.v-stm, .drawer{ background-color:var(--bg); background-image:linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size:22px 22px; }
   /* מסך התלמיד בצבעי תלם (1.12) */
   .st-h{ font-family:var(--font-display); font-weight:900; font-size:22px; margin:18px 2px 12px; }
   .st-h .hl{ background:linear-gradient(transparent 58%, var(--mark) 58%); padding-inline:4px; }
@@ -1323,6 +1324,12 @@
 .crmws .ws-quick .wq-row{gap:5px;}
 .crmws .ws-quick .gseg{display:flex; flex:1 1 auto; min-width:0;}
 .crmws .ws-quick .gseg button{flex:1 1 auto; min-width:0; padding:4px 5px !important; font-size:14.5px; min-height:0 !important; height:36px; white-space:nowrap;}
+/* 1.35.9 (נועה – "אין לי ארבע לשוניות באנגלית"): כשאין מקום (טלפון צר / גופן גדול באנדרואיד) הלשונית האחרונה נחתכה ולא נראתה.
+   עכשיו כל לשונית ברוחב המלא של השם; אם לא נכנסות – הלשוניות יורדות לשורה משלהן, ואם גם שם אין מקום – גלילה לצדדים. */
+.crmws .ws-quick .wq-row{flex-wrap:wrap;}
+.crmws .ws-quick .gseg button{min-width:max-content;}
+.crmws .ws-quick .gseg{overflow-x:auto; scrollbar-width:none;}
+.crmws .ws-quick .gseg::-webkit-scrollbar{display:none;}
 .crmws #view-ws .ws-pick{display:none;}
 .crmws #view-ws .ws-bar{top:calc(var(--side-h, 0px) + var(--wsq, 48px));}
 body.ws-vopen .crmws .ws-stick{position:fixed; top:var(--side-h, 0px); left:0; right:0; z-index:210; padding:6px 10px; margin:0; background:#161118; border-color:#333;}
@@ -1966,7 +1973,8 @@ html:has(body.ws-vopen), body.ws-vopen{background:#161118 !important;}
 .crmatt .ap-b{ margin-inline-start:auto; font:inherit; font-size:12.5px; font-weight:700; border-radius:999px; padding:2px 10px; border:1.5px solid var(--accent); background:var(--paper); color:var(--accent); cursor:pointer; white-space:nowrap; }
 .crmatt .school-chip:not(.sch-sm){ font-weight:800; padding:1px 10px; line-height:1.6; font-size:inherit; }
 .crmatt .page-head{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; } .crmatt .page-head h1{ font-size:24px; color:var(--accent); font-weight:900; margin:0; }
-@media (max-width:760px){ body[data-att], body:has(#attListV), body[data-att] #adminView, body:has(#attListV) #adminView, body[data-att] .ad-app, body:has(#attListV) .ad-app, body[data-att] #adminView .main, body:has(#attListV) #adminView .main{ background:#ECF1EA !important; background-image:none !important; } }   /* 1.24.1 (נועה): רקע ירקרק רק בנייד */
+@media (max-width:760px){ body[data-att], body:has(#attListV){ background-color:#ECF1EA !important; }
+  body[data-att] #adminView, body:has(#attListV) #adminView, body[data-att] .ad-app, body:has(#attListV) .ad-app, body[data-att] #adminView .main, body:has(#attListV) #adminView .main{ background:transparent !important; background-image:none !important; } }   /* 1.24.1 (נועה): רקע ירקרק רק בנייד; 1.35.9 – עם המשבצות של המחברת */
 @media (min-width:761px){ .crmatt .att-stick, .crmatt .sh-stick{ background:var(--bg) !important; box-shadow:none; } }
 .crmatt .sh-actions .btn{ flex:1 1 auto !important; width:100%; min-height:52px; font-size:18px; }
 .crmatt .hol-chips{ display:flex; flex-wrap:wrap; gap:2px; justify-content:center; margin-top:2px; }
@@ -2110,7 +2118,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.8",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.9",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2353,7 +2361,9 @@ let STAFF_MODE = false, LAST_CODE = "";
 function showLogin(msg){
   rtStop();
   showView("loginView"); closeSheet(); closeViewer();
-  $("lgErr").textContent = msg || "";
+  document.body.classList.remove("v-bank", "v-stm", "ws-app-on", "ws-vopen", "ws-selmode");   // 1.35.9: מסך הכניסה – תמיד הרקע הרגיל
+  let om = null; try { om = sessionStorage.getItem("telem_portal_outmsg"); sessionStorage.removeItem("telem_portal_outmsg"); } catch(e) {}
+  $("lgErr").textContent = msg || om || "";
   setStaffMode(store("telem_portal_staff") === "1" || /^#staff\b/i.test(location.hash));
   // 1.27.1 (נועה): כמו במערכת הניהול – לזכור טלפון/אימייל, להישאר מחובר/ת (בטלפון – מסומן מראש; במחשב – לא)
   const mob = window.matchMedia("(pointer:coarse)").matches, pref = (k) => { const v = store(k); return v == null ? mob : v === "1"; };
@@ -2363,7 +2373,7 @@ function showLogin(msg){
 // 1.27.1 (נועה): בלי "להישאר מחובר/ת" – יציאה אוטומטית אחרי 120 דקות (גם אם עובדים)
 const KEEP_MIN = 120;
 function expCheck(){ if (EMBED) return false; const x = Number(store("telem_portal_exp") || 0); if (!x || !auth || Date.now() < x) return false;
-  store("telem_portal_exp", null); logout().then(() => { $("lgErr").textContent = "התנתקת אוטומטית אחרי שעתיים. אפשר להיכנס שוב."; }); return true; }
+  store("telem_portal_exp", null); try { sessionStorage.setItem("telem_portal_outmsg", "התנתקת אוטומטית אחרי שעתיים. אפשר להיכנס שוב."); } catch(e) {} logout(); return true; }
 setInterval(expCheck, 60e3);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) expCheck(); });
 function setStaffMode(on){
@@ -2443,7 +2453,12 @@ $("loginForm").onsubmit = async (ev) => {
 };
 async function logout(){
   try { if (auth) await fetch(CONFIG.supabaseUrl + "/auth/v1/logout", { method:"POST", headers: Object.assign(baseHeaders(), { "Authorization": "Bearer " + auth.access_token }) }); } catch(e) {}
-  saveAuth(null); store("telem_portal_exp", null); try { localStorage.removeItem("telem_portal_groups"); AD.groups = null; } catch(e) {} try { localStorage.removeItem(URLS_KEY); Object.keys(URLS).forEach(k => delete URLS[k]); } catch(e) {} LAST_CODE = ""; ST.pages = null; ST.openT = null; AD.loaded = false; AD_CACHE.clear(); store("telem_portal_role", null); if (AD.role) { AD.role = null; document.body.classList.remove("v-ins"); $("adTools").hidden = false; $("adSearch").hidden = false; AD.started = false; } showLogin();
+  saveAuth(null); store("telem_portal_exp", null); try { localStorage.removeItem("telem_portal_groups"); AD.groups = null; } catch(e) {} try { localStorage.removeItem(URLS_KEY); Object.keys(URLS).forEach(k => delete URLS[k]); } catch(e) {} LAST_CODE = ""; ST.pages = null; ST.openT = null; AD.loaded = false; AD_CACHE.clear(); store("telem_portal_role", null); if (AD.role) { AD.role = null; document.body.classList.remove("v-ins"); $("adTools").hidden = false; $("adSearch").hidden = false; AD.started = false; }
+  // 1.35.9 (אבטחה): גם רשימת הנוכחות השמורה (שמות ילדים) נמחקת, ואז הדף נטען מחדש – בלי שאריות בזיכרון ובמסך
+  // (וגם בלי רקע המחברת של המאגר שנשאר על מסך הכניסה).
+  ["telem_portal_attlist", "telem_portal_waitins"].forEach(k => store(k, null));
+  if (!EMBED) { location.reload(); return; }
+  showLogin();
 }
 $("msgLogout").onclick = logout;
 function showMsg(title, text){ showView("msgView"); $("msgTitle").textContent = title; $("msgText").textContent = text; }
