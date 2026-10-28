@@ -2118,7 +2118,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.10",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.11",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -4523,7 +4523,13 @@ function wsTopics(kind){
     if (!m.has(r.topic_no)) m.set(r.topic_no, { no: r.topic_no, name: r.topic_name, chapters: r.chapters, pages: [], answers: [] });
     m.get(r.topic_no)[r.type === "page" ? "pages" : "answers"].push(r);
   });
-  return [...m.values()];
+  const L = [...m.values()];
+  // 1.35.11 (נועה): באנסין – "אנסין יסודי" (20) מיד לפני "אנסין קצר" (15), אחד ליד השני
+  if (WS.book === "ENG" && (kind || WS.kind) === "unseen") {
+    const iY = L.findIndex(t => /יסודי/.test(t.name || "")), iK = L.findIndex(t => /קצר/.test(t.name || ""));
+    if (iY >= 0 && iK >= 0 && iY !== iK - 1) { const [y] = L.splice(iY, 1); L.splice(L.findIndex(t => /קצר/.test(t.name || "")), 0, y); }
+  }
+  return L;
 }
 async function renderWs(){
   const books = wsBooks();
