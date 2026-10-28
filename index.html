@@ -2118,7 +2118,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.9",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.10",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -3187,17 +3187,19 @@ function wsBankRefresh(){
     if (CB_VIS() && !CBM.viewerOpen() && !(CBM.WS.sel && CBM.WS.sel.size)) CBM.loadWs(); } catch(e) {}
 }
 async function loadWs(force){
-  if (AD.ws && !force) return;
-  let cached = null; try { cached = JSON.parse(store(WS_CACHE) || "null"); } catch(e) {}
   const setWs = (rows) => { AD.ws = rows.map(r => Object.assign(r, { id: String(r.id) })); AD.wsById = new Map(AD.ws.map(r => [r.id, r])); };
-  if (cached && cached.rows && cached.rows.length && !force) {
-    setWs(cached.rows);
-    const raw0 = JSON.stringify(cached.rows);
-    wsFetch().then(fresh => { const raw = JSON.stringify(fresh); try { store(WS_CACHE, JSON.stringify({ t: Date.now(), rows: fresh })); } catch(e) {} setWs(fresh);
-      if (raw !== raw0) wsBankRefresh(); }).catch(() => {});   // 1.35.6 (נועה): רשימה חדשה מהשרת – המאגר מתעדכן לבד
-    return;
-  }
-  try { const fresh = await wsFetch(); try { store(WS_CACHE, JSON.stringify({ t: Date.now(), rows: fresh })); } catch(e) {} setWs(fresh); }
+  // 1.35.10 (נועה – "באנדרואיד רק 3 לשוניות"): כשהאפליקציה נפתחה מהשמור (AD_CACHE), רשימת הדפים לא נטענה מהשרת אף פעם –
+  // והשמור התחדש בכל פעם עם אותה רשימה ישנה. עכשיו: בכל פתיחה – פעם אחת ברקע מהשרת; אם השתנתה – המאגר מתעדכן לבד.
+  const bg = (raw0) => { if (AD.wsBg) return; AD.wsBg = true;
+    wsFetch().then(fresh => { const raw = JSON.stringify(fresh); try { store(WS_CACHE, JSON.stringify({ t: Date.now(), rows: fresh })); } catch(e) {}
+      setWs(fresh); AD.wsAt = Date.now(); AD.wsErr = null; if (raw !== raw0) wsBankRefresh(); })
+      .catch(e => { AD.wsErr = errText(e); }).finally(() => { AD.wsBg = false; }); };
+  let rawC = null; try { rawC = store(WS_CACHE); } catch(e) {}
+  let cached = null; try { cached = JSON.parse(rawC || "null"); } catch(e) {}
+  const raw0 = cached && cached.rows ? JSON.stringify(cached.rows) : "";
+  if (AD.ws && !force) { if (!AD.wsAt) bg(raw0); return; }
+  if (cached && cached.rows && cached.rows.length && !force) { setWs(cached.rows); bg(raw0); return; }
+  try { const fresh = await wsFetch(); try { store(WS_CACHE, JSON.stringify({ t: Date.now(), rows: fresh })); } catch(e) {} setWs(fresh); AD.wsAt = Date.now(); AD.wsErr = null; }
   catch(e) { AD.ws = AD.ws || []; }
 }
 function adGo(v){
@@ -6218,6 +6220,7 @@ if ("serviceWorker" in navigator) window.addEventListener("load", () => {
 // קודם בודקים גרסה חדשה (עד 2.5 שניות), ואז טוענים מחדש – הנתונים נטענים מהשרת.
 async function appRefresh(){
   try { toast("מרענן…"); } catch(e) {}
+  ["telem_portal_ws2", "telem_ws_cache_v1"].forEach(k => store(k, null));   // 1.35.10: רשימת הדפים – תמיד מחדש מהשרת
   try { const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
     if (reg) await Promise.race([reg.update(), new Promise(r => setTimeout(r, 2500))]); } catch(e) {}
   location.reload();
