@@ -1467,6 +1467,12 @@ body.ws-vopen.v-stm .crmws .ws-stick{top:0;} body.ws-vopen.v-stm .crmws .ws-view
 .crmws .ws-grp.fold:not(.closed) .ws-gh{border-color:var(--gold);}
 .crmws .ws-car{font-style:normal; color:var(--accent); font-size:13px; width:14px; display:inline-block;}
 .crmws .ws-gn{font-style:normal; font-weight:500; font-size:12.5px; color:var(--ink-soft);}
+/* 1.35.12: שורה מקופלת – שם למעלה, "N דפים · פרק X" מתחת */
+.crmws .ws-grp.fold .ws-gh > span{align-items:center; min-width:0; flex:1 1 auto;}
+.crmws .ws-gtx{display:flex; flex-direction:column; gap:1px; min-width:0;}
+.crmws .ws-gmeta{display:flex; flex-wrap:wrap; align-items:baseline; gap:6px; font-size:12.5px; font-weight:500; color:var(--ink-soft); white-space:nowrap;}
+.crmws .ws-gmeta > i{font-style:normal;}
+.crmws .ws-gmeta small{font-size:12.5px;}
 @media (min-width:900px){
 .crmws .ws-grp.ws-sumg{grid-column:1/-1; background:none; border:0; padding:0;}
 .crmws .ws-grps.ws-fold{display:block;}
@@ -2118,7 +2124,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.11",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.12",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2227,27 +2233,37 @@ async function tokenRequest(grant, body){
   rtToken(data.access_token);
 }
 let REFRESHING = null;
+// 1.35.12 (נועה: "כל שעה מתנתק גם כשעובדים"): כמה חלונות / לשוניות / האפליקציה מהמסך הראשי באותו מכשיר חולקים את אותה כניסה.
+// הכניסה מתחדשת כל שעה, וכל חידוש מבטל את הקוד הקודם. חלון שהחזיק קוד ישן ניסה לחדש איתו → נדחה → מחק את הכניסה לכולם.
+// עכשיו: קודם בודקים אם חלון אחר כבר חידש (בשמור), מחדשים אחד-אחד (lock), ואם נדחה – בודקים שוב בשמור לפני שמוציאים.
+const storedAuth = () => { if (EMBED) return null; try { return JSON.parse(store(AUTH_KEY) || "null"); } catch(e) { return null; } };
+const adoptStored = (minLeft) => { const a = storedAuth(); if (a && a.access_token && (!auth || a.expires_at > auth.expires_at) && a.expires_at - (minLeft || 0) > Date.now()/1000) { auth = a; try { rtToken(a.access_token); } catch(e) {} return true; } return false; };
+if (!EMBED) window.addEventListener("storage", (ev) => { if (ev.key === AUTH_KEY && ev.newValue) adoptStored(0); });
 function refreshAuth(){
   if (REFRESHING) return REFRESHING;
   const run = async () => {
     if (EMBED) { const a = crmAuthRead(); if (a) auth = a; }
+    else adoptStored(120);
     if (!auth) return false;
-    if (EMBED && auth.expires_at - 120 > Date.now()/1000) return true;   // מערכת הניהול כבר חידשה
+    if (auth.expires_at - 120 > Date.now()/1000) return true;   // כבר חודש (מערכת הניהול / חלון אחר)
     const old = auth.refresh_token;
     for (let i = 0; i < 3; i++) {
       try { await tokenRequest("refresh_token", { refresh_token: old }); if (AUTH_BC) AUTH_BC.postMessage({ type: "refreshed", old, auth }); return true; }
       catch(e) {
-        if (e.status === 400 || e.status === 401 || e.status === 403) { saveAuth(null); return false; }
+        if (e.status === 400 || e.status === 401 || e.status === 403) {
+          if (!EMBED) { const a = storedAuth(); if (a && a.refresh_token !== old && a.expires_at > Date.now()/1000) { auth = a; return true; } }   // חלון אחר חידש בינתיים
+          saveAuth(null); return false; }
         await new Promise(r => setTimeout(r, 1500 * (i + 1)));
       }
     }
     return !!auth && auth.expires_at > Date.now()/1000;
   };
-  REFRESHING = (EMBED && navigator.locks && navigator.locks.request ? navigator.locks.request("telem_refresh", run) : run()).finally(() => { REFRESHING = null; });
+  REFRESHING = (navigator.locks && navigator.locks.request ? navigator.locks.request(EMBED ? "telem_refresh" : "telem_portal_refresh", run) : run()).finally(() => { REFRESHING = null; });
   return REFRESHING;
 }
 async function token(){
   if (EMBED) { const a = crmAuthRead(); if (a && (!auth || a.expires_at >= auth.expires_at)) auth = a; }   // מערכת הניהול אולי חידשה בינתיים
+  else adoptStored(60);
   if (!auth) return null;
   if (auth.expires_at - 60 > Date.now()/1000) return auth.access_token;
   return (await refreshAuth()) && auth ? auth.access_token : null;
@@ -2371,9 +2387,15 @@ function showLogin(msg){
   if ($("lgRemember").checked) { if (!$("lgPhone").value) $("lgPhone").value = store("telem_portal_lastphone") || ""; if (!$("lgEmail").value) $("lgEmail").value = store("telem_portal_lastemail") || ""; }
 }
 // 1.27.1 (נועה): בלי "להישאר מחובר/ת" – יציאה אוטומטית אחרי 120 דקות (גם אם עובדים)
-const KEEP_MIN = 120;
-function expCheck(){ if (EMBED) return false; const x = Number(store("telem_portal_exp") || 0); if (!x || !auth || Date.now() < x) return false;
-  store("telem_portal_exp", null); try { sessionStorage.setItem("telem_portal_outmsg", "התנתקת אוטומטית אחרי שעתיים. אפשר להיכנס שוב."); } catch(e) {} logout(); return true; }
+// 1.35.12 (נועה 28.10): 120 דקות בלי פעילות (לא מהכניסה) – כל לחיצה / הקלדה / חזרה לאפליקציה מאריכה. עם "להישאר מחובר/ת" – בלי יציאה אוטומטית.
+const IDLE_MIN = 120;
+const idleEnd = () => Date.now() + IDLE_MIN * 60e3;
+function expCheck(){ if (EMBED) return false; const x = Number(store("telem_portal_exp") || 0); if (!x || !auth) return false;
+  if (Date.now() < x) return false;
+  store("telem_portal_exp", null); try { sessionStorage.setItem("telem_portal_outmsg", "התנתקת אוטומטית אחרי שעתיים בלי פעילות. אפשר להיכנס שוב."); } catch(e) {} logout(); return true; }
+let ACT_T = 0;
+const onAct = () => { if (EMBED || !auth || Date.now() - ACT_T < 60e3) return; if (!store("telem_portal_exp")) return; if (expCheck()) return; ACT_T = Date.now(); store("telem_portal_exp", String(idleEnd())); };
+["pointerdown", "keydown", "touchstart", "wheel"].forEach(ev => document.addEventListener(ev, onAct, { passive: true, capture: true }));
 setInterval(expCheck, 60e3);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) expCheck(); });
 function setStaffMode(on){
@@ -2442,7 +2464,7 @@ $("loginForm").onsubmit = async (ev) => {
     store("telem_portal_rem", rem ? "1" : "0"); store("telem_portal_keep", keep ? "1" : "0");
     if (rem) { if (STAFF_MODE) store("telem_portal_lastemail", email); else store("telem_portal_lastphone", $("lgPhone").value.trim()); }
     else { store("telem_portal_lastemail", null); store("telem_portal_lastphone", null); }
-    store("telem_portal_exp", keep ? null : String(Date.now() + KEEP_MIN * 60e3));
+    store("telem_portal_exp", keep ? null : String(idleEnd()));
     $("lgCode").value = ""; $("lgPass").value = "";
     if (!rem) { $("lgPhone").value = ""; $("lgEmail").value = ""; }
     await boot();
@@ -4660,7 +4682,11 @@ async function renderWs(){
     const tkey = WS.book + "|" + WS.kind + "|" + WS.topic, fold = groups.length > 1 && groups.every(g => g.head || g.sum) && groups.filter(g => g.head).length > 1 && list.length > 12;
     WS.openG = WS.openG && WS.openG.t === tkey ? WS.openG : { t: tkey, s: new Set() };
     html += `<div class="ws-grps${unitCls ? " ws-grps-unit" : ""}${fold ? " ws-fold" : ""}">` + groups.map(g => { const fd = fold || g.sum, cl = fd && !WS.openG.s.has(g.k);   // שורת הסיכום - תמיד סגורה עד שלוחצים
-      const head = fd ? g.head.replace("<span><bdi>", `<span><i class="ws-car" aria-hidden="true">${cl ? "◂" : "▾"}</i><bdi>`).replace("</bdi>", `</bdi><em class="ws-gn">${g.cards.length} דפים</em>`) : g.head;
+      // 1.35.12 (נועה): שורה מקופלת – השם בשורה אחת, ומתחתיו "N דפים · פרק X" (בלי ששם ארוך ישבור את המספרים)
+      const head = fd ? (() => { let h = g.head; const ch = (h.match(/<small>[^<]*<\/small>/) || [""])[0], tn = (h.match(/<em class="ws-task-n"[^>]*>[^<]*<\/em>/) || [""])[0];
+        if (ch) h = h.replace(ch, ""); if (tn) h = h.replace(tn, "");
+        return h.replace("<span><bdi>", `<span><i class="ws-car" aria-hidden="true">${cl ? "◂" : "▾"}</i><span class="ws-gtx"><bdi>`)
+          .replace("</bdi>", `</bdi><span class="ws-gmeta"><em class="ws-gn">${g.cards.length === 1 ? "דף אחד" : g.cards.length + " דפים"}</em>${ch ? `<i>·</i>${ch}` : ""}${tn}</span></span>`); })() : g.head;
       return `<section class="ws-grp${g.cards.length > 4 ? " wide" : ""}${allIn(g.k) ? " on" : ""}${fd ? " fold" : ""}${g.sum ? " ws-sumg" : ""}${cl ? " closed" : ""}" data-gk="${esc(g.k)}">${head}<div class="ws-pages${unitCls}">${g.cards.join("")}</div></section>`; }).join("") + `</div>`;
   } else html += `<div class="ws-pages">${list.map(card).join("")}</div>`;
   $("wsBody").innerHTML = html;
