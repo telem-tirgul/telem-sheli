@@ -1711,6 +1711,8 @@ html:has(body.ws-vopen), body.ws-vopen{background:#161118 !important;}
 .crmatt .att-side #attSheet{position:fixed; top:0; bottom:0; right:0; width:min(620px, 100%); background:var(--att-bg, var(--bg)); z-index:40; overflow-y:auto; padding:0 18px 24px; box-shadow:-8px 0 24px rgba(0,0,0,.18);}
 .crmatt .att-side .sh-kicker{display:block; font-weight:800; color:var(--accent); font-size:13px; letter-spacing:.3px; padding:12px 0 2px;}
 .crmatt .att-side .sh-stick{position:sticky; top:0; z-index:5; background:var(--att-bg, var(--bg));}
+.crmatt .att-track[data-trk]{cursor:pointer;} .crmatt .att-track .trk-ed{font-style:normal; opacity:.6; margin-inline-start:4px;}   /* 1.35.13 */
+.crmatt .ap-trk{border-color:#e9cf62 !important; color:#5c4500 !important; background:#fffbe8 !important;}
 .crmatt .att-track{display:block; background:#fff8d6; border:1px solid #e9cf62; color:#5c4500; border-radius:8px; padding:3px 8px; font-size:13px; font-weight:700; margin-top:4px; white-space:pre-wrap;}
 .crmatt .split-bar{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; align-items:center;}
 .crmatt .split-bar .lbl2{font-weight:800; font-size:13.5px; color:var(--ink-soft);}
@@ -2124,7 +2126,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.12",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.13",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -5703,7 +5705,8 @@ function payPend(stId, sessId, isMar){
       const t = open ? `<span class="pn">✎ ${esc(ptTitle(open))}</span>` : !q ? `<span class="px">אין דפים בתור</span>` : `<span class="pw">⏳ ${done ? "ממתין/ה לדף" : "עוד לא נשלח דף"}</span>`;
       return (two ? `<span class="ps">${sh(x)}</span> ` : "") + t; }).join(" · "); };
   const ATT_PG_ROW = (r) => { const pg = ATT_PAGES_LINE(r); if (!pg) return "";
-    return `<div class="att-track-row ar-pgl"><span class="ar-pg">${pg}</span><button type="button" class="ap-b" data-addp="${r.student_id}" data-subj="">+ דפים</button></div>`; };
+    const trk = ME.role !== "instructor" && !r.tracking ? `<button type="button" class="ap-b ap-trk" data-trk="${r.student_id}" title="הערת מעקב לפעם הבאה" aria-label="הערת מעקב">+ 📌</button>` : "";   // 1.35.13
+    return `<div class="att-track-row ar-pgl"><span class="ar-pg">${pg}</span>${trk}<button type="button" class="ap-b" data-addp="${r.student_id}" data-subj="">+ דפים</button></div>`; };
   const ATT_ADD = (sid, subj) => toCard(sid, subj, true);
   const DOW = ["א","ב","ג","ד","ה","ו","ש"];
 const DAY_FULL = { "א":"ראשון","ב":"שני","ג":"שלישי","ד":"רביעי","ה":"חמישי","ו":"שישי","ש":"שבת" };
@@ -5866,18 +5869,36 @@ const subjGrp = (v) => { v = String(v || ""); const m = v.includes("מתמטיק
 const SUBJ_GRP_T = ["מתמטיקה", "אנגלית", "מתמטיקה + אנגלית", "בלי מקצוע"];
 // דף הנוכחות: רשימה אחת לפי א"ב של השם הפרטי (בלי חלוקה למקצועות - קל למצוא ילד). המקצוע מסומן ליד השם.
 // הערת מעקב לתלמיד/ה (students.tracking) - מחלון הקבוצה ומדף הנוכחות (מנהלים). מופיעה ב-📌 בכל המקומות.
-async function editTracking(studentId, cur){
-  const v0 = await uiPrompt("הערת מעקב (מופיעה עם 📌 בנוכחות, בקבוצה ובטבלת התלמידים). ריק = מחיקה:", cur || "");
-  if (v0 === null) return null;
-  const v = v0.trim() || null;
-  if (v === (cur || null)) return null;
-  try { await patch("students", "id=eq." + studentId, { tracking: v }); }
-  catch(e) { toast("השמירה נכשלה: " + e.message); return null; }
-  (L.leads || []).forEach(l => { if (l.student && l.student.id === studentId) l.student.tracking = v; });
-  (G.roster || []).forEach(k => { if (k.student_id === studentId) k.tracking = v; });
-  (A.rows || []).forEach(r => { if (r.student_id === studentId) r.tracking = v; });
-  toast(v ? "הערת המעקב נשמרה" : "הערת המעקב נמחקה");
-  return { v };
+// 1.35.13 (נועה): עריכת המעקב מתוך הנוכחות – חלון עם תיבת טקסט (שמירה / ביטול / מחיקה). משותף עם מערכת הניהול (students.tracking).
+function editTracking(studentId, cur, name){
+  return new Promise((resolve) => {
+    let done = false; const fin = (v) => { if (!done) { done = true; resolve(v); } };
+    window.openSheet(`<h2>📌 מעקב${name ? " – " + esc(name) : ""}</h2>
+      <p class="muted small" style="margin:0 0 8px">מה לזכור לפעם הבאה. מופיע עם 📌 בנוכחות – וגם במערכת הניהול.</p>
+      <textarea id="trkTa" rows="4" style="width:100%; box-sizing:border-box; font:inherit; padding:8px 10px; border:1.5px solid var(--border); border-radius:10px; resize:vertical">${esc(cur || "")}</textarea>
+      <div class="trk-btns" style="display:flex; gap:8px; margin-top:10px; align-items:center">
+        ${cur ? `<button type="button" class="btn" id="trkDel" style="color:var(--bad); border-color:var(--bad)">מחיקה</button>` : ""}
+        <span style="flex:1"></span>
+        <button type="button" class="btn" id="trkNo">ביטול</button>
+        <button type="button" class="btn primary" id="trkOk">שמירה</button></div>`, (sh) => {
+      const ta = sh.querySelector("#trkTa"); setTimeout(() => { try { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e) {} }, 60);
+      const save = async (val) => {
+        const v = (val || "").trim() || null;
+        if (v === (cur || null)) { closeSheet(); fin(null); return; }
+        sh.querySelectorAll("button").forEach(b => b.disabled = true);
+        try { await patch("students", "id=eq." + studentId, { tracking: v }); }
+        catch(e) { sh.querySelectorAll("button").forEach(b => b.disabled = false); toast("השמירה נכשלה: " + errText(e)); return; }
+        try { (L.leads || []).forEach(l => { if (l.student && l.student.id === studentId) l.student.tracking = v; }); } catch(e) {}
+        try { (G.roster || []).forEach(k => { if (k.student_id === studentId) k.tracking = v; }); } catch(e) {}
+        (A.rows || []).forEach(r => { if (String(r.student_id) === String(studentId)) r.tracking = v; });
+        closeSheet(); toast(v ? "המעקב נשמר" : "המעקב נמחק"); fin({ v });
+      };
+      sh.querySelector("#trkOk").onclick = () => save(ta.value);
+      sh.querySelector("#trkNo").onclick = () => { closeSheet(); fin(null); };
+      if (sh.querySelector("#trkDel")) sh.querySelector("#trkDel").onclick = () => save("");
+      sh.addEventListener("click", (e) => { if (e.target.closest(".sheet-x")) fin(null); });
+    });
+  });
 }
 // חלון הקבוצה (לוח הקבוצות): קודם לפי מקצוע (מתמטיקה, אנגלית, משולב) - כדי שכל מקצוע יהיה ביחד - ובתוכו לפי שם פרטי
 function rosterSort(a, b){ return subjGrp(a.subject) - subjGrp(b.subject) || attSort(a, b); }
@@ -6010,6 +6031,9 @@ $("shRows").addEventListener("click", async (e) => {
   const kl = e.target.closest("[data-kl]");
   // 5.19.23: לחיצה על השם - חלון עם הפרטים העיקריים והשיבוצים; לכרטיס (לעריכה) רק בכפתור
   if (kl) { ATT_KID(kl.dataset.kl); return; }
+  const trk = e.target.closest("[data-trk]");   // 1.35.13: עריכת המעקב
+  if (trk) { const r = (A.rows || []).find(x => String(x.student_id) === trk.dataset.trk); if (!r) return;
+    const res = await editTracking(r.student_id, r.tracking, ((r.first_name || "") + " " + (r.last_name || "")).trim()); if (res) renderSheetRows(); return; }
   const tg = e.target.closest("[data-tog]");
   if (tg && !e.target.closest("button, input, label, .seg, .att-sj2")) { const r = A.rows[Number(tg.closest("li").dataset.i)]; if (r) { A.openRows.has(r.student_id) ? A.openRows.delete(r.student_id) : A.openRows.add(r.student_id); renderSheetRows(); } return; }
   const exb = e.target.closest("[data-ex]"); if (exb) { exSheet(exb.dataset.ex); return; }
@@ -6147,7 +6171,7 @@ function renderSheetRows(){
       </div>
 
     </div>${(() => { const ex = kidExTag(r, A.sheet.city, A.sheet.date || A.date);   // 5.19.19: מבחן / לומדים עכשיו - באותה שורה עם השעה האישית והמעקב (לא דוחקים את השם)
-      return r.tracking || ex ? `<div class="att-track-row">${ex}${r.tracking ? `<span class="att-track">📌 ${esc(r.tracking)}</span>` : ""}</div>` : ""; })()}${ATT_PG_ROW(r)}</li>`; }).join("");
+      return r.tracking || ex ? `<div class="att-track-row">${ex}${r.tracking ? `<span class="att-track"${ME.role !== "instructor" ? ` data-trk="${esc(r.student_id)}" role="button" tabindex="0" title="עריכת המעקב"` : ""}>📌 ${esc(r.tracking)}${ME.role !== "instructor" ? ` <i class="trk-ed">✎</i>` : ""}</span>` : ""}</div>` : ""; })()}${ATT_PG_ROW(r)}</li>`; }).join("");
   // 5.19.29: "לא מגיעים היום" - בסוף הרשימה, באפור, עם החזרה
   const sk = A.rows.map((r, i) => [r, i]).filter(([r]) => r.skip);
   if (sk.length) shH += (`<li class="att-sec att-skip-h"><span>לא מגיעים היום (רק בשיעור הזה)</span><span>${sk.length}</span></li>` +
