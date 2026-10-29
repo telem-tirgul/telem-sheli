@@ -2126,7 +2126,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.13",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.14",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -5534,14 +5534,25 @@ async function insRender(pre){
           get("attendance", "select=session_id,student_id,present&lesson_date=eq." + iso + "&present=not.is.null").catch(() => null),
           get("attendance_plan", "select=session_id,student_id&kind=eq.skip&lesson_date=eq." + iso).catch(() => [])]); list = list || []; if (!Array.isArray(list)) list = []; }
   catch(e) { T.innerHTML = top() + `<div class="card err">לא ניתן לטעון את הקבוצות.</div></div></div>`; wireIns(T); return; }
+  // 1.35.14 (נועה: "סימנתי את כולם והקבוצה לא ירוקה"): מי צריך סימון – בדיוק כמו בדף הנוכחות: שיבוץ "משובץ" שכבר התחיל (started_on),
+  // כל ילד/ה פעם אחת (ילד/ה משולב/ת עם שני שיבוצים נספר/ת פעם אחת), בלי מי שהוסר/ה מהשיעור היום. עד עכשיו – לפי מספר השיבוצים.
+  let asgD = pre ? pre[3] : null;
+  if (!pre && list.length) { const ids = list.map(g => g.session_id).filter(x => x != null).join(","), st = encodeURIComponent("משובץ");
+    asgD = await get("assignments", "select=session_id,student_id,started_on&status=eq." + st + "&session_id=in.(" + ids + ")")
+      .catch(() => get("assignments", "select=session_id,student_id&status=eq." + st + "&session_id=in.(" + ids + ")")).catch(() => null); }
   T.classList.remove("att-upd");
-  if (!pre) { tmMark("נוכחות – כל הרשימה", t0); attListCache(iso, [list, mk, skp]); }
+  if (!pre) { tmMark("נוכחות – כל הרשימה", t0); attListCache(iso, [list, mk, skp, asgD]); }
   // 1.24 (נועה): חגים וחופשות – כמו במערכת הניהול (תגית ליד היום; קבוצה ביום חג – "לא התקיים")
   holC = ATTM.HOLX.chips(iso);
   if (Array.isArray(mk)) { const c = new Map(); mk.forEach(r => { const k = String(r.session_id); if (!c.has(k)) c.set(k, new Set()); c.get(k).add(String(r.student_id)); });
     const sk = new Map(); (Array.isArray(skp) ? skp : []).forEach(r => { const k = String(r.session_id); sk.set(k, (sk.get(k) || 0) + 1); });   // "לא מגיעים היום" – לא צריך לסמן
+    const skS = new Map(); (Array.isArray(skp) ? skp : []).forEach(r => { const k = String(r.session_id); if (!skS.has(k)) skS.set(k, new Set()); skS.get(k).add(String(r.student_id)); });
+    let need = null; if (Array.isArray(asgD)) { need = new Map(); asgD.forEach(a => { if (a.started_on && String(a.started_on) > iso) return; const k = String(a.session_id), id = String(a.student_id);
+      if ((skS.get(k) || new Set()).has(id)) return; if (!need.has(k)) need.set(k, new Set()); need.get(k).add(id); }); }
     list.forEach(g => { const k = String(g.session_id), gr = (AD.groups || []).find(x => x.id === k), m = c.get(k) || new Set();
-      g.n_marked = m.size; g.n_need = Math.max(0, (g.kids || 0) - (sk.get(k) || 0));
+      g.n_marked = m.size;
+      if (need) { const N = need.get(k) || new Set(); g.n_need = N.size; g.n_marked = [...N].filter(id => m.has(id)).length; g.all = g.marked && g.n_marked >= g.n_need; return; }   // 1.35.14
+      g.n_need = Math.max(0, (g.kids || 0) - (sk.get(k) || 0));
       const mAssigned = gr ? [...m].filter(id => gr.kids.has(id)).length : m.size;   // ילד/ה שנוסף/ה לשיעור לא משלים/ה ילד/ה שחסר/ה בסימון
       g.all = g.marked && mAssigned >= g.n_need; }); }
   else list.forEach(g => { g.all = g.marked; });
@@ -5562,7 +5573,7 @@ async function insRender(pre){
       <span class="t">${g.kind === "מרתון" ? "🏁 " + esc(marGradeTxt(g.session_id)) + esc(marMeetTxt(g.session_id, iso)) + esc(g.time_label || "") + (g.start_time ? ` <span class="m">${rng(hm(g.start_time), hm(g.end_time))}</span>` : "") : rng(hm(g.start_time), hm(g.end_time))}</span>
       <span class="w">${scChip(g.location)}${!ins ? " · " + esc(g.city || "") : ""}</span><span class="ag-br"></span>${g.room ? `<span class="m">חדר: <b><bdi>${esc(g.room)}</bdi></b></span>` : ""}
       ${!ins && g.instructors ? `<span class="ag-ins">${esc(g.instructors)}</span>` : ""}
-      <span class="ag-st">${g.all ? `<span class="ok">✓ סומן · <b>${g.marked_count}</b> נוכחים מתוך ${g.kids}</span>` : g.marked ? `<span class="pt">סומנו ${g.n_marked} מתוך ${g.n_need != null ? g.n_need : g.kids} · <b>${g.marked_count}</b> נוכחים</span>` : `<span class="m kn">${g.kids} ילדים</span> · ${g.cx ? `<span class="cx-tag" title="לא התקיים${g.cx.reason ? " · " + esc(g.cx.reason) : ""}">לא התקיים${g.cx.reason ? " · " + esc(g.cx.reason) : ""}</span>` : `<span class="m">טרם סומן</span>`}`}</span></button>`;
+      <span class="ag-st">${g.all ? `<span class="ok">✓ סומן · <b>${g.marked_count}</b> נוכחים מתוך ${g.n_need != null ? Math.max(g.n_need, g.marked_count) : g.kids}</span>` : g.marked ? `<span class="pt">סומנו ${g.n_marked} מתוך ${g.n_need != null ? g.n_need : g.kids} · <b>${g.marked_count}</b> נוכחים</span>` : `<span class="m kn">${g.kids} ילדים</span> · ${g.cx ? `<span class="cx-tag" title="לא התקיים${g.cx.reason ? " · " + esc(g.cx.reason) : ""}">לא התקיים${g.cx.reason ? " · " + esc(g.cx.reason) : ""}</span>` : `<span class="m">טרם סומן</span>`}`}</span></button>`;
   paint(T, top(sel) + `<div class="att-groups">${gs.length ? gs.map(card).join("") : `<div class="card muted">${ins ? "אין לך קבוצות ביום הזה." : AD.waitIns && list.length ? "אין קבוצות ביום הזה למתרגל/ת שנבחר/ה." : "אין קבוצות ביום הזה."}</div>`}</div></div></div>`);
   wireIns(T); attSideH();
   T.querySelectorAll("[data-att]").forEach(b => b.onclick = () => { const x = gs.find(g => String(g.session_id) === b.dataset.att) || {};
