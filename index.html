@@ -2126,7 +2126,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.14",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.15",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -4541,6 +4541,8 @@ async function wsSign(paths){
 const wsBookRank = (b) => /^\d/.test(b) ? 0 : b === "GEN" ? 1 : b === "ENG" ? 3 : 2;
 const wsBooks = () => { const m = new Map(); (WS.rows || []).forEach(r => { if (!m.has(r.book)) m.set(r.book, r.book_label); });
   return [...m.entries()].sort((a, b) => wsBookRank(a[0]) - wsBookRank(b[0]) || a[0].localeCompare(b[0])); };
+// 1.35.15 (דפ-16): קטע קצר עם שאלות · אנסין יסודי · אנסין קצר · אנסין 1 · אנסין 2 · 3 · 4 · שאלון E
+const WS_TOPIC_ORD = { "ENG|unseen": ["27", "20", "15", "28", "16", "17", "18", "19"] };
 function wsTopics(kind){
   const m = new Map();
   WS.rows.filter(r => r.book === WS.book && r.kind === (kind || WS.kind)).forEach(r => {
@@ -4548,11 +4550,9 @@ function wsTopics(kind){
     m.get(r.topic_no)[r.type === "page" ? "pages" : "answers"].push(r);
   });
   const L = [...m.values()];
-  // 1.35.11 (נועה): באנסין – "אנסין יסודי" (20) מיד לפני "אנסין קצר" (15), אחד ליד השני
-  if (WS.book === "ENG" && (kind || WS.kind) === "unseen") {
-    const iY = L.findIndex(t => /יסודי/.test(t.name || "")), iK = L.findIndex(t => /קצר/.test(t.name || ""));
-    if (iY >= 0 && iK >= 0 && iY !== iK - 1) { const [y] = L.splice(iY, 1); L.splice(L.findIndex(t => /קצר/.test(t.name || "")), 0, y); }
-  }
+  // 1.35.15 (דפ-16, נועה 29.10): סדר קבוע לנושאים באנסין (לפי topic_no); נושא שלא ברשימה – בסוף, לפי הסדר הרגיל
+  const ORD = WS_TOPIC_ORD[WS.book + "|" + (kind || WS.kind)];
+  if (ORD) { const ix = (t) => { const i = ORD.indexOf(String(Number(t.no))); return i < 0 ? 999 : i; }; L.forEach((t, i) => t._i = i); L.sort((a, b) => ix(a) - ix(b) || a._i - b._i); }
   return L;
 }
 async function renderWs(){
