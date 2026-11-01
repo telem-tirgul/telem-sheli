@@ -2131,7 +2131,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.16",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.17",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -5852,6 +5852,7 @@ async function openSheet(sessionId, retry){
     const gMar = (A.groups || []).find(g => g.session_id === sessionId), isMarSh = (gMar && gMar.kind === "מרתון") || (!sh.day && !!(G.sessions || []).find(x => x.session_id === sessionId && x.kind === "מרתון"));
     $("shTitle").textContent = `${isMarSh ? "🏁 " + marGradeTxt(sessionId) + marMeetTxt(sessionId, A.date) : ""}${sh.time_label} · ${sh.location}`;
     if (isMarSh && (!MAR_GR || !AD.groups)) Promise.all([loadMarGrades(), loadGroups()]).then(() => { if (A.sheet === sh) $("shTitle").textContent = `🏁 ${marGradeTxt(sessionId)}${marMeetTxt(sessionId, A.date)}${sh.time_label} · ${sh.location}`; }).catch(() => {});
+    if (isMarSh) marTrackLoad(sh, sessionId);   // 1.35.17 (מנ-231): במרתון – המעקב של הקורס של המרתון
     const mySp = null;
     $("shSub").innerHTML = `יום <b>${DAY_FULL[sh.day || dayLetter(sh.date)]}</b> · <b>${fmtIso(sh.date)}</b> · ${esc(sh.city)}${mySp ? ` · תת-קבוצה <b>${esc(mySp.name)}</b>` : ""}${(mySp && mySp.room) || sh.room ? ` · חדר <b><bdi>${esc((mySp && mySp.room) || sh.room)}</bdi></b>` : ""}`;
     $("shLocked").hidden = !!sh.can_edit;
@@ -5896,12 +5897,30 @@ const subjGrp = (v) => { v = String(v || ""); const m = v.includes("מתמטיק
 const SUBJ_GRP_T = ["מתמטיקה", "אנגלית", "מתמטיקה + אנגלית", "בלי מקצוע"];
 // דף הנוכחות: רשימה אחת לפי א"ב של השם הפרטי (בלי חלוקה למקצועות - קל למצוא ילד). המקצוע מסומן ליד השם.
 // הערת מעקב לתלמיד/ה (students.tracking) - מחלון הקבוצה ומדף הנוכחות (מנהלים). מופיעה ב-📌 בכל המקומות.
+// 1.35.17 (נועה, מנ-231): בקבוצת מרתון המעקב הוא של הקורס של המרתון (course_members.tracking, קובץ 155) – לא של הכרטיס.
+// בקבוצה רגילה – כמו היום (students.tracking, מסונכרן עם קורס התרגול השוטף). אם אין גישה / אין קורס – נשאר המעקב של הכרטיס.
+async function marTrackLoad(sh, sessionId){
+  try {
+    let mid = ((AD.groups || []).find(g => g.id === String(sessionId)) || {}).mid;
+    if (!mid) mid = ((await get("sessions", "select=marathon_id&id=eq." + sessionId))[0] || {}).marathon_id;
+    if (!mid) return;
+    const co = (await get("courses", "select=id&marathon_id=eq." + mid))[0]; if (!co) return;
+    const ids = (A.rows || []).map(r => r.student_id).filter(Boolean); if (!ids.length) return;
+    const cms = await get("course_members", "select=id,student_id,tracking&course_id=eq." + co.id + "&student_id=in.(" + ids.join(",") + ")");
+    if (A.sheet !== sh) return;
+    const by = new Map((cms || []).map(c => [String(c.student_id), c]));
+    A.marCourse = co.id;
+    A.rows.forEach(r => { const c = by.get(String(r.student_id)); r.cmId = c ? c.id : null; r.tracking = c ? (c.tracking || null) : r.tracking; });
+    renderSheetRows();
+  } catch(e) {}
+}
+window.__marTrk = () => marTrackLoad(A.sheet, A.sheet && A.sheet.session_id);   // לבדיקות
 // 1.35.13 (נועה): עריכת המעקב מתוך הנוכחות – חלון עם תיבת טקסט (שמירה / ביטול / מחיקה). משותף עם מערכת הניהול (students.tracking).
-function editTracking(studentId, cur, name){
+function editTracking(studentId, cur, name, cmId){
   return new Promise((resolve) => {
     let done = false; const fin = (v) => { if (!done) { done = true; resolve(v); } };
     window.openSheet(`<h2>📌 מעקב${name ? " – " + esc(name) : ""}</h2>
-      <p class="muted small" style="margin:0 0 8px">מה לזכור לפעם הבאה. מופיע עם 📌 בנוכחות – וגם במערכת הניהול.</p>
+      <p class="muted small" style="margin:0 0 8px">${cmId ? "המעקב של המרתון הזה (בקורס של המרתון במערכת הניהול)." : "מה לזכור לפעם הבאה. מופיע עם 📌 בנוכחות – וגם במערכת הניהול."}</p>
       <textarea id="trkTa" rows="4" style="width:100%; box-sizing:border-box; font:inherit; padding:8px 10px; border:1.5px solid var(--border); border-radius:10px; resize:vertical">${esc(cur || "")}</textarea>
       <div class="trk-btns" style="display:flex; gap:8px; margin-top:10px; align-items:center">
         ${cur ? `<button type="button" class="btn" id="trkDel" style="color:var(--bad); border-color:var(--bad)">מחיקה</button>` : ""}
@@ -5913,11 +5932,12 @@ function editTracking(studentId, cur, name){
         const v = (val || "").trim() || null;
         if (v === (cur || null)) { closeSheet(); fin(null); return; }
         sh.querySelectorAll("button").forEach(b => b.disabled = true);
-        try { await patch("students", "id=eq." + studentId, { tracking: v }); }
+        try { if (cmId) await patch("course_members", "id=eq." + cmId, { tracking: v }); else await patch("students", "id=eq." + studentId, { tracking: v }); }   // 1.35.17: במרתון – המעקב של הקורס
         catch(e) { sh.querySelectorAll("button").forEach(b => b.disabled = false); toast("השמירה נכשלה: " + errText(e)); return; }
+        (A.rows || []).forEach(r => { if (String(r.student_id) === String(studentId)) r.tracking = v; });
+        if (cmId) { closeSheet(); toast(v ? "המעקב של המרתון נשמר" : "המעקב של המרתון נמחק"); fin({ v }); return; }
         try { (L.leads || []).forEach(l => { if (l.student && l.student.id === studentId) l.student.tracking = v; }); } catch(e) {}
         try { (G.roster || []).forEach(k => { if (k.student_id === studentId) k.tracking = v; }); } catch(e) {}
-        (A.rows || []).forEach(r => { if (String(r.student_id) === String(studentId)) r.tracking = v; });
         closeSheet(); toast(v ? "המעקב נשמר" : "המעקב נמחק"); fin({ v });
       };
       sh.querySelector("#trkOk").onclick = () => save(ta.value);
@@ -6060,7 +6080,7 @@ $("shRows").addEventListener("click", async (e) => {
   if (kl) { ATT_KID(kl.dataset.kl); return; }
   const trk = e.target.closest("[data-trk]");   // 1.35.13: עריכת המעקב
   if (trk) { const r = (A.rows || []).find(x => String(x.student_id) === trk.dataset.trk); if (!r) return;
-    const res = await editTracking(r.student_id, r.tracking, ((r.first_name || "") + " " + (r.last_name || "")).trim()); if (res) renderSheetRows(); return; }
+    const res = await editTracking(r.student_id, r.tracking, ((r.first_name || "") + " " + (r.last_name || "")).trim(), r.cmId || null); if (res) renderSheetRows(); return; }
   const tg = e.target.closest("[data-tog]");
   if (tg && !e.target.closest("button, input, label, .seg, .att-sj2")) { const r = A.rows[Number(tg.closest("li").dataset.i)]; if (r) { A.openRows.has(r.student_id) ? A.openRows.delete(r.student_id) : A.openRows.add(r.student_id); renderSheetRows(); } return; }
   const exb = e.target.closest("[data-ex]"); if (exb) { exSheet(exb.dataset.ex); return; }
