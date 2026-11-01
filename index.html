@@ -1,6 +1,9 @@
 <!doctype html>
 <html lang="he" dir="rtl">
 <head>
+<script>/* 1.35.21 (כל-17 / G-2, מנ-238): לא נפתח בתוך אתר זר. בתוך מערכת הניהול (אותו אתר) – כרגיל. */
+(function(){ var ok = true; try { ok = window.top === window.self || window.top.location.origin === window.location.origin; } catch(e) { ok = false; }
+  if (!ok) { window.__telemFramed = true; document.documentElement.style.display = "none"; } })();</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>תלם שלי</title>
@@ -2141,11 +2144,12 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 
 <script>
 "use strict";
+if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר זר – לא מציגים");
 // ======================================================================
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.20",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.21",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2232,12 +2236,19 @@ const EMB_Q = (() => { const o = {}; String(location.hash || "").replace(/^#/, "
 const EMBED = EMB_Q.embed === "1" && window.parent !== window;
 const crmAuthRead = () => { try { const v = sessionStorage.getItem("telem_crm_session") || (localStorage.getItem("telem_keep") === "1" ? localStorage.getItem("telem_crm_session") : null); return v ? JSON.parse(v) : null; } catch(e) { return null; } };
 let auth = null;
-try { auth = EMBED ? crmAuthRead() : JSON.parse(store(AUTH_KEY) || "null"); } catch(e) {}
+// 1.35.21 (נועה: "כמו מערכת הניהול", כל-17 סעיף 0): הכניסה נשמרת במכשיר (localStorage) רק עם "להישאר מחובר/ת";
+// בלי – רק עד שסוגרים את הלשונית (sessionStorage). בנייד "להישאר מחובר/ת" מסומן מראש.
+const AUTH_RAW = () => { try { return localStorage.getItem(AUTH_KEY) || sessionStorage.getItem(AUTH_KEY); } catch(e) { return null; } };
+try { auth = EMBED ? crmAuthRead() : JSON.parse(AUTH_RAW() || "null"); } catch(e) {}
 function saveAuth(a){ auth = a;
   if (EMBED) { try { const v = a ? JSON.stringify(a) : null; if (a) { sessionStorage.setItem("telem_crm_session", v); if (localStorage.getItem("telem_keep") === "1") localStorage.setItem("telem_crm_session", v); } } catch(e) {} return; }   // בהטמעה – לא מוחקים את הכניסה של מערכת הניהול
-  store(AUTH_KEY, a ? JSON.stringify(a) : null); }
+  const v = a ? JSON.stringify(a) : null, keep = store("telem_portal_keep") === "1";
+  try { if (!v) { localStorage.removeItem(AUTH_KEY); sessionStorage.removeItem(AUTH_KEY); }
+        else if (keep) { localStorage.setItem(AUTH_KEY, v); sessionStorage.removeItem(AUTH_KEY); }
+        else { sessionStorage.setItem(AUTH_KEY, v); localStorage.removeItem(AUTH_KEY); } } catch(e) {} }
 const AUTH_BC = EMBED && typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("telem_auth") : null;
-if (AUTH_BC) AUTH_BC.onmessage = (ev) => { const m = ev.data || {}; if (m.type === "refreshed" && m.auth) auth = Object.assign({}, m.auth, { email: (auth && auth.email) || m.auth.email }); };
+// 1.35.21 (כל-17 סעיף 0, מנ-237): בערוץ – רק "refreshed", בלי טוקנים; את הכניסה החדשה קוראים מהשמור של מערכת הניהול
+if (AUTH_BC) AUTH_BC.onmessage = (ev) => { const m = ev.data || {}; if (m.type !== "refreshed") return; const a = crmAuthRead(); if (a && a.access_token && (!auth || a.expires_at >= auth.expires_at)) auth = Object.assign({}, a, { email: (auth && auth.email) || a.email }); };
 const embPost = (o) => { if (!EMBED) return; try { window.parent.postMessage(Object.assign({ telemSheli: "att" }, o), location.origin); } catch(e) {} };
 function baseHeaders(){
   const h = { "apikey": CONFIG.anonKey, "Content-Type": "application/json" };
@@ -2257,7 +2268,7 @@ let REFRESHING = null;
 // 1.35.12 (נועה: "כל שעה מתנתק גם כשעובדים"): כמה חלונות / לשוניות / האפליקציה מהמסך הראשי באותו מכשיר חולקים את אותה כניסה.
 // הכניסה מתחדשת כל שעה, וכל חידוש מבטל את הקוד הקודם. חלון שהחזיק קוד ישן ניסה לחדש איתו → נדחה → מחק את הכניסה לכולם.
 // עכשיו: קודם בודקים אם חלון אחר כבר חידש (בשמור), מחדשים אחד-אחד (lock), ואם נדחה – בודקים שוב בשמור לפני שמוציאים.
-const storedAuth = () => { if (EMBED) return null; try { return JSON.parse(store(AUTH_KEY) || "null"); } catch(e) { return null; } };
+const storedAuth = () => { if (EMBED) return null; try { return JSON.parse(AUTH_RAW() || "null"); } catch(e) { return null; } };
 const adoptStored = (minLeft) => { const a = storedAuth(); if (a && a.access_token && (!auth || a.expires_at > auth.expires_at) && a.expires_at - (minLeft || 0) > Date.now()/1000) { auth = a; try { rtToken(a.access_token); } catch(e) {} return true; } return false; };
 if (!EMBED) window.addEventListener("storage", (ev) => { if (ev.key === AUTH_KEY && ev.newValue) adoptStored(0); });
 function refreshAuth(){
@@ -2269,7 +2280,7 @@ function refreshAuth(){
     if (auth.expires_at - 120 > Date.now()/1000) return true;   // כבר חודש (מערכת הניהול / חלון אחר)
     const old = auth.refresh_token;
     for (let i = 0; i < 3; i++) {
-      try { await tokenRequest("refresh_token", { refresh_token: old }); if (AUTH_BC) AUTH_BC.postMessage({ type: "refreshed", old, auth }); return true; }
+      try { await tokenRequest("refresh_token", { refresh_token: old }); if (AUTH_BC) AUTH_BC.postMessage({ type: "refreshed" }); return true; }
       catch(e) {
         if (e.status === 400 || e.status === 401 || e.status === 403) {
           if (!EMBED) { const a = storedAuth(); if (a && a.refresh_token !== old && a.expires_at > Date.now()/1000) { auth = a; return true; } }   // חלון אחר חידש בינתיים
@@ -2478,11 +2489,12 @@ $("loginForm").onsubmit = async (ev) => {
   }
   $("lgBtn").disabled = true; $("lgBtn").textContent = "נכנסים…";
   try {
+    const rem = $("lgRemember").checked, keep = $("lgKeep").checked;
+    store("telem_portal_keep", keep ? "1" : "0");   // 1.35.21: לפני הכניסה – כדי שהכניסה תישמר במקום הנכון
     await tokenRequest("password", { email, password: pass });
     LAST_CODE = STAFF_MODE ? "" : pass;
     store("telem_portal_staff", STAFF_MODE ? "1" : null);
-    const rem = $("lgRemember").checked, keep = $("lgKeep").checked;
-    store("telem_portal_rem", rem ? "1" : "0"); store("telem_portal_keep", keep ? "1" : "0");
+    store("telem_portal_rem", rem ? "1" : "0");
     if (rem) { if (STAFF_MODE) store("telem_portal_lastemail", email); else store("telem_portal_lastphone", $("lgPhone").value.trim()); }
     else { store("telem_portal_lastemail", null); store("telem_portal_lastphone", null); }
     store("telem_portal_exp", keep ? null : String(idleEnd()));
