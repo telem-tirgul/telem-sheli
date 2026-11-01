@@ -2131,7 +2131,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.17",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.18",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2485,7 +2485,7 @@ async function logout(){
   saveAuth(null); store("telem_portal_exp", null); try { localStorage.removeItem("telem_portal_groups"); AD.groups = null; } catch(e) {} try { localStorage.removeItem(URLS_KEY); Object.keys(URLS).forEach(k => delete URLS[k]); } catch(e) {} LAST_CODE = ""; ST.pages = null; ST.openT = null; AD.loaded = false; AD_CACHE.clear(); store("telem_portal_role", null); if (AD.role) { AD.role = null; document.body.classList.remove("v-ins"); $("adTools").hidden = false; $("adSearch").hidden = false; AD.started = false; }
   // 1.35.9 (אבטחה): גם רשימת הנוכחות השמורה (שמות ילדים) נמחקת, ואז הדף נטען מחדש – בלי שאריות בזיכרון ובמסך
   // (וגם בלי רקע המחברת של המאגר שנשאר על מסך הכניסה).
-  ["telem_portal_attlist", "telem_portal_waitins"].forEach(k => store(k, null));
+  ["telem_portal_attlist", "telem_portal_waitins", "telem_portal_myname", "telem_portal_mgrs"].forEach(k => store(k, null));
   if (!EMBED) { location.reload(); return; }
   showLogin();
 }
@@ -3067,7 +3067,8 @@ function adminStart(fast){
   $("adLogout").onclick = logout;
   $("adTools").onclick = toolsSheet;
   $("adSearch").onclick = searchSheet;
-  rpc("my_role").then(r => { if (r && r.full_name) { $("adWho").textContent = r.full_name; AD.myName = r.full_name; insChanged(); } }).catch(() => {});
+  if (!AD.myName) { const nm = store("telem_portal_myname"); if (nm) { AD.myName = nm; $("adWho").textContent = nm; } }   // 1.35.18: השם מהפעם הקודמת – "שלי" נכון כבר בפתיחה
+  rpc("my_role").then(r => { if (r && r.full_name) { $("adWho").textContent = r.full_name; const ch = AD.myName !== r.full_name; AD.myName = r.full_name; store("telem_portal_myname", r.full_name); if (ch) insChanged(); } }).catch(() => {});
   insBtn();
   $("drawerClose").onclick = $("drawerBg").onclick = () => closeDrawer();
   renderNav();
@@ -3138,9 +3139,11 @@ function renderNav(){
 // 1.16.1: כל הבקשות בבת אחת (לא אחת אחרי השנייה), והמסך מהפעם הקודמת מוצג מיד
 const AD_CACHE = {
   key: "telem_portal_adcache",
-  save(){ try { store(this.key, JSON.stringify({ t: Date.now(), students: AD.students, plan: AD.plan, planSince: AD.planSince || null, settings: AD.settings, codeReqs: AD.codeReqs })); } catch(e) {} },
+  save(){ try { store(this.key, JSON.stringify({ t: Date.now(), students: AD.students, plan: AD.plan, planSince: AD.planSince || null, settings: AD.settings, codeReqs: AD.codeReqs,
+    nreq: AD.nreq, ndis: AD.ndis ? [...AD.ndis.entries()] : null })); } catch(e) {} },   // 1.35.18: גם הבקשות – בלי "1 ממתינים" ישן בפתיחה
   load(){ try { const c = JSON.parse(store(this.key) || "null"); if (!c || !c.students || Date.now() - c.t > 3 * 864e5) return false;
     AD.students = c.students; AD.plan = c.plan || []; AD.planSince = c.planSince || null; AD.settings = c.settings || null; AD.codeReqs = c.codeReqs || [];
+    if (Array.isArray(c.nreq)) AD.nreq = c.nreq; if (Array.isArray(c.ndis)) AD.ndis = new Map(c.ndis);
     let ws = null; try { ws = JSON.parse(store(WS_CACHE) || "null"); } catch(e) {}
     if (!ws || !ws.rows || !ws.rows.length) return false;
     AD.ws = ws.rows.map(r => Object.assign(r, { id: String(r.id) })); AD.wsById = new Map(AD.ws.map(r => [r.id, r]));
@@ -3345,10 +3348,11 @@ function waitingKids(list){
 const myUid = () => (auth && jwtSub(auth.access_token)) || null;
 let MGRS = null;   // שמות המנהלים (staff), נטען פעם אחת
 function loadMgrs(){
-  if (MGRS || loadMgrs.p) return;
+  if (!MGRS && !loadMgrs.c) { loadMgrs.c = true; try { const c = JSON.parse(store("telem_portal_mgrs") || "null"); if (Array.isArray(c)) MGRS = new Set(c); } catch(e) {} }   // 1.35.18: מהפעם הקודמת
+  if ((MGRS && loadMgrs.fresh) || loadMgrs.p) return;
   loadMgrs.p = get("staff", "select=full_name,role").then(r => (r || []).filter(x => x.role === "admin"))
     .catch(() => get("staff", "select=full_name,is_admin").then(r => (r || []).filter(x => x.is_admin)))
-    .then(r => { MGRS = new Set(r.map(x => x.full_name)); }).catch(() => {}).finally(() => { loadMgrs.p = null; });
+    .then(r => { MGRS = new Set(r.map(x => x.full_name)); loadMgrs.fresh = true; store("telem_portal_mgrs", JSON.stringify([...MGRS])); }).catch(() => {}).finally(() => { loadMgrs.p = null; });
 }
 // 1.34 (נועה): "שלי" = ילד/ה בקבוצה שאני משובץ/ת בה, או שאני שלחתי לו/ה את הדף האחרון.
 //   לא ידוע מי שלח (דפים ישנים): אם יש לו/ה קבוצה עם מנהל/ת – אצלו/ה; אם אין – אצל כל המנהלים (שלא ייפול).
