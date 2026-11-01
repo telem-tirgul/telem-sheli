@@ -468,6 +468,8 @@
   .pa-st{ display:inline-flex; align-items:center; font-weight:800; font-size:14px; color:#3F4FA8; background:#EEF0FA; border-radius:999px; padding:6px 12px; white-space:nowrap; }
   .stm-sec-h b.sn{ font-size:12.5px; padding:1px 8px; border-radius:999px; margin-inline-start:4px; }
   .stm-sec-h b.sn.s-m, .stm-sec-h b.sn.subj-m{ background:#DDF5D6; color:#1F6B17; } .stm-sec-h b.sn.s-e, .stm-sec-h b.sn.subj-e{ background:#FFF6B8; color:#6B5600; }
+  .lvl-chip.lv-0{ background:#E3EEFF; color:#1F5BB8; } .lvl-chip.lv-1{ background:#FDE4EC; color:#B3285A; } .lvl-chip.lv-2{ background:#E0F4F1; color:#167A6B; } .lvl-chip.lv-3{ background:#FFF0D6; color:#9A5B00; }
+  .lvl-chip.lv-4{ background:#ECE6FB; color:#5B3FB0; } .lvl-chip.lv-5{ background:#F3EED0; color:#76650C; } .lvl-chip.lv-6{ background:#F9E5DC; color:#A2441D; } .lvl-chip.lv-7{ background:#E4E9EF; color:#3E5468; }   /* 1.35.20: צבע לכל הקבצה */
   .lvl-chip{ display:inline-block; font-size:12px; font-weight:700; line-height:1.5; border-radius:999px; padding:0 8px; margin-inline-start:4px; background:#EEF0FA; color:#3F4FA8; vertical-align:middle; }
   .att-group.part{ border-color:#E0B44A !important; background:#FFF8E6 !important; } .att-group .ag-st .pt{ color:#8A5A00; font-weight:700; }
   .att-upd .att-groups{ opacity:.85; }
@@ -2143,7 +2145,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.19",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.20",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -5692,7 +5694,18 @@ function lvlTag(r, sessId, isMar){
       const m = I.math_level, e = I.english_level;
       if (g === 2) { if (m) out.push("מת' " + m); if (e) out.push("אנג' " + e); }
       else if (/אנגלית/.test(sj)) { if (e) out.push(e); } else if (m) out.push(m); } }
-  return out.length ? `<span class="lvl-chip" title="הקבצה">${esc(out.join(" · "))}</span>` : "";
+  return out.map(v => lvlChip(v, isMar)).join("");
+}
+// 1.35.20 (נועה): הקבצה – בצבע (כמו השכבה), כל הקבצה בצבע משלה. ההקבצה כתובה כמו שהיא (א׳, ב׳, מואצת…). אותו ערך – תמיד אותו צבע.
+const LVL_HE = "אבגדהוזחטי";
+try { window.__lvlChip = (v, m) => lvlChip(v, m); } catch(e) {}   // לבדיקות
+function lvlChip(v, isMar){
+  const raw = String(v || "").trim(); if (!raw) return "";
+  const letter = /^([א-י])\s*['׳"]?$/.exec(raw), num = letter ? LVL_HE.indexOf(letter[1]) + 1 : (/^\d+$/.test(raw) ? Number(raw) : 0);
+  const txt = raw;   // נועה: כמו שהיא – רק בצבע
+  let h = 0; const key = num ? "n" + num : raw.replace(/^(מת'|אנג')\s*/, ""); for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const c = num ? ((num - 1) % 8) : (h % 8);
+  return `<span class="lvl-chip lv-${c}" title="הקבצה">${esc(txt)}</span>`;
 }
 function marFlag(sid){
   const m = ((typeof L !== "undefined" && L.mar && L.mar[sid]) || []).filter(x => x.status !== "בוטל"); if (!m.length) return "";
@@ -6213,6 +6226,11 @@ function renderSheetRows(){
   const spName = (id) => ((A.sheet.splits || []).find(s => s.id === id) || {}).name;
   let prevGrp = null;
   A.rows.sort(attTimeSort);
+  // 1.35.20 (נועה): במרתון – לפי ההקבצה (בסדר של המרתון: א׳, ב׳…; בלי הקבצה – בסוף), ובתוכה לפי השם
+  const isMarS = ((G.sessions || []).find(x => x.session_id === A.sheet.session_id) || {}).kind === "מרתון" || !!(A.gref && A.gref.mar) || ((AD.groups || []).find(g => g.id === String(A.sheet.session_id)) || {}).kind === "מרתון";
+  if (isMarS) { const hk = (r) => { const regs = ((typeof L !== "undefined" && L.mar && L.mar[String(r.student_id)]) || []).filter(x => x.status !== "בוטל" && x.hakbatsa);
+      const g = regs.find(x => String(x.session_id) === String(A.sheet.session_id)) || regs[regs.length - 1]; return g ? String(g.hakbatsa) : "\uffff"; };
+    A.rows.sort((a, b) => (attArr(a) ?? 9999) - (attArr(b) ?? 9999) || hk(a).localeCompare(hk(b), "he", { numeric: true }) || attSort(a, b)); }
   // 5.19.20: כותרת שעה רק כשיש בקבוצה יותר משעת הגעה אחת (מי מגיע קודם ומי אחר כך)
   const tSet = new Set(A.rows.filter(shVisible).map(attArr).filter(t => t != null)), multiT = tSet.size > 1;
   let prevT = null;
