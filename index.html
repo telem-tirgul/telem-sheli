@@ -2029,6 +2029,23 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .crmatt #shRows .att-nm{display:inline-flex; flex-wrap:wrap; align-items:center; gap:4px 8px;}
 .crmatt #shRows .att-nm .nm-sch{display:inline-flex; align-items:center; min-height:24px; box-sizing:border-box; padding:2px 10px !important; margin:0 !important; border-radius:999px; font-size:13px !important; font-weight:700; line-height:1.2; white-space:nowrap;}
 .crmatt #shRows .att-track-row.ar-pgl{margin-top:2px;}
+/* 1.35.24: אייקונים */
+.crmatt #shRows .att-chips{gap:4px;}
+.crmatt #shRows .att-chips > *{min-height:24px; padding:1px 8px !important; font-size:13px !important;}
+.crmatt #shRows .att-chips > .ic-only{padding:1px 5px !important; min-width:26px; justify-content:center; font-size:15px !important; cursor:pointer;}
+.crmatt #shRows .att-chips > .att-pt.ic-only{background:#FDEFD9; border:1px solid #F0C98A;}
+.crmatt #shRows .att-chips > .att-track{white-space:nowrap !important; overflow:hidden; text-overflow:ellipsis; max-width:min(100%, 260px); display:inline-block !important; line-height:22px !important;}
+.crmatt #shRows .att-chips > .pg-ic{cursor:pointer; padding:1px 6px !important; background:#EEF2F7; color:#1E5C9A;} .crmatt #shRows .att-chips > .pg-ic.pw{background:#FFF4DE; color:#9A6A00;} .crmatt #shRows .att-chips > .pg-ic.px{background:#FDE8E6; color:#B23A2E;}
+.crmatt #shRows .att-chips > .ic-btn{all:unset; display:inline-flex !important; align-items:center; justify-content:center; min-height:24px; min-width:30px; padding:1px 6px !important; border-radius:999px !important; border:1.5px solid var(--accent) !important; color:var(--accent); font-size:13px !important; font-weight:800; cursor:pointer; box-sizing:border-box; background:var(--paper);}
+.crmatt #shRows .att-chips > .lvl-chip{order:0;} .crmatt #shRows .att-chips > .ic-only{order:1;} .crmatt #shRows .att-chips > .pg-ic{order:2;} .crmatt #shRows .att-chips > .ic-btn{order:3;} .crmatt #shRows .att-chips > .att-track{order:4;}
+.crmatt #shRows .att-chips > .att-prev{order:1; background:#EEF0F2; color:#555; cursor:pointer;}
+.crmatt #shRows .pg-row{display:flex; flex-wrap:wrap; align-items:center; gap:4px;}
+.crmatt #shRows .pg-row > .pg-ic{display:inline-flex; align-items:center; justify-content:center; min-height:24px; min-width:26px; padding:1px 6px; border-radius:999px; font-size:14px; cursor:pointer; background:#EEF2F7; box-sizing:border-box;}
+.crmatt #shRows .pg-row > .pg-ic{background:var(--ok-bg); color:var(--ok);}
+.crmatt #shRows .pg-row > .pg-ic.pw{background:var(--warn-bg);}
+.crmatt #shRows .pg-row > .pg-ic.px{background:#FDE8E6; color:var(--bad);}
+.crmatt #shRows .pg-row > .ic-btn{all:unset; display:inline-flex; align-items:center; min-height:24px; padding:1px 10px; border-radius:999px; border:1.5px solid var(--accent); color:var(--accent); font-size:13px; font-weight:800; cursor:pointer; box-sizing:border-box; background:var(--paper);}
+.crmatt #shRows .att-chips > .ic-btn.ap-trk{border-color:#e9cf62 !important; background:#fffbe8; color:#5c4500;}
 </style>
 </head>
 <body>
@@ -2159,7 +2176,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.23",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.24",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -6084,6 +6101,9 @@ async function loadPrevSubj(sessionId){
   const prev = {}; rows.forEach(x => { if (!prev[x.student_id] && (x.did_math || x.did_english)) prev[x.student_id] = x; });
   A.prev = prev; renderSheetRows();
 }
+// 1.35.24: אייקון דף שאפשר לצבוע (currentColor) – ירוק = יש דף בתור; אדום = אין דפים
+const PG_SVG_ON = `<svg viewBox="0 0 16 20" width="14" height="17" aria-hidden="true"><path d="M2 1h8l4 4v13a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z" fill="currentColor"/><path d="M10 1v4h4" fill="none" stroke="#fff" stroke-width="1.2" opacity=".7"/><path d="M4 9h8M4 12h8M4 15h5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+const PG_SVG_OFF = PG_SVG_ON;   // נועה: אותו דף, באדום
 const prevTag = (r) => { const x = (A.prev || {})[r.student_id]; if (!x) return "";
   const t = x.did_math && x.did_english ? "מת'+אנג'" : x.did_math ? "מת'" : "אנג'";
   return `<span class="att-prev" title="בשיעור הקודם (${fmtIso(x.lesson_date)}) עשה/תה ${t}">↩ ${t}</span>`; };
@@ -6163,6 +6183,7 @@ $("shRows").addEventListener("click", async (e) => {
   const kl = e.target.closest("[data-kl]");
   // 5.19.23: לחיצה על השם - חלון עם הפרטים העיקריים והשיבוצים; לכרטיס (לעריכה) רק בכפתור
   if (kl) { ATT_KID(kl.dataset.kl); return; }
+  const tip = e.target.closest("[data-tip]"); if (tip) { toast(tip.dataset.tip); return; }   // 1.35.24: אייקון – הפרטים בלחיצה
   const trk = e.target.closest("[data-trk]");   // 1.35.13: עריכת המעקב
   if (trk) { const r = (A.rows || []).find(x => String(x.student_id) === trk.dataset.trk); if (!r) return;
     const res = await editTracking(r.student_id, r.tracking, ((r.first_name || "") + " " + (r.last_name || "")).trim(), r.cmId || null); if (res) renderSheetRows(); return; }
@@ -6325,6 +6346,22 @@ function renderSheetRows(){
     if (meta) { while (meta.firstChild) ch.appendChild(meta.firstChild); meta.remove(); }
     if (tr) { while (tr.firstChild) ch.appendChild(tr.firstChild); tr.remove(); }
     [...ch.childNodes].forEach(n => { if (n.nodeType === 3 && !n.textContent.trim()) n.remove(); });
+    // 1.35.24 (נועה): אייקונים במקום טקסט – לחיצה מראה את הפרטים; ושורת הדפים עוברת לשורת התגיות (שורה אחת פחות)
+    ch.querySelectorAll(":scope > .ex-tag:not(.ic-only)").forEach(bt => { const full = bt.textContent.replace(/\s+/g, " ").trim(); bt.title = full; bt.setAttribute("aria-label", full);
+      bt.innerHTML = bt.classList.contains("ex-nbt") ? "📖" : "📝"; bt.classList.add("ic-only"); });
+    ch.querySelectorAll(":scope > .att-pt:not(.ic-only)").forEach(x => { const full = x.textContent.replace(/\s+/g, " ").replace(/^⏰\s*/, "").trim(); x.dataset.tip = "⏰ " + full; x.title = full; x.innerHTML = "⏰"; x.classList.add("ic-only"); });
+    ch.querySelectorAll(":scope > .att-prev:not(.ic-prev)").forEach(x => { x.dataset.tip = x.title || x.textContent; x.textContent = "↩ קודם: " + x.textContent.replace(/^↩\s*/, ""); x.classList.add("ic-prev"); });
+    const pr = li.querySelector(":scope > .att-track-row.ar-pgl");
+    if (pr && !pr.querySelector(".pg-row")) { let pre = "";
+      const row = document.createElement("div"); row.className = "pg-row";
+      const grp = {};   // סימן אחד לכל מצב (בלי שם המקצוע – הוא בלחיצה)
+      pr.querySelectorAll(".ar-pg > span").forEach(x => { if (x.classList.contains("ps")) { pre = x.textContent.trim(); return; }
+        const k = x.classList.contains("pn") ? "pn" : x.classList.contains("pw") ? "pw" : "px", full = (pre ? pre + ": " : "") + x.textContent.replace(/\s+/g, " ").trim();
+        (grp[k] = grp[k] || []).push(full); pre = ""; });
+      Object.entries(grp).forEach(([k, l]) => { const c = document.createElement("span"); c.className = "pg-ic " + k; c.dataset.tip = l.join(" · "); c.title = l.join("\n");
+        c.innerHTML = k === "pw" ? "⏳" : k === "pn" ? PG_SVG_ON : PG_SVG_OFF; c.setAttribute("aria-label", l.join(" · ")); row.appendChild(c); });   // נועה: רק אייקון; דף צבוע = יש, דף ריק = אין
+      pr.querySelectorAll("button").forEach(bt => { bt.classList.add("ic-btn"); if (bt.hasAttribute("data-trk")) { bt.textContent = "📌+"; ch.appendChild(bt); } else if (bt.hasAttribute("data-addp")) { bt.textContent = "+ דפים"; bt.title = "+ דפים מהמאגר"; row.appendChild(bt); } });
+      pr.replaceChildren(row); }   // 1.35.24 (נועה): הדפים של תלם שלי – בשורה נפרדת
     const an = li.querySelector(":scope > .att-name");   // 1.35.22 (נועה): התגיות מתחת לשם (מימין); המקצוע נשאר מתחת ל-✗/✓
     if (ch.childNodes.length) { if (an) an.appendChild(ch); else li.appendChild(ch); } });
   updateCount();
