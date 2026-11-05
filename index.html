@@ -2196,7 +2196,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.25",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.26",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -5951,7 +5951,10 @@ async function openSheet(sessionId, retry){
   try {
     // 5.19.29: לא מחכים ללוח המבחנים (טעינה ארוכה בפעם הראשונה) - הרשימה מוצגת מיד, תגיות המבחן מתווספות כשהוא מגיע
     const exReady = !!EX.rows, exP = loadExams();
+    // 1.35.26 (נועה 5.11, TS-15): המקצוע – מהרישום לקורס, לא מהשיבוץ ("אין משמעות בשיבוצים למקצוע"). בלי רישום / לפני TS-15 – כמו היום
+    const subjP = rpc("portal_session_subjects", { p_session: sessionId, p_date: A.date }).catch(() => null);
     const tS = performance.now(); const sh = await rpc("attendance_sheet", { p_session: sessionId, p_date: A.date }); tmMark("דף נוכחות", tS);
+    const cSub = await subjP; if (cSub && sh && sh.rows) sh.rows.forEach(r => { const v = cSub[String(r.student_id)]; if (v) r.csub = v; });
     if (!exReady) exP.then(() => { if (A.sheet && A.sheet.session_id === sessionId && !$("attSheet").hidden) renderSheetRows(); });
     A.sheet = sh;
     // 5.19.15: זוכרים את הקבוצה הפתוחה (עד סוף היום) - "נוכחות" בתפריט חוזר ישר אליה
@@ -5960,12 +5963,12 @@ async function openSheet(sessionId, retry){
     A.hasPlan = sh.rows.some(r => "skip" in r);   // 5.19.29 (קובץ 59): "לא מגיע/ה היום" ו"אמור/ה להגיע"
     // ילד/ה שנוסף/ה לשיעור: המקצוע לפי ההרשמה שלו/ה (ומתקנים סימון ישן שנשמר רק מת' - נשמר בשמירה הבאה)
     // 5.19.25: המקצוע תמיד לפי הסטטוס הנוכחי - גם לילדים בקבוצה (לא לפי מה שנשמר ביום השיבוץ)
-    A.rows.forEach(r => { const s = r.reg_status != null ? subjFromStatus(r.reg_status) : stSubjOf(r.student_id);
+    A.rows.forEach(r => { const s = r.csub || (r.reg_status != null ? subjFromStatus(r.reg_status) : stSubjOf(r.student_id));   // 1.35.26: הקורס קודם
       if (s) r.subject = s; else if (!r.in_group && !r.subject) r.subject = regSubj(r.student_id, r.reg_status);
       if (r.subject && r.present && subjGrp(r.subject) !== 2) { const d = subjDefault(r.subject); r.did_math = d.m; r.did_english = d.e; } });
     // 5.19.47: מרתון = מתמטיקה בלבד (גם לילד/ה שרשום/ה לשוטף במת' + אנג')
     if (((A.groups || []).find(g => g.session_id === sessionId) || {}).kind === "מרתון" || (!sh.day && (G.sessions || []).some(x => x.session_id === sessionId && x.kind === "מרתון")))
-      A.rows.forEach(r => { r.subject = "מתמטיקה"; if (r.present) { r.did_math = true; r.did_english = false; } });
+      A.rows.forEach(r => { if (r.csub) return; r.subject = "מתמטיקה"; if (r.present) { r.did_math = true; r.did_english = false; } });   // 1.35.26: מרתון – מהרישום למרתון כשיש
     A.rows.sort(attTimeSort);   // 5.19.20: לפי שעת ההגעה (שעה אישית, או שעת הקבוצה) ואז שם
     A.removed = [];
     A.splitView = "";   // פיצול לתת-קבוצות/חדרים - לא בשימוש (הלקוחה 11.10): תמיד כל הילדים
