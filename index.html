@@ -2207,7 +2207,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.29",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.30",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -3603,7 +3603,13 @@ async function renderWait(){
   if (!byGroup && (!AD.nreq || AD.waitTab === "req" || !AD.waitTab)) h += inLessonHtml(list);   // 1.35.27 (נועה): כל מי שבשיעור עכשיו – עובד/ת על דף / צריך דף
   if (fresh.length && !byGroup) {
     h += `${AD.nreq ? "" : `<div class="sec-h" style="margin-top:26px">יש חשבון, עוד לא נשלח אף דף (${fresh.length})</div>`}<div class="wrows wl">`;
-    h += fresh.map(s => waitLine(g, { s, ws: (s.subjects || []).slice(0, 2).map(subj => ({ subj })) }, false, "", s.last_seen_at ? "נכנס/ה " + esc(ago(s.last_seen_at)) : "עוד לא נכנס/ה")).join("") + `</div>`;
+    // 1.35.30 (נועה): הקוד הראשוני פג – רואים את זה, ו"שליחת קוד חדש" ישר מכאן (הם ראשונים ברשימה)
+    const fr = fresh.slice().sort((a, b) => codeExpired(b) - codeExpired(a));
+    h += fr.map(s => { const ex = codeExpired(s);
+      const when = s.must_change_code ? (ex ? `<b class="bad-t">🔑 הקוד פג${s.code_expires_at ? " (" + esc(fmtDay(s.code_expires_at)) + ")" : ""}</b>` : "עוד לא נכנס/ה" + (s.code_expires_at ? " · הקוד עובד עד " + esc(fmtDay(s.code_expires_at)) : ""))
+                 : s.last_seen_at ? "נכנס/ה " + esc(ago(s.last_seen_at)) : "עוד לא נכנס/ה";
+      return waitLine(g, { s, ws: (s.subjects || []).slice(0, 2).map(subj => ({ subj })) }, false, "", when,
+        ex ? `<div class="wl-q wl-code"><span class="wl-t bad-t">בלי קוד חדש לא יוכל/תוכל להיכנס</span><button class="btn primary sm" data-newcode="${esc(s.student_id)}">${IC.wa} קוד חדש</button></div>` : ""); }).join("") + `</div>`;
   }
   paint($("adBody"), h);
   const B = $("adBody");
@@ -3854,7 +3860,7 @@ function inLessonHtml(list){
     + (rows.length ? `<div class="wrows wl">${rows.map(r => r.html).join("")}</div>` : `<div class="muted small" style="padding:4px 6px">אין עוד ילדים בשיעור מלבד הממתינים.</div>`);
 }
 // 1.35.27 (נועה): "ממתינים לדף" – שורה אחת לכל ילד/ה (במקום כרטיס): השם + מתי, הבא בתור, ושחרור לכל מקצוע. לחיצה על השם – התוכנית
-function waitLine(g, k, hot, chip, sub0){
+function waitLine(g, k, hot, chip, sub0, extra){
   const s = k.s, ord = (x) => x === "מתמטיקה" ? 0 : 1, sh = (x) => x === "מתמטיקה" ? "מת'" : x === "אנגלית" ? "אנג'" : x;
   const ws = (k.ws || []).filter(w => w.subj).slice().sort((a, b) => ord(a.subj) - ord(b.subj)), w0 = ws[0] || {}, many = ws.length > 1 || (s.subjects || []).length > 1;
   const when = sub0 != null ? sub0 : w0.req ? `ביקש/ה ${esc(ago(w0.req.requested_at))}` : w0.done_at ? `סיים/ה ${esc(ago(w0.done_at))}` : "";
@@ -3868,7 +3874,7 @@ function waitLine(g, k, hot, chip, sub0){
   // 1.35.29 (נועה): משולב/ת – ממתין/ה במקצוע אחד ועובד/ת בשני: רואים גם על מה עובד/ת
   const wsS = new Set(ws.map(w => w.subj)), work = (s.subjects || []).filter(x => !wsS.has(x)).map(x => { const op = planOf(s.student_id, x).filter(p => p.status === "נשלח").sort((a, b) => String(b.released_at).localeCompare(String(a.released_at)))[0];
     return op ? `<div class="wl-q wl-work"><span class="subj-chip ${subjCls(x)} on sm">${esc(sh(x))}</span><button type="button" class="wl-t" data-open="${esc(s.student_id)}" data-subj="${esc(x)}">✎ <bdi>${esc(ptTitle(op))}</bdi></button><small class="wl-ago">${op.seen_at ? "" : "לא פתח/ה · "}${esc(ago(op.released_at))}</small></div>` : ""; }).join("");
-  return `<div class="wl-row${hot ? " hot" : ""}"><button type="button" class="wl-1" data-open="${esc(s.student_id)}" data-subj="${esc(w0.subj || "")}"${last ? ` title="סיים/ה: ${esc(last)}"` : ""}><b>${esc(stName(s))}</b>${chip || ""}<small>${when}</small></button>${lines}${work}</div>`;
+  return `<div class="wl-row${hot ? " hot" : ""}"><button type="button" class="wl-1" data-open="${esc(s.student_id)}" data-subj="${esc(w0.subj || "")}"${last ? ` title="סיים/ה: ${esc(last)}"` : ""}><b>${esc(stName(s))}</b>${chip || ""}<small>${when}</small></button>${lines}${work}${extra || ""}</div>`;
 }
 // 1.31: ילד/ה שמחכה בשני המקצועות – כרטיס אחד, בכל מקצוע מה סיים/ה, הבא בתור ושחרור
 function waitCard2(g, k){
