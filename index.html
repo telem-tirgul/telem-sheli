@@ -406,6 +406,7 @@
   .wr-1{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; } .wr-1 b{ font-size:15px; } .wr-1 .chip{ font-size:11.5px; padding:1px 7px; }
   .wrows.wl{ display:flex; flex-direction:column; gap:6px; }
   .wl-all{ display:flex; justify-content:flex-start; margin:0 0 8px; } .wl-sec{ margin-top:18px; } .wl-row.in{ background:color-mix(in srgb, var(--paper) 70%, transparent); } .wl-row.in.need{ border-color:color-mix(in srgb, var(--bad) 35%, var(--border)); }
+  .wl-home .wl-row{ background:transparent; border-style:dashed; opacity:.92; } .wl-home .wr-rel.primary{ background:var(--paper) !important; color:var(--accent) !important; border:1.5px solid var(--accent) !important; box-shadow:none !important; }
   .wl-ago{ flex:none; color:var(--ink-soft); font-size:11.5px; white-space:nowrap; }
   .toast .toast-act{ all:unset; margin-inline-start:10px; padding:2px 10px; border-radius:999px; background:rgba(255,255,255,.18); font-weight:800; cursor:pointer; }   /* 1.35.27: ממתינים – שורה לכל ילד/ה */
   .wl-row{ background:var(--paper); border:1px solid var(--border); border-radius:14px; padding:6px 10px; display:flex; flex-direction:column; gap:4px; }
@@ -2206,7 +2207,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.27",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.29",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2755,7 +2756,7 @@ function renderStudent(){
   }
   paint($("stBody"), h);
   $("stBody").querySelectorAll("[data-i]").forEach(b => b.onclick = () => openStudentPage(Number(b.dataset.i)));
-  $("stBody").querySelectorAll("[data-task]").forEach(b => b.onclick = () => { const T = (ST.tasks || new Map()).get(b.dataset.task); if (T && T.length) openGallery(T, T[0].item_id, false, true); });
+  $("stBody").querySelectorAll("[data-task]").forEach(b => b.onclick = () => { const T = (ST.tasks || new Map()).get(b.dataset.task); if (T && T.length) { if (T[0].status === "נשלח") openStudentPage(T[0].item_id); else openGallery(T, T[0].item_id, false, true); } });
   $("stBody").querySelectorAll("[data-rq]").forEach(b => b.onclick = () => { b.disabled = true; requestNext(b.dataset.rq, true); });
   $("stBody").querySelectorAll("[data-rqc]").forEach(b => b.onclick = () => requestNext(b.dataset.rqc, false));
   $("stBody").querySelectorAll("[data-dv]").forEach(b => b.onclick = () => { store("telem_portal_done_view", b.dataset.dv); renderStudent(); });
@@ -2798,7 +2799,7 @@ function renderStudentCols(subs){
   paint($("stBody"), h);
   const B = $("stBody");
   B.querySelectorAll("[data-i]").forEach(b => b.onclick = () => openStudentPage(Number(b.dataset.i)));
-  B.querySelectorAll("[data-task]").forEach(b => b.onclick = () => { const T = (ST.tasks || new Map()).get(b.dataset.task); if (T && T.length) openGallery(T, T[0].item_id, false, true); });
+  B.querySelectorAll("[data-task]").forEach(b => b.onclick = () => { const T = (ST.tasks || new Map()).get(b.dataset.task); if (T && T.length) { if (T[0].status === "נשלח") openStudentPage(T[0].item_id); else openGallery(T, T[0].item_id, false, true); } });
   B.querySelectorAll("[data-rq]").forEach(b => b.onclick = () => { b.disabled = true; requestNext(b.dataset.rq, true); });
   B.querySelectorAll("[data-rqc]").forEach(b => b.onclick = () => requestNext(b.dataset.rqc, false));
 }
@@ -2905,16 +2906,28 @@ const stTaskKey = (p) => p && p.kind === "unseen" && p.sub ? [p.subject, p.book,
 function stTaskColl(L){ const by = new Map(); (L || []).forEach(p => { const k = stTaskKey(p); if (k) by.set(k, (by.get(k) || 0) + 1); });
   const seen = new Set(); return (L || []).filter(p => { const k = stTaskKey(p); if (!k) return true; if (seen.has(k)) return false; seen.add(k); p._tn = by.get(k); return true; }); }
 // 1.29 (נועה): אצל התלמידים הכל משימות – משימה של דף אחד או של כמה דפים; פותחים משימה ומדפדפים בתוכה
+// 1.35.29 (נועה): כמו אפליקציית התמונות – מדפדפים בין כל המשימות הפתוחות (כל המקצועות; משימה מכמה דפים – הדפים שלה ברצף)
+function stDeck(){
+  const all = (ST.pages || []).filter(p => p.status === "נשלח"), subs = (ST.me && ST.me.subjects) || [], ord = (x) => { const i = subs.indexOf(x); return i < 0 ? 9 : i; };
+  const out = [], seen = new Set();
+  all.slice().sort((a, b) => ord(a.subject) - ord(b.subject)).forEach(p => { const k = stTaskKey(p);
+    if (!k) { out.push(p); return; } if (seen.has(k)) return; seen.add(k);
+    out.push(...all.filter(x => stTaskKey(x) === k).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))); });
+  return out;
+}
 function openStudentPage(itemId){
   const p = ST.pages.find(x => x.item_id === itemId); if (!p) return;
   if (p.status === "הושלם") { const k = stTaskKey(p);
     if (k) { const T = ST.pages.filter(x => x.status === "הושלם" && stTaskKey(x) === k).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)); if (T.length > 1) { openGallery(T, T[0].item_id, false, true); return; } }
     const L = stTaskColl(ST.doneList || [p]).filter(x => !(x._tn > 1)); openGallery(L.some(x => x.item_id === itemId) ? L : [p], itemId); return; }
+  const D = stDeck(); if (D.some(x => x.item_id === itemId)) { openGallery(D, itemId, false, false, true); return; }
   const k = stTaskKey(p), T = k && ST.tasks && ST.tasks.get(k);
   if (T && T.length > 1) openGallery(T, itemId, false, true); else openGallery([p], itemId);
 }
-function openGallery(list, startId, keep, task){
-  if (keep) closeViewer(true); else closeViewer();   // keep: מחליפים את הדפדוף במקום (בלי לגעת בהיסטוריה של "חזרה")
+let VW_KEEP = false;
+function openGallery(list, startId, keep, task, deck){
+  if (keep) { VW_KEEP = true; closeViewer(true); VW_KEEP = false; } else closeViewer();
+  if (!keep) vwFull(true);   // 1.35.29 (נועה): כל המסך   // keep: מחליפים את הדפדוף במקום (בלי לגעת בהיסטוריה של "חזרה")
   const isOpen = list[0] && list[0].status !== "הושלם", n = list.length;
   const ltr = list.every(p => p.subject === "אנגלית" || p.book === "ENG");   // 1.29 (נועה): באנגלית – משמאל לימין
   // 1.34 (נועה): ישר שני כפתורים – "סיימתי – שלחו לי את הבאה" / "סיימתי" (כשאין עוד משימה פתוחה באותו מקצוע)
@@ -2925,7 +2938,7 @@ function openGallery(list, startId, keep, task){
   host.innerHTML = `<div class="viewer gal" role="dialog" aria-modal="true">
     <div class="vtop">
       <button class="icon-btn" id="vClose" aria-label="חזרה">${IC.back}</button>
-      <div class="ttl" id="gTtl"></div>${task ? `<span class="g-task">📎 משימה</span>` : ""}
+      <div class="ttl" id="gTtl"></div>${task ? `<span class="g-task">📎 משימה</span>` : deck ? `<span class="g-task" id="gTaskChip" hidden>📎 משימה</span>` : ""}
       ${n > 1 ? `<span class="g-cnt" id="gCnt"></span>` : ""}
       <button class="icon-btn" id="vSave" aria-label="שמירה בטלפון">${IC.save}</button>
     </div>
@@ -2933,7 +2946,7 @@ function openGallery(list, startId, keep, task){
     ${n > 1 ? `<div class="g-dots" aria-hidden="true" dir="${ltr ? "ltr" : "rtl"}">${list.map((_, i) => `<i data-d="${esc(i)}"></i>`).join("")}</div>` : ""}
     <div class="vbar g-bar" dir="${ltr ? "ltr" : "rtl"}">
       ${n > 1 ? `<button class="btn ghost g-nav" id="gPrev" aria-label="הדף הקודם">${ltr ? "←" : "→"}</button>` : ""}
-      ${isOpen ? (canAsk ? `<div class="g-done2" dir="rtl"><button class="btn ok" id="gNextReq">📨 סיימתי – שלחו לי את הבאה</button><button class="btn ok-soft" id="gDoneOnly">${IC.check} סיימתי</button></div>` : task ? `<button class="btn ok" id="gTask">${IC.check} סיימתי את המשימה</button>` : `<button class="btn ok" id="gDone">${IC.check} סיימתי את המשימה</button>`) : `<button class="btn ghost" id="gUndo">${IC.undo} עוד לא סיימתי</button>`}
+      ${deck ? `<div class="g-act" id="gAct" dir="rtl"></div>` : isOpen ? (canAsk ? `<div class="g-done2" dir="rtl"><button class="btn ok" id="gNextReq">📨 סיימתי – שלחו לי את הבאה</button><button class="btn ok-soft" id="gDoneOnly">${IC.check} סיימתי</button></div>` : task ? `<button class="btn ok" id="gTask">${IC.check} סיימתי את המשימה</button>` : `<button class="btn ok" id="gDone">${IC.check} סיימתי את המשימה</button>`) : `<button class="btn ghost" id="gUndo">${IC.undo} עוד לא סיימתי</button>`}
       ${n > 1 ? `<button class="btn ghost g-nav" id="gNext" aria-label="הדף הבא">${ltr ? "→" : "←"}</button>` : ""}
       <!-- 1.28 (נועה): בלי "סיימתי את כל הדפים" – יבוא "סיימתי את המשימה" כשהמשימות יוגדרו במאגר (של-43) -->
     </div></div>`;
@@ -2948,6 +2961,7 @@ function openGallery(list, startId, keep, task){
     if (V.querySelector("#gPrev")) V.querySelector("#gPrev").disabled = cur === 0;
     if (V.querySelector("#gNext")) V.querySelector("#gNext").disabled = cur === n - 1;
     if (p.is_new) { p.is_new = false; rpc("portal_seen", { p_item: p.item_id }).catch(() => {}); }
+    if (deck) deckBar(V, list, cur);
     [cur - 1, cur + 1].forEach(k => { const im = img(k); if (im) im.loading = "eager"; }); };
   const go = (k, smooth) => { k = Math.max(0, Math.min(n - 1, k)); if (z > 100) setZ(100); cur = k;
     tr.scrollTo({ left: k * tr.clientWidth * (getComputedStyle(tr).direction === "rtl" ? -1 : 1), behavior: smooth ? "smooth" : "auto" }); show(); };
@@ -2977,6 +2991,39 @@ function openGallery(list, startId, keep, task){
   if (V.querySelector("#gAll")) V.querySelector("#gAll").onclick = () => markDoneMany(list);
   if (!keep) history.pushState({ v: 1, d: navD() + 1 }, "");
   requestAnimationFrame(() => go(cur, false));
+}
+// 1.35.29: הכפתורים בתחתית – לפי הדף שמוצג עכשיו (דף בודד / משימה מכמה דפים; "שלחו לי את הבאה" כשזו המשימה הפתוחה האחרונה במקצוע)
+function deckGrp(p){ const k = stTaskKey(p); return k ? (ST.pages || []).filter(x => stTaskKey(x) === k && x.status === "נשלח") : [p]; }
+function deckBar(V, list, cur){
+  const p = list[cur], el = V.querySelector("#gAct"); if (!el || !p) return;
+  const grp = deckGrp(p), ids = new Set(grp.map(x => x.item_id)), multi = grp.length > 1;
+  const chip = V.querySelector("#gTaskChip"); if (chip) chip.hidden = !multi;
+  if (p.status !== "נשלח") { el.innerHTML = `<button class="btn ghost" id="gUndo">${IC.undo} עוד לא סיימתי</button>`; el.querySelector("#gUndo").onclick = () => markDone(p, false); return; }
+  const ask = !!ST.req && !ST.req.has(p.subject) && !(ST.pages || []).some(x => x.subject === p.subject && x.status === "נשלח" && !ids.has(x.item_id));
+  const lbl = multi ? "סיימתי את המשימה" : "סיימתי";
+  el.innerHTML = ask ? `<div class="g-done2"><button class="btn ok" id="gNextReq">📨 ${lbl} – שלחו לי את הבאה</button><button class="btn ok-soft" id="gDoneOnly">${IC.check} ${lbl}</button></div>`
+                     : `<button class="btn ok" id="gDone">${IC.check} ${lbl}</button>`;
+  const b1 = el.querySelector("#gNextReq"), b2 = el.querySelector("#gDoneOnly"), b3 = el.querySelector("#gDone");
+  if (b1) b1.onclick = () => deckDone(list, cur, grp, true); if (b2) b2.onclick = () => deckDone(list, cur, grp, false); if (b3) b3.onclick = () => deckDone(list, cur, grp, false);
+}
+async function deckDone(list, cur, grp, next){
+  const bs = VIEWER ? VIEWER.querySelectorAll("#gAct button") : []; bs.forEach(b => b.disabled = true);
+  const res = await Promise.allSettled(grp.map(p => rpc("portal_mark_done", { p_item: p.item_id, p_done: true }).then(() => { p.status = "הושלם"; p.done_at = new Date().toISOString(); })));
+  if (res.some(r => r.status === "rejected")) { bs.forEach(b => b.disabled = false); toast("לא הצלחנו לעדכן – לנסות שוב."); return; }
+  const subj = grp[0].subject; renderStudent();
+  if (next) await requestNext(subj, true, true);
+  const rest = list.filter(x => x.status === "נשלח");
+  if (!rest.length) { closeViewer(); doneCheer(grp.length, grp.length > 1, subj, next); return; }
+  toast(`✓ כל הכבוד!${next ? " 📨 ביקשנו את הבאה." : ""} ${rest.length === 1 ? "נשאר עוד דף אחד" : "נשארו עוד " + rest.length + " דפים"}`, 3500);
+  const nxt = list.slice(cur + 1).find(x => x.status === "נשלח") || rest[0];
+  openGallery(rest, nxt.item_id, true, false, true);
+}
+// 1.35.29 (נועה): הדף על כל המסך (בלי שורת הכתובת של הדפדפן, איפה שאפשר). באפליקציה מהמסך הראשי – כבר מלא
+function vwFull(on){
+  try {
+    if (on) { const el = document.documentElement; if (!document.fullscreenElement && el.requestFullscreen && !matchMedia("(display-mode: standalone)").matches && matchMedia("(pointer:coarse)").matches) el.requestFullscreen({ navigationUI: "hide" }).catch(() => {}); }
+    else if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+  } catch(e) {}
 }
 // "סיימתי את הדף" בתוך הדפדוף: אם נשארו עוד דפים – ממשיכים לדף הבא; אם לא – "כל הכבוד"
 async function galDone(list, i, next){
@@ -3047,7 +3094,7 @@ function vwLock(on){
     if (meta && meta.dataset.orig) meta.content = meta.dataset.orig;
   }
 }
-function closeViewer(fromPop){ if (!VIEWER) return; $("viewerHost").innerHTML = ""; VIEWER = null; vwLock(false);
+function closeViewer(fromPop){ if (!VIEWER) return; $("viewerHost").innerHTML = ""; VIEWER = null; vwLock(false); if (!VW_KEEP) vwFull(false);
   if (RT.pending && !$("studentView").hidden) { RT.pending = false; loadStudentPages(true); }
   if (STAR_DIRTY) { STAR_DIRTY = false; if (!$("adminView").hidden) { if (inDrawer()) renderBank($("drawerBody")); else if ($("stBank")) renderBank($("stBank")); else if (AD.view === "bank") renderBank($("adBody")); } } if (!fromPop && history.state && history.state.v) { if (typeof AD !== "undefined") AD.skipPop = true; history.back(); } }
 window.addEventListener("popstate", () => {
@@ -3207,11 +3254,11 @@ async function adPoll(){
     let nreq = AD.nreq; if (AD.nreq !== null) { try { nreq = await getNreq(); } catch(e) {} }
     const sig = (P, R, N) => JSON.stringify([P.map(p => [p.id, p.status, p.seen_at ? 1 : 0]), R.map(r => r.id), (N || []).map(r => r.id)]);
     if (sig(plan, reqs, nreq) === sig(AD.plan, AD.codeReqs || [], AD.nreq)) return;
-    if (AD.nreq !== null && !AD.present) presentAllToday();
+    if (AD.nreq !== null) presentAllToday().then(() => { try { renderNav(); updateTitle(); } catch(e) {} }).catch(() => {});   // 1.35.28: נוכחות ממכשיר אחר – הבקשות "מהבית" מתעדכנות (המטמון – דקה)
     const beforeW = new Set(waitingList(true).map(w => w.s.student_id + "|" + w.subj)), beforeR = new Set(myReqs().map(r => r.id));
     AD.plan = plan; AD.codeReqs = reqs; AD.nreq = nreq; refreshWaitingLocal();
     loadMgrs();
-    const newW = waitingKids(waitingList(true).filter(w => !beforeW.has(w.s.student_id + "|" + w.subj) && alertMine(w))), newR = myReqs().filter(r => !beforeR.has(r.id));
+    const newW = waitingKids(waitingList(true).filter(w => !beforeW.has(w.s.student_id + "|" + w.subj) && alertMine(w) && !wHome(w))), newR = myReqs().filter(r => !beforeR.has(r.id));
     if (newW.length || newR.length) {
       const names = [...newW.map(w => stName(w.s).trim()), ...newR.map(r => stName(stById(r.student_id)).trim() + " (קוד)")];
       const msg = newW.length && !newR.length ? (newW.length === 1 ? (AD.nreq ? `🔔 ${names[0]} ביקש/ה את המשימה הבאה` : `🔔 ${names[0]} סיים/ה דף ומחכה לדף הבא`) : `🔔 ${newW.length} תלמידים מחכים לדף: ${names.join(", ")}`)
@@ -3326,7 +3373,7 @@ async function adLoad(){
   adRender();
   // ברקע: קבוצות, נוכחות היום, מבחנים וכרטיסים – מוכנים כשנכנסים ל"תלמידים"
   loadGroups().then(() => { if (insWant()) insChanged(); }).catch(() => {});
-  Promise.all([loadGroups(), presentAllToday(), loadInfo()]).then(() => { if (AD.view === "students" && !AD.st && !SHEET) adRender(); }).catch(() => {});
+  Promise.all([loadGroups(), presentAllToday(), loadInfo()]).then(() => { try { renderNav(); } catch(e) {} if (AD.view === "students" && !AD.st && !SHEET) adRender(); }).catch(() => {});
 }
 // 1.35.6: המאגר (CBM) בונה את הרשימה פעם אחת מ-AD.ws – כשמגיעה רשימה חדשה, בונים מחדש. אם המאגר פתוח (ולא באמצע דף / בחירה) – מציגים מיד.
 function wsBankRefresh(){
@@ -3478,7 +3525,9 @@ function alertMine(w){
   if (by) return by === uid;
   return !gs.some(g => !MGRS || (g.ins || []).some(n => MGRS.has(n)));
 }
-const alertKids = () => { loadMgrs(); return waitingKids(waitingList(true).filter(alertMine)); };
+// 1.35.28 (נועה): בקשה ממי שלא סומן/ה נוכח/ת עכשיו = "מהבית" – לא דחוף: לא נספר/ת, בלי צליל, ברשימה נפרדת. ברגע שמסמנים נוכחות – עובר/ת לרגיל
+const wHome = (w) => !!(AD.nreq && w.req && !presentNow(w.s.student_id));
+const alertKids = () => { loadMgrs(); return waitingKids(waitingList(true).filter(w => alertMine(w) && !wHome(w))); };
 const waitN = () => alertKids().length;
 // 1.33: שורת הפירוט בכרטיס – ביקש/ה מתי, ומה סיים/ה
 const wSub = (w) => w.req ? `ביקש/ה ${esc(ago(w.req.requested_at))}${w.last ? ` · סיים/ה "<bdi>${esc(ptTitle(w.last))}</bdi>"` : ""}` : `סיים/ה "<bdi>${esc(w.last ? ptTitle(w.last) : "")}</bdi>" · ${esc(ago(w.done_at))}`;
@@ -3534,7 +3583,7 @@ async function renderWait(){
     const mine = waitingList(true).filter(w => alertMine(w) && (!liveKids || liveKids.has(String(w.s.student_id)))), oth = list.filter(w => !alertMine(w));   // "שלי" – בלי קשר לסינון המתרגלים
     list = tab === "oth" ? oth : mine;
     const nTabs = 3 + (oth.length || tab === "oth" ? 1 : 0);
-    h += `<div class="seg wt-seg t${nTabs}"><button type="button" data-wt="req" class="${tab === "req" ? "on" : ""}">ביקשו ממני <b>${waitingKids(mine).length}</b></button>${oth.length || tab === "oth" ? `<button type="button" data-wt="oth" class="${tab === "oth" ? "on" : ""}">אצל אחרים <b class="g">${waitingKids(oth).length}</b></button>` : ""}<button type="button" data-wt="idle" class="${tab === "idle" ? "on" : ""}">סיימו ולא ביקשו <b class="g">${nI}</b></button><button type="button" data-wt="new" class="${tab === "new" ? "on" : ""}">חדשים <b class="g">${nF}</b></button></div>`;
+    h += `<div class="seg wt-seg t${nTabs}"><button type="button" data-wt="req" class="${tab === "req" ? "on" : ""}">ביקשו ממני <b>${waitingKids(mine.filter(w => !wHome(w))).length}</b></button>${oth.length || tab === "oth" ? `<button type="button" data-wt="oth" class="${tab === "oth" ? "on" : ""}">אצל אחרים <b class="g">${waitingKids(oth).length}</b></button>` : ""}<button type="button" data-wt="idle" class="${tab === "idle" ? "on" : ""}">סיימו ולא ביקשו <b class="g">${nI}</b></button><button type="button" data-wt="new" class="${tab === "new" ? "on" : ""}">חדשים <b class="g">${nF}</b></button></div>`;
     if (tab === "oth") h += `<div class="lb-note">ביקשו משימה, וההתראה הלכה למנהל/ת אחר/ת (המשובץ/ת בקבוצה או מי ששלח/ה את הדף האחרון).</div>`;
     if (tab === "idle") { h += idle.length ? `<div class="wrows wl">` + waitingKids(idle).map(k => waitLine(g, k, false, presChip(k.s.student_id))).join("") + `</div>`
                                            : `<div class="card muted">אין כרגע מי שסיים/ה ולא ביקש/ה.</div>`;
@@ -3545,9 +3594,12 @@ async function renderWait(){
   else if (AD.nreq && (AD.waitTab === "idle" || AD.waitTab === "new")) {}
   else if (AD.nreq && AD.waitTab === "oth" && !list.length) h += `<div class="card muted">אין בקשות אצל מנהלים אחרים.</div>`;
   else if (!list.length) h += `<div class="card empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.3l2.8 2.8L16.3 9.5"/></svg><h2 style="margin-top:8px">אין ממתינים כרגע</h2><p class="muted">${AD.nreq ? "כשתלמיד/ה יבקש/תבקש את המשימה הבאה, הוא/היא יופיע/תופיע כאן." : "כשתלמיד/ה ילחץ/תלחץ \"סיימתי\", הוא/היא יופיע/תופיע כאן."}</p></div>`;
-  else { const wk = waitingKids(list), relAll = wk.flatMap(k => k.ws.map(w => queueOf(k.s.student_id, w.subj)[0]).filter(Boolean).map(p => p.id));
+  else { const home = AD.waitTab === "oth" ? [] : waitingKids(list.filter(wHome)), wk = waitingKids(list.filter(w => AD.waitTab === "oth" || !wHome(w))), relAll = wk.flatMap(k => k.ws.map(w => queueOf(k.s.student_id, w.subj)[0]).filter(Boolean).map(p => p.id));
     if (relAll.length > 1) h += `<div class="wl-all"><button class="btn primary sm" data-relg="${relAll.join(",")}">${IC.check} שחרור הדף הבא לכל הממתינים (${relAll.length})</button></div>`;   // 1.35.27
-    h += `<div class="wrows wl">` + wk.map(k => waitLine(g, k, true, AD.nreq ? presChip(k.s.student_id) : doneChip(k.s.student_id, k.ws[0].done_at))).join("") + `</div>`; }   // 1.35.27 (נועה): שורה לכל ילד/ה
+    h += wk.length ? `<div class="wrows wl">` + wk.map(k => waitLine(g, k, true, AD.nreq ? presChip(k.s.student_id) : doneChip(k.s.student_id, k.ws[0].done_at))).join("") + `</div>`
+                   : `<div class="card muted">אין כרגע בקשות ממי שבשיעור.</div>`;   // 1.35.27 (נועה): שורה לכל ילד/ה
+    if (home.length) h += `<div class="sec-h wl-sec wl-home-h">🏠 מהבית – לא דחוף (${home.length})</div><div class="lb-note">ביקשו משימה ולא סומנו נוכחים עכשיו. לא נספרים בממתינים; כשמסמנים אותם נוכחים – עוברים למעלה.</div>`
+      + `<div class="wrows wl wl-home">` + home.map(k => waitLine(g, k, false, `<span class="chip">🏠 מהבית</span>`)).join("") + `</div>`; }   // 1.35.28
   if (!byGroup && (!AD.nreq || AD.waitTab === "req" || !AD.waitTab)) h += inLessonHtml(list);   // 1.35.27 (נועה): כל מי שבשיעור עכשיו – עובד/ת על דף / צריך דף
   if (fresh.length && !byGroup) {
     h += `${AD.nreq ? "" : `<div class="sec-h" style="margin-top:26px">יש חשבון, עוד לא נשלח אף דף (${fresh.length})</div>`}<div class="wrows wl">`;
@@ -3684,7 +3736,7 @@ function liveBar(list){
   const sel = AD.waitLive || "";
   return `<div class="live-bar"><div class="lb-h"><span class="live-dot"></span><b>${live.length === 1 ? "קבוצה פעילה עכשיו" : "קבוצות פעילות עכשיו"}</b><span class="lb-hint">לחיצה – רק הממתינים ממנה</span></div>
     <div class="lb-f"><button type="button" class="${!sel ? "on" : ""}" data-wlive="">כל הממתינים</button>${live.length > 1 ? `<button type="button" class="${sel === "*" ? "on" : ""}" data-wlive="*">כל הקבוצות הפעילות</button>` : ""}</div><div class="lb-list">` +
-    live.map(gr => { const nk = grNowKids(gr, now), w = waitingKids(list.filter(x => nk.has(String(x.s.student_id)))).length, n = inLesson(gr);
+    live.map(gr => { const nk = grNowKids(gr, now), w = waitingKids(list.filter(x => nk.has(String(x.s.student_id)) && !wHome(x))).length, n = inLesson(gr);
       return `<button class="lb-g${sel === gr.id ? " on" : ""}" data-wlive="${esc(gr.id)}"><span class="t"><b>${esc(gr.loc)}</b> · <span class="nw">${esc(grRange(gr))}</span><small>${esc(gr.city)}</small></span>
         <span class="c"><b>${w}</b> ממתינים${n ? `<small>${n} סיימו בשיעור</small>` : ""}</span></button>`; }).join("") + `</div></div>`;
 }
@@ -3799,7 +3851,7 @@ function inLessonHtml(list){
   const nNeed = rows.filter(r => r.rank < 2).length;
   return `<div class="sec-h wl-sec">בשיעור עכשיו – עובדים על דף (${rows.length})${nNeed ? ` · <b class="bad-t">${nNeed} בלי דף פתוח</b>` : ""}</div>`
     + (marked ? "" : `<div class="lb-note">עוד לא סומנה נוכחות בקבוצה – מוצגים כל הילדים המשובצים. <button type="button" class="lnk" data-att="${esc(gs[0].id)}">✓ סימון נוכחות</button></div>`)
-    + (rows.length ? `<div class="wrows wl">${rows.map(r => r.html).join("")}</div>` : `<div class="muted small" style="padding:4px 6px">כל מי שבשיעור – ממתין/ה (למעלה).</div>`);
+    + (rows.length ? `<div class="wrows wl">${rows.map(r => r.html).join("")}</div>` : `<div class="muted small" style="padding:4px 6px">אין עוד ילדים בשיעור מלבד הממתינים.</div>`);
 }
 // 1.35.27 (נועה): "ממתינים לדף" – שורה אחת לכל ילד/ה (במקום כרטיס): השם + מתי, הבא בתור, ושחרור לכל מקצוע. לחיצה על השם – התוכנית
 function waitLine(g, k, hot, chip, sub0){
@@ -3813,7 +3865,10 @@ function waitLine(g, k, hot, chip, sub0){
       ${w.req ? `<button class="btn sm ghost wr-x" data-ndis="${esc(w.req.id)}" title="סגירת הבקשה${many ? " ב" + esc(w.subj) : ""} בלי לשלוח" aria-label="סגירת הבקשה">✕</button>` : ""}
       ${nx ? `<button class="btn primary sm wr-rel" data-rel="${esc(nx.id)}" title="שחרור: ${esc(ptTitle(nx))}">${IC.check} שחרור</button>`
            : `<button class="btn sm wr-rel" data-pick="${esc(s.student_id)}" data-subj="${esc(w.subj)}">+ דפים</button>`}</div>`; }).join("");
-  return `<div class="wl-row${hot ? " hot" : ""}"><button type="button" class="wl-1" data-open="${esc(s.student_id)}" data-subj="${esc(w0.subj || "")}"${last ? ` title="סיים/ה: ${esc(last)}"` : ""}><b>${esc(stName(s))}</b>${chip || ""}<small>${when}</small></button>${lines}</div>`;
+  // 1.35.29 (נועה): משולב/ת – ממתין/ה במקצוע אחד ועובד/ת בשני: רואים גם על מה עובד/ת
+  const wsS = new Set(ws.map(w => w.subj)), work = (s.subjects || []).filter(x => !wsS.has(x)).map(x => { const op = planOf(s.student_id, x).filter(p => p.status === "נשלח").sort((a, b) => String(b.released_at).localeCompare(String(a.released_at)))[0];
+    return op ? `<div class="wl-q wl-work"><span class="subj-chip ${subjCls(x)} on sm">${esc(sh(x))}</span><button type="button" class="wl-t" data-open="${esc(s.student_id)}" data-subj="${esc(x)}">✎ <bdi>${esc(ptTitle(op))}</bdi></button><small class="wl-ago">${op.seen_at ? "" : "לא פתח/ה · "}${esc(ago(op.released_at))}</small></div>` : ""; }).join("");
+  return `<div class="wl-row${hot ? " hot" : ""}"><button type="button" class="wl-1" data-open="${esc(s.student_id)}" data-subj="${esc(w0.subj || "")}"${last ? ` title="סיים/ה: ${esc(last)}"` : ""}><b>${esc(stName(s))}</b>${chip || ""}<small>${when}</small></button>${lines}${work}</div>`;
 }
 // 1.31: ילד/ה שמחכה בשני המקצועות – כרטיס אחד, בכל מקצוע מה סיים/ה, הבא בתור ושחרור
 function waitCard2(g, k){
@@ -3861,12 +3916,15 @@ function relTaskExpand(ids){
 async function releaseItems(ids){
   if (!ids.length) return;
   ids = relTaskExpand(ids);
+  const rel0 = AD.plan.filter(p => ids.includes(p.id)), rq0 = (AD.nreq || []).filter(r => rel0.some(p => String(p.student_id) === String(r.student_id) && p.subject === r.subject));   // 1.35.29: לביטול – הבקשות שייסגרו
   try {
     const n = await rpc("portal_release", { p_items: ids });
     const now = new Date().toISOString();
     AD.plan.forEach(p => { if (ids.includes(p.id) && p.status === "מתוכנן") { p.status = "נשלח"; p.released_at = now; p.released_by = myUid(); p.done_at = null; p.seen_at = null; } });
     refreshWaitingLocal(); AD.sel.clear();
-    toastAct(n === 1 ? "הדף נשלח לתלמיד/ה." : n + " דפים נשלחו.", "↩ ביטול", async () => { for (const id of ids) await unrelease(id); if (AD.view === "wait" || AD.view === "att") adRender(); });   // 1.35.27: אפשר לבטל
+    toastAct(n === 1 ? "הדף נשלח לתלמיד/ה." : n + " דפים נשלחו.", "↩ ביטול", async () => { for (const id of ids) await unrelease(id);
+      for (const r of rq0) { try { const x = await rpc("portal_request_reopen", { p_id: r.id }); if (x && x.ok && AD.nreq && !AD.nreq.some(y => y.id === r.id)) AD.nreq.push(r); } catch(e) {} }   // 1.35.29 (TS-16): גם הבקשה של הילד/ה חוזרת
+      refreshWaitingLocal(); if (AD.view === "wait" || AD.view === "att") adRender(); });   // 1.35.27: אפשר לבטל
     adRender();
   } catch(e) { toast(errText(e)); }
 }
@@ -6316,6 +6374,7 @@ $("shSave").addEventListener("click", async () => {
     toast(missing ? `הנוכחות נשמרה (${missing} לא סומנו)` : "הנוכחות נשמרה"); attDraftClear();
     try { store(ATT_LC, null); } catch(e) {}   // 1.35.23: רשימת הקבוצות – תיטען מחדש עם המספרים החדשים
     AD.present = null; AD.attG = null;   // 1.35.25 (נועה): "ממתינים לדף" מתעדכן מיד לפי הנוכחות שנשמרה
+    if (AD.nreq) presentAllToday().then(() => { try { renderNav(); updateTitle(); } catch(e) {} }).catch(() => {});   // 1.35.28: בקשה "מהבית" של מי שסומן/ה עכשיו – נספרת מיד
     embPost({ saved: { sid: A.sheet.session_id, date: A.sheet.date } });
     // 5.19.18: נשארים בדף הקבוצה אחרי שמירה (אפשר לשמור חלק ולהמשיך לסמן כשמגיעים עוד ילדים). לרשימה - "חזרה".
     A.rows.forEach(r => { if (r.unmark) { r.unmark = false; r.present0 = null; } if (r.present != null) { r.saved = true; r.present0 = r.present; } r.skip0 = r.skip; if (A.hasPlan && r.added && !r.in_group) { r.planned = true; r.saved = true; } }); A.rows = A.rows.filter(r => !(A.removed || []).includes(r.student_id)); A.removed = [];
