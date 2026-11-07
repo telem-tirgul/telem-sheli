@@ -2214,7 +2214,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.32",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.33",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -5583,14 +5583,7 @@ async function loadGroups(){
   if (AD.groups) { if (Date.now() - (AD.groupsAt || 0) > 10 * 60e3) grRefresh(); return AD.groups; }   // יש – מיד; ישן – מתעדכן ברקע
   return grRefresh();
 }
-// 1.26.4: סטטוס "נרשם" – רק לחלון "לתלמידים…" (נטען בנפרד, לא מעכב את הממתינים)
-async function loadReg(){
-  if (AD.regSet && Date.now() - (AD.regAt || 0) < 15 * 60e3) return AD.regSet;
-  try { const lds = await getAll("leads", "select=student_id,topic,st:lead_statuses(name)&student_id=not.is.null");
-    AD.regSet = new Set(lds.filter(l => /^נרשם/.test((l.st && l.st.name) || "") || l.topic === "נרשם").map(l => String(l.student_id))); AD.regAt = Date.now(); }
-  catch(e) { if (!AD.regSet) AD.regSet = null; }
-  return AD.regSet;
-}
+// 1.35.33 (מנ-328): loadReg (לפי הסטטוס הישן בכרטיס) הוסר – לא היה בשימוש; מי בפנים – לפי הקורס (TS-13)
 async function presentToday(sessionId){
   const d = new Date(), iso = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   try { const r = await get("attendance", "select=student_id&present=is.true&lesson_date=eq." + iso + "&session_id=eq." + sessionId); return new Set((r || []).map(x => String(x.student_id))); }
@@ -5917,7 +5910,6 @@ const ATTM = (() => {
   const currentView = "att";
   const isMobile = () => true, attSide = () => false;
   const attFiltTo = () => {};
-  const statusName = () => "";
   const stSubjOf = (id) => { const s = stById(String(id)); const x = (s && s.subjects) || []; return x.includes("מתמטיקה") && x.includes("אנגלית") ? "מתמטיקה ואנגלית" : x[0] || ""; };
   // מי שמר (בהיסטוריית השמירות) – שמות הצוות
   let STAFF = null; const staffName = (id) => ((STAFF || []).find(x => x.id === id) || {}).full_name || "";
@@ -6155,9 +6147,8 @@ async function openSheet(sessionId, retry){
 }
 // מקצוע לתצוגה: מהשיבוץ; לילד/ה שנוסף/ה לשיעור - לפי מה שנשמר (מת' / אנג' / שניהם)
 // המקצוע שהילד/ה רשום/ה אליו (לפי הסטטוס: נרשם מת. / אנג. / מת. + אנג.) - מה שרשום זה מה שעושה
-function regSubj(studentId, status){
-  const ld = (L.leads || []).find(l => l.student && l.student.id === studentId);
-  return subjFromStatus(status || "") || (ld ? subjFromStatus(statusName(ld.status_id)) : "") || null;
+function regSubj(studentId, status){   // 1.35.33 (מנ-328): בלי הסטטוס הישן בכרטיס – reg_status כבר לפי הקורס (172/173), ואחרת המקצועות מהקורס (portal_students, TS-13)
+  return subjFromStatus(status || "") || stSubjOf(studentId) || null;
 }
 const rowSubj = (r) => r.subject || (r.did_math && r.did_english ? "מתמטיקה ואנגלית" : r.did_math ? "מתמטיקה" : r.did_english ? "אנגלית" : null);
 const subjDefault = (subj) => ({ m: !subj || subj.indexOf("מתמטיקה") >= 0, e: !!subj && subj.indexOf("אנגלית") >= 0 });
@@ -6325,35 +6316,7 @@ function setPresent(r, v){
   if (v && !r.did_math && !r.did_english && subjGrp(rowSubj(r)) !== 2) { const d = subjDefault(rowSubj(r)); r.did_math = d.m; r.did_english = d.e; }
   if (!v) { r.did_math = false; r.did_english = false; }
 }
-// 5.19.23: חלון פרטים מהיר של ילד/ה מתוך הנוכחות (מנהלים)
-async function attKidPop(l){
-  const s = l.student, f = s.family || {}, sch = schoolOf(s), city = leadCity(l);
-  let o = $("kidPop"); if (!o) { o = document.createElement("div"); o.id = "kidPop"; o.className = "ex-pop"; document.body.appendChild(o);
-    o.addEventListener("click", (ev) => { if (ev.target === o || ev.target.closest("[data-kpclose]")) o.hidden = true; }); }
-  const ph = (v) => v ? `<a class="kp-ph" dir="ltr" href="tel:${esc(v)}">${esc(String(v).replace(/^(05\d|0[2-9])(\d{7})$/, "$1-$2"))}</a>` : "";
-  const row = (k, v) => v ? `<div class="kp-r"><span class="kp-k">${k}</span><span>${v}</span></div>` : "";
-  const paint = (asg) => {
-    o.innerHTML = `<div class="ex-pop-box kp-box" role="dialog" aria-modal="true">
-      <div class="ex-pop-h"><b>${esc(fullName(s.first_name, s.last_name))}</b><button type="button" class="kp-x" data-kpclose aria-label="סגירה" title="סגירה">✕</button></div>
-      <div class="kp-tags">${statusName(l.status_id) ? `<span class="kp-st"${statusColor(l.status_id) ? ` style="background:${statusColor(l.status_id)}; color:#fff;"` : ""}>${esc(statusName(l.status_id))}</span>` : ""}
-        ${city ? `<span class="muted">${esc(city)}</span>` : ""}</div>
-      <div class="kp-r"><span class="kp-k">בית ספר</span><span>${sch.name ? scChip(sch.name) : "<span class='muted'>לא ידוע</span>"}</span><span class="kp-k" style="min-width:0; margin-inline-start:10px;">כיתה</span><span>${s.grade ? `<b>${esc(classLabel(s.grade, s.class_num))}</b>` : "<span class='muted'>לא ידוע</span>"}</span></div>
-      ${row("הורה", [esc(fullName(f.parent1_first, f.parent1_last)), ph(f.parent1_phone)].filter(Boolean).join(" · "))}
-      ${f.parent2_phone ? row("הורה 2", [esc(fullName(f.parent2_first, f.parent2_last)), ph(f.parent2_phone)].filter(Boolean).join(" · ")) : ""}
-      ${row("תלמיד/ה", ph(s.phone))}
-      ${s.tracking ? row("📌 מעקב", esc(s.tracking)) : ""}
-      <div class="kp-k" style="margin-top:4px;">שיבוצים</div>
-      <div class="kp-asg">${asg == null ? "<span class='muted'>טוען…</span>" : asg.length ? asg.map(a => { const se = a.session, arr = String(a.arrival_time || "").slice(0, 5), st = String(se.start_time || "").slice(0, 5);
-        return `<div class="kp-a"><span class="asg-pill"><span class="${scCls(se.location && se.location.name)}"><i></i>${se.kind === "מרתון" ? "מרתון" : esc(se.day) + "'"} ${rng(st, String(se.end_time || "").slice(0, 5))} · ${esc((se.location && se.location.name) || "")}</span></span>${arr && arr !== st ? ` <span class="kp-pt">⏰ שעה אישית ${rng(arr, String(a.personal_end || "").slice(0, 5) || addMin(arr, 45))}</span>` : ""}${a.status === "ממתין" ? ` <span class="muted">(מוצע)</span>` : ""}</div>`; }).join("") : "<span class='muted'>לא משובץ/ת</span>"}</div>
-      <div class="kp-btns"><button type="button" class="btn small primary" data-kpopen>לכרטיס התלמיד ←</button></div></div>`;
-    o.querySelector("[data-kpopen]").onclick = () => { o.hidden = true; A.ret = { sid: A.sheet.session_id, date: A.date }; openLead(l.id); };
-  };
-  paint(null); o.hidden = false;
-  try { const r = await get("assignments", "select=id,status,arrival_time,personal_end,session:sessions(day,start_time,end_time,kind,school_year,location:locations(name))&student_id=eq." + s.id + "&order=id");
-    paint(r.filter(a => a.session && a.session.school_year === CONFIG.schoolYear && (a.status === "משובץ" || a.status === "ממתין"))
-      .sort((a, b) => (DAY_ORDER[a.session.day] ?? 9) - (DAY_ORDER[b.session.day] ?? 9) || String(a.session.start_time).localeCompare(String(b.session.start_time)))); }
-  catch(e) { paint([]); }
-}
+// 1.35.33 (מנ-328): attKidPop (תגית לפי הסטטוס הישן) הוסר – לא היה בשימוש; לחיצה על שם פותחת את הילד/ה ב"תלם שלי"
 document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && $("kidPop") && !$("kidPop").hidden) $("kidPop").hidden = true; });
 $("shRows").addEventListener("click", async (e) => {
   // 5.19.14: מנהלים - לחיצה על שם הילד/ה פותחת את כרטיס התלמיד; "חזרה לנוכחות" מחזיר לאותה קבוצה ואותו יום (הסימון נשמר בטלפון)
