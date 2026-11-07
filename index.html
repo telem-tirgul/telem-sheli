@@ -406,6 +406,7 @@
   .wr-1{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; } .wr-1 b{ font-size:15px; } .wr-1 .chip{ font-size:11.5px; padding:1px 7px; }
   .wrows.wl{ display:flex; flex-direction:column; gap:6px; }
   .wl-gh{ margin:14px 4px 6px; font-size:13.5px; font-weight:800; color:var(--accent); } .wl-gh b{ font-size:12px; background:var(--accent-soft, #F3E6E6); border-radius:999px; padding:0 7px; margin-inline-start:4px; } .wl-gh.muted{ color:var(--ink-soft); }
+  .wl-undo{ display:flex; align-items:center; gap:10px; margin:0 2px 8px; font-size:13px; color:var(--ok); font-weight:700; } .wl-undo .lnk{ font-size:13px; }
   .wl-all{ display:flex; justify-content:flex-start; margin:0 0 8px; } .wl-sec{ margin-top:18px; } .wl-row.in{ background:color-mix(in srgb, var(--paper) 70%, transparent); } .wl-row.in.need{ border-color:color-mix(in srgb, var(--bad) 35%, var(--border)); }
   .wl-home .wl-row{ background:transparent; border-style:dashed; opacity:.92; } .wl-home .wr-rel.primary{ background:var(--paper) !important; color:var(--accent) !important; border:1.5px solid var(--accent) !important; box-shadow:none !important; }
   .wl-ago{ flex:none; color:var(--ink-soft); font-size:11.5px; white-space:nowrap; }
@@ -813,6 +814,11 @@
   .icon-btn.dark{ color:var(--ink); }
   @media (min-width:761px) and (max-width:1100px){ #adminView .nav{ margin-inline-start:4px; } #adminView .nav button{ padding:10px 8px; } #adminView .brand small{ display:none; } }
   #adminView .hdr-btn{ display:inline-flex; align-items:center; gap:6px; }
+  /* 1.35.32 (נועה): החיפוש היה קטן מדי, "הקבוצות שלי" גדול מדי – אותו גובה, אייקון גדול יותר בחיפוש ובהגדרות, הבחירה קומפקטית */
+  #adminView .who .hdr-btn, #adminView .who .ins-pick{ min-height:40px; box-sizing:border-box; }
+  #adminView .who .hdr-btn svg.ic{ width:23px; height:23px; }
+  @media (max-width:760px){ #adminView .who .hdr-btn{ min-width:44px; justify-content:center; padding:4px 10px !important; }
+    #adminView .ins-pick{ max-width:34vw; padding:4px 9px !important; font-size:13px; gap:4px; } #adminView .ins-pick svg.ic{ width:15px; height:15px; } }
   @media (max-width:760px){ #adminView .ib-t{ display:none; } }
   /* נייד: שורת אייקונים מתחת ללוגו – כמו במערכת הניהול */
   @media (max-width:760px){
@@ -2208,7 +2214,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.31",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.32",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2259,7 +2265,8 @@ function beep(){
     o.type = "sine"; o.frequency.value = 880; g.gain.setValueAtTime(0.0001, AUDIO.currentTime); g.gain.exponentialRampToValueAtTime(0.25, AUDIO.currentTime + 0.02);
     g.gain.exponentialRampToValueAtTime(0.0001, AUDIO.currentTime + 0.35); o.connect(g); g.connect(AUDIO.destination); o.start(); o.stop(AUDIO.currentTime + 0.4); } catch(e) {}
 }
-function toast(t, ms){ const el = $("toast"); el.textContent = t; el.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => { el.hidden = true; }, ms || 3200); }
+function toast(t, ms){ const vh = document.getElementById("viewerHost"); if (vh && vh.firstElementChild && !/לא הצלחנו|שגיאה|נכשל|נסו שוב|לנסות שוב/.test(String(t))) return;   // 1.35.32 (נועה): על מסך מלא – בלי הודעות קופצות (מסתירות את התפריט)
+  const el = $("toast"); el.textContent = t; el.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => { el.hidden = true; }, ms || 3200); }
 // 1.35.27: הודעה עם פעולה (למשל "↩ ביטול" אחרי שחרור דף)
 function toastAct(t, label, fn, ms){ const el = $("toast"); el.textContent = t + " "; const b = document.createElement("button"); b.type = "button"; b.className = "toast-act"; b.textContent = label;
   b.onclick = (e) => { e.stopPropagation(); el.hidden = true; clearTimeout(toast._t); fn(); }; el.appendChild(b); el.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => { el.hidden = true; }, ms || 7000); }
@@ -2908,8 +2915,9 @@ function stTaskColl(L){ const by = new Map(); (L || []).forEach(p => { const k =
   const seen = new Set(); return (L || []).filter(p => { const k = stTaskKey(p); if (!k) return true; if (seen.has(k)) return false; seen.add(k); p._tn = by.get(k); return true; }); }
 // 1.29 (נועה): אצל התלמידים הכל משימות – משימה של דף אחד או של כמה דפים; פותחים משימה ומדפדפים בתוכה
 // 1.35.29 (נועה): כמו אפליקציית התמונות – מדפדפים בין כל המשימות הפתוחות (כל המקצועות; משימה מכמה דפים – הדפים שלה ברצף)
-function stDeck(){
-  const all = (ST.pages || []).filter(p => p.status === "נשלח"), subs = (ST.me && ST.me.subjects) || [], ord = (x) => { const i = subs.indexOf(x); return i < 0 ? 9 : i; };
+function stDeck(subj){
+  // 1.35.32 (נועה): מקצוע אחד בכל דפדוף – מתמטיקה מימין לשמאל, אנגלית משמאל לימין
+  const all = (ST.pages || []).filter(p => p.status === "נשלח" && (!subj || p.subject === subj)), subs = (ST.me && ST.me.subjects) || [], ord = (x) => { const i = subs.indexOf(x); return i < 0 ? 9 : i; };
   const out = [], seen = new Set();
   all.slice().sort((a, b) => ord(a.subject) - ord(b.subject)).forEach(p => { const k = stTaskKey(p);
     if (!k) { out.push(p); return; } if (seen.has(k)) return; seen.add(k);
@@ -2921,7 +2929,7 @@ function openStudentPage(itemId){
   if (p.status === "הושלם") { const k = stTaskKey(p);
     if (k) { const T = ST.pages.filter(x => x.status === "הושלם" && stTaskKey(x) === k).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)); if (T.length > 1) { openGallery(T, T[0].item_id, false, true); return; } }
     const L = stTaskColl(ST.doneList || [p]).filter(x => !(x._tn > 1)); openGallery(L.some(x => x.item_id === itemId) ? L : [p], itemId); return; }
-  const D = stDeck(); if (D.some(x => x.item_id === itemId)) { openGallery(D, itemId, false, false, true); return; }
+  const D = stDeck(p.subject); if (D.some(x => x.item_id === itemId)) { openGallery(D, itemId, false, false, true); return; }
   const k = stTaskKey(p), T = k && ST.tasks && ST.tasks.get(k);
   if (T && T.length > 1) openGallery(T, itemId, false, true); else openGallery([p], itemId);
 }
@@ -3015,7 +3023,6 @@ async function deckDone(list, cur, grp, next){
   if (next) await requestNext(subj, true, true);
   const rest = list.filter(x => x.status === "נשלח");
   if (!rest.length) { closeViewer(); doneCheer(grp.length, grp.length > 1, subj, next); return; }
-  toast(`✓ כל הכבוד!${next ? " 📨 ביקשנו את הבאה." : ""} ${rest.length === 1 ? "נשאר עוד דף אחד" : "נשארו עוד " + rest.length + " דפים"}`, 3500);
   const nxt = list.slice(cur + 1).find(x => x.status === "נשלח") || rest[0];
   openGallery(rest, nxt.item_id, true, false, true);
 }
@@ -3612,8 +3619,12 @@ async function renderWait(){
       return waitLine(g, { s, ws: (s.subjects || []).slice(0, 2).map(subj => ({ subj })) }, false, "", when,
         ex ? `<div class="wl-q wl-code"><span class="wl-t bad-t">בלי קוד חדש לא יוכל/תוכל להיכנס</span><button class="btn primary sm" data-newcode="${esc(s.student_id)}">${IC.wa} קוד חדש</button></div>` : ""); });
   }
+  const LR = AD.lastRel && Date.now() - AD.lastRel.at < 120e3 ? AD.lastRel : null;   // 1.35.32: ביטול השחרור האחרון – בשורה, לא בהודעה קופצת
+  if (LR) h = `<div class="wl-undo">✓ ${esc(LR.txt)}<button type="button" class="lnk" data-undorel>↩ ביטול</button></div>` + h;
   paint($("adBody"), h);
   const B = $("adBody");
+  if (LR) { const u = B.querySelector("[data-undorel]"); if (u) u.onclick = () => { u.disabled = true; LR.undo(); };
+    clearTimeout(renderWait._u); renderWait._u = setTimeout(() => { const el = document.querySelector(".wl-undo"); if (el) el.remove(); }, LR.at + 120e3 - Date.now()); }
   B.querySelectorAll("[data-newcode]").forEach(b => b.onclick = () => accountSheet(stById(b.dataset.newcode), true));
   B.querySelectorAll("[data-dismiss]").forEach(b => b.onclick = () => codeReqDone(b.dataset.dismiss));
   B.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { if (b.dataset.f) AD.filter = b.dataset.f; adGo(b.dataset.go); });
@@ -3868,7 +3879,7 @@ function inLessonHtml(list){
   const rows = [...kids].filter(id => !waitIds.has(id)).map(stById).filter(s => s && s.has_account && (s.subjects || []).length).map(s => {
     const subs = s.subjects, many = subs.length > 1, pl = planOf(s.student_id);
     let rank = 3; const lines = subs.map(x => { const open = pl.filter(p => p.subject === x && p.status === "נשלח").sort((a, b) => String(b.released_at).localeCompare(String(a.released_at)))[0], nx = queueOf(s.student_id, x)[0];
-      const chip = many ? `<span class="subj-chip ${subjCls(x)} on sm">${esc(sh(x))}</span>` : "";
+      const chip = `<span class="subj-chip ${subjCls(x)} on sm">${esc(sh(x))}</span>`;   // 1.35.32 (נועה): המקצוע תמיד – גם למי שרשום/ה למקצוע אחד
       if (open) { if (!open.seen_at) rank = Math.min(rank, 2);
         return `<div class="wl-q">${chip}<button type="button" class="wl-t" data-open="${esc(s.student_id)}" data-subj="${esc(x)}">✎ <bdi>${esc(ptTitle(open))}</bdi></button><small class="wl-ago">${open.seen_at ? "" : "לא פתח/ה · "}${esc(ago(open.released_at))}</small></div>`; }
       rank = Math.min(rank, nx ? 1 : 0);
@@ -3888,7 +3899,7 @@ function waitLine(g, k, hot, chip, sub0, extra){
   const when = sub0 != null ? sub0 : w0.req ? `ביקש/ה ${esc(ago(w0.req.requested_at))}` : w0.done_at ? `סיים/ה ${esc(ago(w0.done_at))}` : "";
   const last = ws.filter(w => w.last).map(w => (many ? sh(w.subj) + ": " : "") + ptTitle(w.last)).join(" · ");
   const lines = ws.map(w => { const nx = queueOf(s.student_id, w.subj)[0];
-    return `<div class="wl-q">${many ? `<span class="subj-chip ${subjCls(w.subj)} on sm">${esc(sh(w.subj))}</span>` : ""}
+    return `<div class="wl-q"><span class="subj-chip ${subjCls(w.subj)} on sm">${esc(sh(w.subj))}</span>
       <button type="button" class="wl-t" data-open="${esc(s.student_id)}" data-subj="${esc(w.subj)}">${nx ? `<bdi>${esc(ptTitle(nx))}</bdi>` : `<span class="bad-t">אין דפים בתור</span>`}</button>
       ${w.req ? `<button class="btn sm ghost wr-x" data-ndis="${esc(w.req.id)}" title="סגירת הבקשה${many ? " ב" + esc(w.subj) : ""} בלי לשלוח" aria-label="סגירת הבקשה">✕</button>` : ""}
       ${nx ? `<button class="btn primary sm wr-rel" data-rel="${esc(nx.id)}" title="שחרור: ${esc(ptTitle(nx))}">${IC.check} שחרור</button>`
@@ -3950,9 +3961,13 @@ async function releaseItems(ids){
     const now = new Date().toISOString();
     AD.plan.forEach(p => { if (ids.includes(p.id) && p.status === "מתוכנן") { p.status = "נשלח"; p.released_at = now; p.released_by = myUid(); p.done_at = null; p.seen_at = null; } });
     refreshWaitingLocal(); AD.sel.clear();
-    toastAct(n === 1 ? "הדף נשלח לתלמיד/ה." : n + " דפים נשלחו.", "↩ ביטול", async () => { for (const id of ids) await unrelease(id);
+    const undo = async () => { AD.lastRel = null; for (const id of ids) await unrelease(id);
       for (const r of rq0) { try { const x = await rpc("portal_request_reopen", { p_id: r.id }); if (x && x.ok && AD.nreq && !AD.nreq.some(y => y.id === r.id)) AD.nreq.push(r); } catch(e) {} }   // 1.35.29 (TS-16): גם הבקשה של הילד/ה חוזרת
-      refreshWaitingLocal(); if (AD.view === "wait" || AD.view === "att") adRender(); });   // 1.35.27: אפשר לבטל
+      refreshWaitingLocal(); if (AD.view === "wait" || AD.view === "att") adRender(); };   // 1.35.27: אפשר לבטל
+    // 1.35.32 (נועה): בממתינים – בלי הודעה קופצת (הסתירה את "+ דפים"); הביטול – שורה קטנה למעלה, 2 דקות
+    if (AD.view === "wait") { const nm = [...new Set(rel0.map(p => { const st = stById(p.student_id); return st ? st.first_name : ""; }).filter(Boolean))].join(", ");
+      AD.lastRel = { undo, at: Date.now(), txt: (n === 1 ? "נשלח דף" : "נשלחו " + n + " דפים") + (nm ? " ל" + nm : "") }; }
+    else toastAct(n === 1 ? "הדף נשלח לתלמיד/ה." : n + " דפים נשלחו.", "↩ ביטול", undo);
     adRender();
   } catch(e) { toast(errText(e)); }
 }
