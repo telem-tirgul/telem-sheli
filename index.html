@@ -405,6 +405,7 @@
   .wr-main{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:1px; background:none; border:0; padding:0; text-align:start; font:inherit; color:inherit; cursor:pointer; }
   .wr-1{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; } .wr-1 b{ font-size:15px; } .wr-1 .chip{ font-size:11.5px; padding:1px 7px; }
   .wrows.wl{ display:flex; flex-direction:column; gap:6px; }
+  .wl-gh{ margin:14px 4px 6px; font-size:13.5px; font-weight:800; color:var(--accent); } .wl-gh b{ font-size:12px; background:var(--accent-soft, #F3E6E6); border-radius:999px; padding:0 7px; margin-inline-start:4px; } .wl-gh.muted{ color:var(--ink-soft); }
   .wl-all{ display:flex; justify-content:flex-start; margin:0 0 8px; } .wl-sec{ margin-top:18px; } .wl-row.in{ background:color-mix(in srgb, var(--paper) 70%, transparent); } .wl-row.in.need{ border-color:color-mix(in srgb, var(--bad) 35%, var(--border)); }
   .wl-home .wl-row{ background:transparent; border-style:dashed; opacity:.92; } .wl-home .wr-rel.primary{ background:var(--paper) !important; color:var(--accent) !important; border:1.5px solid var(--accent) !important; box-shadow:none !important; }
   .wl-ago{ flex:none; color:var(--ink-soft); font-size:11.5px; white-space:nowrap; }
@@ -2207,7 +2208,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.30",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.31",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -3585,7 +3586,7 @@ async function renderWait(){
     const nTabs = 3 + (oth.length || tab === "oth" ? 1 : 0);
     h += `<div class="seg wt-seg t${nTabs}"><button type="button" data-wt="req" class="${tab === "req" ? "on" : ""}">ביקשו ממני <b>${waitingKids(mine.filter(w => !wHome(w))).length}</b></button>${oth.length || tab === "oth" ? `<button type="button" data-wt="oth" class="${tab === "oth" ? "on" : ""}">אצל אחרים <b class="g">${waitingKids(oth).length}</b></button>` : ""}<button type="button" data-wt="idle" class="${tab === "idle" ? "on" : ""}">סיימו ולא ביקשו <b class="g">${nI}</b></button><button type="button" data-wt="new" class="${tab === "new" ? "on" : ""}">חדשים <b class="g">${nF}</b></button></div>`;
     if (tab === "oth") h += `<div class="lb-note">ביקשו משימה, וההתראה הלכה למנהל/ת אחר/ת (המשובץ/ת בקבוצה או מי ששלח/ה את הדף האחרון).</div>`;
-    if (tab === "idle") { h += idle.length ? `<div class="wrows wl">` + waitingKids(idle).map(k => waitLine(g, k, false, presChip(k.s.student_id))).join("") + `</div>`
+    if (tab === "idle") { h += idle.length ? wlRows(waitingKids(idle), k => waitLine(g, k, false, presChip(k.s.student_id)))
                                            : `<div class="card muted">אין כרגע מי שסיים/ה ולא ביקש/ה.</div>`;
       list = []; fresh = []; }
     else if (tab === "new") { list = []; if (!fresh.length) h += `<div class="card muted">אין ילדים חדשים עם חשבון (לפי הסינון למעלה).</div>`; }   // 1.34.4 (נועה): חשבון חדש – עוד לא התחלנו
@@ -3596,20 +3597,20 @@ async function renderWait(){
   else if (!list.length) h += `<div class="card empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.3l2.8 2.8L16.3 9.5"/></svg><h2 style="margin-top:8px">אין ממתינים כרגע</h2><p class="muted">${AD.nreq ? "כשתלמיד/ה יבקש/תבקש את המשימה הבאה, הוא/היא יופיע/תופיע כאן." : "כשתלמיד/ה ילחץ/תלחץ \"סיימתי\", הוא/היא יופיע/תופיע כאן."}</p></div>`;
   else { const home = AD.waitTab === "oth" ? [] : waitingKids(list.filter(wHome)), wk = waitingKids(list.filter(w => AD.waitTab === "oth" || !wHome(w))), relAll = wk.flatMap(k => k.ws.map(w => queueOf(k.s.student_id, w.subj)[0]).filter(Boolean).map(p => p.id));
     if (relAll.length > 1) h += `<div class="wl-all"><button class="btn primary sm" data-relg="${relAll.join(",")}">${IC.check} שחרור הדף הבא לכל הממתינים (${relAll.length})</button></div>`;   // 1.35.27
-    h += wk.length ? `<div class="wrows wl">` + wk.map(k => waitLine(g, k, true, AD.nreq ? presChip(k.s.student_id) : doneChip(k.s.student_id, k.ws[0].done_at))).join("") + `</div>`
-                   : `<div class="card muted">אין כרגע בקשות ממי שבשיעור.</div>`;   // 1.35.27 (נועה): שורה לכל ילד/ה
+    h += wk.length ? wlRows(wk, k => waitLine(g, k, true, AD.nreq ? presChip(k.s.student_id) : doneChip(k.s.student_id, k.ws[0].done_at)))
+                   : home.length && nextGroupsDay() ? "" : `<div class="card muted">אין כרגע בקשות ממי שבשיעור.</div>`;   // 1.35.31: אין היום קבוצות – בלי ההודעה   // 1.35.27 (נועה): שורה לכל ילד/ה
     if (home.length) h += `<div class="sec-h wl-sec wl-home-h">🏠 מהבית – לא דחוף (${home.length})</div><div class="lb-note">ביקשו משימה ולא סומנו נוכחים עכשיו. לא נספרים בממתינים; כשמסמנים אותם נוכחים – עוברים למעלה.</div>`
-      + `<div class="wrows wl wl-home">` + home.map(k => waitLine(g, k, false, `<span class="chip">🏠 מהבית</span>`)).join("") + `</div>`; }   // 1.35.28
+      + wlRows(home, k => waitLine(g, k, false, `<span class="chip">🏠 מהבית</span>`), "wl-home"); }   // 1.35.28
   if (!byGroup && (!AD.nreq || AD.waitTab === "req" || !AD.waitTab)) h += inLessonHtml(list);   // 1.35.27 (נועה): כל מי שבשיעור עכשיו – עובד/ת על דף / צריך דף
   if (fresh.length && !byGroup) {
-    h += `${AD.nreq ? "" : `<div class="sec-h" style="margin-top:26px">יש חשבון, עוד לא נשלח אף דף (${fresh.length})</div>`}<div class="wrows wl">`;
+    h += `${AD.nreq ? "" : `<div class="sec-h" style="margin-top:26px">יש חשבון, עוד לא נשלח אף דף (${fresh.length})</div>`}`;
     // 1.35.30 (נועה): הקוד הראשוני פג – רואים את זה, ו"שליחת קוד חדש" ישר מכאן (הם ראשונים ברשימה)
     const fr = fresh.slice().sort((a, b) => codeExpired(b) - codeExpired(a));
-    h += fr.map(s => { const ex = codeExpired(s);
+    h += wlRows(fr.map(s => ({ s })), ({ s }) => { const ex = codeExpired(s);
       const when = s.must_change_code ? (ex ? `<b class="bad-t">🔑 הקוד פג${s.code_expires_at ? " (" + esc(fmtDay(s.code_expires_at)) + ")" : ""}</b>` : "עוד לא נכנס/ה" + (s.code_expires_at ? " · הקוד עובד עד " + esc(fmtDay(s.code_expires_at)) : ""))
                  : s.last_seen_at ? "נכנס/ה " + esc(ago(s.last_seen_at)) : "עוד לא נכנס/ה";
       return waitLine(g, { s, ws: (s.subjects || []).slice(0, 2).map(subj => ({ subj })) }, false, "", when,
-        ex ? `<div class="wl-q wl-code"><span class="wl-t bad-t">בלי קוד חדש לא יוכל/תוכל להיכנס</span><button class="btn primary sm" data-newcode="${esc(s.student_id)}">${IC.wa} קוד חדש</button></div>` : ""); }).join("") + `</div>`;
+        ex ? `<div class="wl-q wl-code"><span class="wl-t bad-t">בלי קוד חדש לא יוכל/תוכל להיכנס</span><button class="btn primary sm" data-newcode="${esc(s.student_id)}">${IC.wa} קוד חדש</button></div>` : ""); });
   }
   paint($("adBody"), h);
   const B = $("adBody");
@@ -3835,6 +3836,27 @@ function waitRow(g, s, subj, sub, hot, chip){
       <small>${sub}</small>
       <small class="wr-nx">${nx ? "הבא: " + esc(ptTitle(nx)) : `<span class="bad-t">אין דפים בתור</span>`}</small></button>
     ${nx ? `<button class="btn primary sm wr-rel" data-rel="${esc(nx.id)}">${IC.check} שחרור</button>` : `<button class="btn sm wr-rel" data-pick="${esc(s.student_id)}" data-subj="${esc(subj)}">+ דפים</button>`}</div>`;
+}
+// 1.35.31 (נועה): כשאין לי עוד קבוצות היום – הממתינים לפי סדר הקבוצות של היום הבא (מחר, או היום הבא שיש בו קבוצות), עם כותרת לכל קבוצה
+function nextGroupsDay(){
+  const want = insWant(), all = AD.groups || [], mine = all.filter(gr => !want || (gr.ins || []).includes(want)), gs = mine.length ? mine : all; if (!gs.length) return null;
+  const now = new Date(), hm = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+  if (gs.some(gr => grOn(gr, now) && String(grAt(gr, now).end || "23:59") > hm)) return null;   // יש לי עוד קבוצות היום
+  for (let i = 1; i <= 7; i++) { const d = new Date(now); d.setDate(d.getDate() + i);
+    const dg = gs.filter(gr => grOn(gr, d)).map(gr => grAt(gr, d)).sort((a, b) => String(a.start || a.time).localeCompare(String(b.start || b.time)) || String(a.city).localeCompare(String(b.city)) || String(a.loc).localeCompare(String(b.loc)));
+    if (dg.length) return { groups: dg, label: i === 1 ? "מחר" : "יום " + DAY_L[d.getDay()] + "'" }; }
+  return null;
+}
+// שורות הממתינים – מקובצות לפי הקבוצות של היום הבא (כשאין היום), אחרת רשימה אחת
+function wlRows(ks, fn, cls){
+  const nd = nextGroupsDay(), wrap = (x) => `<div class="wrows wl${cls ? " " + cls : ""}">${x}</div>`; if (!nd || !ks.length) return wrap(ks.map(fn).join(""));
+  const used = new Set(), out = [];
+  nd.groups.forEach(gr => { const g = ks.filter(k => !used.has(String(k.s.student_id)) && gr.kids && gr.kids.has(String(k.s.student_id)));
+    g.forEach(k => used.add(String(k.s.student_id)));
+    if (g.length) out.push(`<div class="wl-gh">${esc(nd.label)} · <bdi>${esc(gr.start || gr.time || "")}</bdi> · ${esc(gr.city || "")}${gr.loc ? " – " + esc(gr.loc) : ""} <b>${g.length}</b></div>` + wrap(g.map(fn).join(""))); });
+  const rest = ks.filter(k => !used.has(String(k.s.student_id)));
+  if (rest.length) out.push(`<div class="wl-gh muted">לא בקבוצות של ${esc(nd.label === "מחר" ? "מחר" : nd.label)} <b>${rest.length}</b></div>` + wrap(rest.map(fn).join("")));
+  return out.join("");
 }
 // 1.35.27 (נועה): "בשיעור עכשיו" – מי שבקבוצה הפעילה (לפי הנוכחות) ולא ממתין/ה: עובד/ת על דף, או שצריך לשלוח לו/ה דף. אחרי סימון נוכחות – רואים את כל הקבוצה כאן
 function inLessonHtml(list){
