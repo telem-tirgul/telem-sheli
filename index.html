@@ -2108,6 +2108,8 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .ac-sheet.st-att .att-prev{background:#EEF0F2; color:#555; border-radius:999px; padding:0 8px; font-weight:700;} .ac-sheet.st-att .chip{margin:0;}
 .crmatt #shRows .pg-ic.p1{background:#FFF4DE !important; color:#9A6A00 !important; font-weight:900;} .crmatt #shRows .pg-ic.p1 .p1n{font-size:12px; padding:0 2px;}
 .stm-row .q-rm{width:28px !important; height:28px !important; min-width:28px; font-size:13px; color:var(--ink-soft); border-radius:50%;} .stm-cols .stm-row .q-rm{width:24px !important; height:24px !important; min-width:24px; font-size:12px;}
+.wl-nolink{cursor:default;} .wl-nolink b{font-weight:800;}
+.na-chip{display:inline-block; font-size:12px; font-weight:800; border-radius:999px; padding:0 8px; background:#FDE8E6; color:var(--bad); margin-inline-start:6px;} .na-set{font-size:12px; color:var(--ink-soft); margin-inline-start:8px;}
 .td-sec{margin:0 0 10px; background:var(--card, #fff); border:1.5px solid var(--border); border-radius:14px; overflow:hidden;}
 .td-sec > summary{list-style:none; cursor:pointer; display:flex; align-items:center; gap:8px; padding:12px 14px; font-weight:800; font-size:16px;} .td-sec > summary::-webkit-details-marker{display:none;}
 .td-sec > summary .td-t{flex:1;} .td-sec .td-car{transition:transform .15s; color:var(--ink-soft);} .td-sec[open] .td-car{transform:rotate(180deg);}
@@ -2216,6 +2218,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
       <img class="logo" src="logo.png" alt="תלם">
       <h2 id="msgTitle"></h2>
       <p class="muted" id="msgText"></p>
+      <button class="btn primary block" id="msgAct" hidden></button>
       <button class="btn block" id="msgLogout">יציאה</button>
     </div>
   </div>
@@ -2279,7 +2282,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.44",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.45",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2545,6 +2548,8 @@ function showLogin(msg){
   showView("loginView"); closeSheet(); closeViewer(); capRender();
   document.body.classList.remove("v-bank", "v-stm", "ws-app-on", "ws-vopen", "ws-selmode");   // 1.35.9: מסך הכניסה – תמיד הרקע הרגיל
   let om = null; try { om = sessionStorage.getItem("telem_portal_outmsg"); sessionStorage.removeItem("telem_portal_outmsg"); } catch(e) {}
+  let fg = null; try { fg = sessionStorage.getItem("telem_portal_forgot"); sessionStorage.removeItem("telem_portal_forgot"); } catch(e) {}
+  if (fg) setTimeout(() => { if (fg !== "1") $("lgPhone").value = fg; $("forgotBtn").click(); }, 150);   // 1.35.45: מ"הקוד הראשוני כבר לא בתוקף"
   $("lgErr").textContent = msg || om || "";
   setStaffMode(store("telem_portal_staff") === "1" || /^#staff\b/i.test(location.hash));
   // 1.27.1 (נועה): כמו במערכת הניהול – לזכור טלפון/אימייל, להישאר מחובר/ת (בטלפון – מסומן מראש; במחשב – לא)
@@ -2691,7 +2696,8 @@ async function logout(){
   showLogin();
 }
 $("msgLogout").onclick = logout;
-function showMsg(title, text){ showView("msgView"); $("msgTitle").textContent = title; $("msgText").textContent = text; }
+function showMsg(title, text, act){ showView("msgView"); $("msgTitle").textContent = title; $("msgText").textContent = text;
+  const b = $("msgAct"); b.hidden = !act; if (act) { b.textContent = act.label; b.onclick = act.fn; } }
 
 // ======================================================================
 // הפעלה: מי נכנס/ה – צוות (מנהלת) או תלמיד/ה
@@ -2723,7 +2729,9 @@ async function boot(){
   let me;
   try { me = await rpc("portal_me"); } catch(e) { showMsg("אין חיבור", "לא הצלחנו להתחבר. כדאי לנסות שוב."); return; }
   if (!me || me.status === "no_account") { showMsg("אין גישה", "המשתמש הזה לא מוגדר כתלמיד/ה. אם זו טעות – לכתוב לנו."); return; }
-  if (me.status === "code_expired") { showMsg("הקוד הראשוני כבר לא בתוקף", "הקוד שקיבלת עבד רק " + (me.days || 5) + " ימים. צריך לבקש קוד חדש: ללחוץ \"יציאה\" ואז \"שכחתי את הקוד\", או לכתוב לנו בוואטסאפ."); return; }
+  // 1.35.45 (נועה): קוד שפג – לבקש קוד חדש, בלחיצה אחת (יציאה ופתיחת "שכחתי את הקוד" עם הטלפון)
+  if (me.status === "code_expired") { showMsg("הקוד הראשוני כבר לא בתוקף", "הקוד שקיבלת עבד רק " + (me.days || 5) + " ימים. צריך לבקש קוד חדש – לוחצים על הכפתור, ונשלח לך קוד חדש בוואטסאפ.",
+      { label: "בקשת קוד חדש", fn: () => { try { sessionStorage.setItem("telem_portal_forgot", $("lgPhone").value || "1"); } catch(e) {} logout(); } }); return; }
   if (me.status === "inactive") { showMsg("החשבון לא פעיל כרגע", "הגישה למשימות פתוחה רק לתלמידים רשומים. לשאלות – לכתוב לנו בוואטסאפ."); return; }
   ST.me = me;
   if (me.must_change_code) { showCodeChange(); return; }
@@ -3492,8 +3500,9 @@ async function adLoad(){
       opt(rpc("portal_settings_get")),   // קוד ראשוני לכולם (TS-05; אם לא הורץ – null)
       opt(get("portal_code_requests", "select=id,student_id,phone,created_at&handled_at=is.null&matched=is.true&order=created_at")),   // "שכחתי את הקוד"
       opt(getNreq()),   // 1.33: "שלחו לי את המשימה הבאה" (TS-08; אם לא הורץ – כמו קודם)
-      loadWs()
-    ]);
+      loadWs(),
+      opt(get("portal_no_access", "select=student_id,reason"))   // 1.35.45: "🚫 בלי תלם שלי" (TS-22; אם לא הורץ – אף אחד)
+    ]).then(r => { AD.noAcc = new Map((Array.isArray(r[6]) ? r[6] : []).map(x => [String(x.student_id), x.reason || ""])); return r; });
     AD.nreq = nreq === undefined ? null : nreq;
     AD.students = (students || []).map(s => Object.assign(s, { student_id: String(s.student_id) }));
     AD.plan = (plan || []).map(planNorm);
@@ -3689,8 +3698,29 @@ function alertOpenKid(sid){
 const wHome = (w) => !!(AD.nreq && w.req && !presentNow(w.s.student_id));
 const alertKids = () => { loadMgrs(); return waitingKids(waitingList(true).filter(w => alertMine(w) && !wHome(w))); };
 const waitN = () => alertKids().length;
+// 1.35.45 (נועה): "🚫 בלי תלם שלי" – לא מקבלים גישה; לא ב"לטיפול" (קוד / חשבון / אין דפים), הכניסה חסומה (TS-22)
+const noAcc = (sid) => !!(AD.noAcc && AD.noAcc.has(String(sid)));
+function noAccSet(s, after){
+  window.openSheet(`<h2>🚫 בלי תלם שלי – ${esc(stName(s))}</h2>
+    <p class="muted small" style="margin:0 0 8px">לא יופיע/תופיע ב"לטיפול" (קוד חדש / אין תלם שלי / אין דפים), והכניסה לאפליקציה נחסמת. החשבון לא נמחק – אפשר לבטל.</p>
+    <input id="naWhy" type="text" placeholder="סיבה (לא חובה)" style="width:100%; box-sizing:border-box; font:inherit; padding:8px 10px; border:1.5px solid var(--border); border-radius:10px">
+    <div style="display:flex; gap:8px; margin-top:10px"><span style="flex:1"></span><button type="button" class="btn" id="naNo">ביטול</button><button type="button" class="btn primary" id="naOk">סימון</button></div>`, (sh) => {
+    sh.querySelector("#naNo").onclick = () => closeSheet();
+    sh.querySelector("#naOk").onclick = async () => { const why = sh.querySelector("#naWhy").value.trim() || null; sh.querySelectorAll("button").forEach(b => b.disabled = true);
+      try { await insert("portal_no_access", { student_id: Number(s.student_id), reason: why }); AD.noAcc = AD.noAcc || new Map(); AD.noAcc.set(String(s.student_id), why || ""); closeSheet(); toast("סומן: בלי תלם שלי"); renderNav(); if (after) after(); }
+      catch(e) { sh.querySelectorAll("button").forEach(b => b.disabled = false); toast(/42P01|PGRST205|does not exist/.test(String(e && (e.code || e.message))) ? "צריך להריץ את TS-22 ב-Supabase." : errText(e)); } };
+  });
+}
+function noAccOff(s, after){
+  confirmSheet(`לבטל את "בלי תלם שלי" אצל ${stName(s)}?`, "ביטול הסימון", async () => {
+    try { await del("portal_no_access", "student_id=eq." + Number(s.student_id)); AD.noAcc && AD.noAcc.delete(String(s.student_id)); toast("הסימון בוטל"); renderNav(); if (after) after(); } catch(e) { toast(errText(e)); } });
+}
+const noAccHtml = (s) => AD.role === "instructor" ? (noAcc(s.student_id) ? `<span class="na-chip">🚫 בלי תלם שלי</span>` : "")
+  : noAcc(s.student_id) ? `<span class="na-chip" title="${esc(AD.noAcc.get(String(s.student_id)) || "")}">🚫 בלי תלם שלי${AD.noAcc.get(String(s.student_id)) ? " · " + esc(AD.noAcc.get(String(s.student_id))) : ""}</span><button type="button" class="lnk" data-naoff>ביטול</button>`
+  : `<button type="button" class="lnk na-set" data-naon>🚫 בלי תלם שלי</button>`;
+const wireNoAcc = (T, s, after) => { T.querySelectorAll("[data-naon]").forEach(b => b.onclick = () => noAccSet(s, after)); T.querySelectorAll("[data-naoff]").forEach(b => b.onclick = () => noAccOff(s, after)); };
 const todoN = () => { if (!AD.nreq) return 0; try { return waitingKids(waitingList(true).filter(w => alertMine(w) && wHome(w))).length + myReqs().length
-  + (AD.students || []).filter(s => s.has_account && codeExpired(s) && stMine(s.student_id)).length; } catch(e) { return 0; } };
+  + (AD.students || []).filter(s => s.has_account && codeExpired(s) && stMine(s.student_id) && !noAcc(s.student_id)).length; } catch(e) { return 0; } };
 // 1.33: שורת הפירוט בכרטיס – ביקש/ה מתי, ומה סיים/ה
 const wSub = (w) => w.req ? `ביקש/ה ${esc(ago(w.req.requested_at))}${w.last ? ` · סיים/ה "<bdi>${esc(ptTitle(w.last))}</bdi>"` : ""}` : `סיים/ה "<bdi>${esc(w.last ? ptTitle(w.last) : "")}</bdi>" · ${esc(ago(w.done_at))}`;
 // סיימו (אין דף פתוח) ולא ביקשו – לפי סינון המתרגלים (ובסינון קבוצה פעילה – רק ממנה)
@@ -3775,6 +3805,7 @@ async function renderWait(){
     clearTimeout(renderWait._u); renderWait._u = setTimeout(() => { const el = document.querySelector(".wl-undo"); if (el) el.remove(); }, LR.at + 120e3 - Date.now()); }
   B.querySelectorAll("[data-newcode]").forEach(b => b.onclick = () => accountSheet(stById(b.dataset.newcode), true));
   B.querySelectorAll("[data-mkacc]").forEach(b => b.onclick = () => accountSheet(stById(b.dataset.mkacc), false));   // 1.35.43
+  B.querySelectorAll("[data-nalist]").forEach(b => b.onclick = () => { const st = stById(b.dataset.nalist); if (st) noAccSet(st, renderWait); });   // 1.35.45
   B.querySelectorAll("[data-goatt]").forEach(b => b.onclick = () => adGo("att"));
   B.querySelectorAll("details.td-sec").forEach(d => d.addEventListener("toggle", () => { if (!AD.tdOpen) AD.tdOpen = new Set(); d.open ? AD.tdOpen.add(d.dataset.td) : AD.tdOpen.delete(d.dataset.td); store("telem_portal_tdopen", JSON.stringify([...AD.tdOpen])); }));
   B.querySelectorAll("[data-dismiss]").forEach(b => b.onclick = () => codeReqDone(b.dataset.dismiss));
@@ -3819,18 +3850,19 @@ function todoHtml(g, mine){
   if (home.length) h += sec("🙋", "ביקשו דף ולא בשיעור", home.length, "מהבית או מקבוצה אחרת – אין צליל ולא נספרים בנוכחות.", wlRows(home, k => waitLine(g, k, false, "")), "td-home");
   // 2. צריכים קוד חדש
   const reqs = myReqs(), rq = new Set(reqs.map(r => String(r.student_id)));
-  const exp = (AD.students || []).filter(s => s.has_account && codeExpired(s) && stMine(s.student_id) && !rq.has(String(s.student_id)));
+  const exp = (AD.students || []).filter(s => s.has_account && codeExpired(s) && stMine(s.student_id) && !rq.has(String(s.student_id)) && !noAcc(s.student_id));
   const codeRow = (s, why, r) => `<div class="wl-row">${who(s, why)}<div class="wl-q td-acts"><button class="btn primary sm" data-newcode="${esc(s.student_id)}">${IC.wa} קוד חדש</button>${r ? `<button class="btn sm ghost" data-dismiss="${esc(s.student_id)}">התעלמות</button>` : ""}</div></div>`;
   if (reqs.length || exp.length) h += sec("🔑", "צריכים קוד חדש", reqs.length + exp.length, "בלי קוד חדש לא יוכלו להיכנס.",
     `<div class="wrows wl">` + [...reqs.map(r => codeRow(stById(r.student_id), `שכח/ה את הקוד · ${esc(ago(r.created_at))}`, r)),
                                 ...exp.map(s => codeRow(s, `הקוד הראשוני פג${s.code_expires_at ? " · " + esc(fmtDay(s.code_expires_at)) : ""}`))].join("") + `</div>`, "td-code");
   // 3. אין להם "תלם שלי"
-  const noA = (AD.students || []).filter(s => !s.has_account && stMine(s.student_id)).sort((a, b) => stName(a).localeCompare(stName(b), "he"));
+  const noA = (AD.students || []).filter(s => !s.has_account && stMine(s.student_id) && !noAcc(s.student_id)).sort((a, b) => stName(a).localeCompare(stName(b), "he"));
+  const who0 = (s, sub) => `<div class="wl-1 wl-nolink"><b>${esc(stName(s))}</b>${sub ? `<small>${sub}</small>` : ""}</div>`;   // 1.35.45: בלי חשבון – לא נלחץ
   if (noA.length) h += sec("🚫", "אין להם \"תלם שלי\"", noA.length, "רשומים לקורס ועוד אין להם חשבון.",
-    `<div class="wrows wl">` + noA.map(s => `<div class="wl-row">${who(s, esc((s.subjects || []).map(sh).join(" · ")))}<div class="wl-q td-acts"><button class="btn sm" data-mkacc="${esc(s.student_id)}">+ פתיחת חשבון</button></div></div>`).join("") + `</div>`, "td-noacc");
+    `<div class="wrows wl">` + noA.map(s => `<div class="wl-row">${who0(s, esc((s.subjects || []).map(sh).join(" · ")))}<div class="wl-q td-acts"><button class="btn sm ghost" data-nalist="${esc(s.student_id)}" title="לא מקבל/ת תלם שלי – לא יופיע/תופיע כאן">🚫 לא צריך/ה</button><button class="btn sm" data-mkacc="${esc(s.student_id)}">+ פתיחת חשבון</button></div></div>`).join("") + `</div>`, "td-noacc");
   // 4. אין דפים בתור – לקראת הקבוצות הבאות (היום, ואם אין – היום הבא)
   const up = upcomingGroups(); if (up) { const used = new Set(home.map(k => String(k.s.student_id))); let n = 0;   // מי שכבר למעלה (ביקש/ה) – לא שוב
-    const body = up.groups.map(gr => { const rows = [...(gr.kids || [])].filter(id => !used.has(String(id))).map(id => stById(String(id))).filter(Boolean).map(st => {
+    const body = up.groups.map(gr => { const rows = [...(gr.kids || [])].filter(id => !used.has(String(id))).map(id => stById(String(id))).filter(st => st && st.has_account && !noAcc(st.student_id)).map(st => {   // נועה: רק מי שבתלם שלי
         const need = (st.subjects || []).filter(x => !queueOf(st.student_id, x).length); if (!need.length) return ""; used.add(String(st.student_id)); n++;
         return `<div class="wl-row">${who(st, "")}${need.map(x => `<div class="wl-q"><span class="subj-chip ${subjCls(x)} on sm">${esc(sh(x))}</span><span class="wl-t bad-t">אין דפים בתור</span><button class="btn sm wr-rel" data-pick="${esc(st.student_id)}" data-subj="${esc(x)}">+ דפים</button></div>`).join("")}</div>`; }).join("");
       return rows ? `<div class="wl-gh">${esc(up.label)} · <bdi>${esc(gr.start || gr.time || "")}</bdi> · ${esc(gr.city || "")}${gr.loc ? " – " + esc(gr.loc) : ""}</div><div class="wrows wl">${rows}</div>` : ""; }).join("");
@@ -4352,7 +4384,7 @@ async function renderStudentPlan(T, mobile){
           return subs.length > 1 ? `<button class="subj-chip ${subjCls(x)} ${x === AD.subj ? "on" : "off"}" data-subj="${esc(x)}" title="תוכנית ${esc(x)}">${x === AD.subj ? IC.check.replace("<svg", '<svg width="13" height="13"') : ""}${esc(x)}${w ? `<span class="wdot" title="ממתין/ה לדף"></span>` : ""}</button>`
                                  : `<span class="subj-chip ${subjCls(x)} on">${esc(x)}</span>`; }).join("")}</div></div>
         ${waiting ? `<span class="chip new">ממתין/ה לדף</span>` : ""}</div>
-      <div class="acc-line">${acc}</div>
+      <div class="acc-line">${acc}${noAccHtml(s)}</div>
       ${stAttHtml(s)}
     </div>
     <div class="plan-cols" style="margin-top:12px">
@@ -4388,7 +4420,7 @@ async function renderStudentPlan(T, mobile){
     </div>
     `;
   const q = (sel) => T.querySelector(sel);
-  if (q("#stBack")) q("#stBack").onclick = () => { if (AD.attRet) return leaveStudent(); AD.st = null; adRender(); }; wireStAtt(T, s);   // 1.35.42: גם במחשב – חזרה לנוכחות
+  if (q("#stBack")) q("#stBack").onclick = () => { if (AD.attRet) return leaveStudent(); AD.st = null; adRender(); }; wireStAtt(T, s); wireNoAcc(T, s, rerenderPlan);   // 1.35.42: גם במחשב – חזרה לנוכחות
   T.querySelectorAll("[data-subj]").forEach(b => b.onclick = () => { AD.subj = b.dataset.subj; AD.sel.clear(); rerenderPlan(); });
   T.querySelectorAll("[data-unrel]").forEach(b => b.onclick = () => unrelease(Number(b.dataset.unrel)));
   T.querySelectorAll("[data-sel]").forEach(c => c.onchange = () => { const id = Number(c.dataset.sel); c.checked ? AD.sel.add(id) : AD.sel.delete(id); selActions(T); });
@@ -4556,13 +4588,13 @@ async function renderStudentMobile(T, s){
   const I = infoOf(s), exL = exLines(I);
   const lvl = [I.math_level && (s.subjects || []).includes("מתמטיקה") ? "מתמטיקה: " + I.math_level : "", I.english_level && (s.subjects || []).includes("אנגלית") ? "אנגלית: " + I.english_level : ""].filter(Boolean);
   // פרטים בשורה אחת: בית ספר · כיתה · הקבצה
-  const accIc = !s.has_account ? `<i class="si si-noacc" title="בלי חשבון">🚫</i>` : s.must_change_code ? `<i class="si ${codeExpired(s) ? "si-bad" : "si-key"}" title="${codeExpired(s) ? "הקוד הראשוני פג" : "עוד לא נכנס/ה"}">🔑</i>` : "";
+  const accIc = noAcc(s.student_id) ? `<i class="si si-noacc" title="בלי תלם שלי">🚫</i>` : !s.has_account ? `<i class="si si-noacc" title="בלי חשבון">🚫</i>` : s.must_change_code ? `<i class="si ${codeExpired(s) ? "si-bad" : "si-key"}" title="${codeExpired(s) ? "הקוד הראשוני פג" : "עוד לא נכנס/ה"}">🔑</i>` : "";
   const det = `<div class="st-det">${[I.school ? esc(I.school) + (I.city ? `<span class="muted">, ${esc(I.city)}</span>` : "") : "",
     I.grade ? "כיתה " + esc(gradeKey(I.grade) + "'" + (I.cls || "")) : "", lvl.length ? "הקבצה " + esc(lvl.join(" · ").replace(/מתמטיקה: /, "מת' ").replace(/אנגלית: /, "אנג' ")) : ""].filter(Boolean).join(" · ") || `<span class="muted">אין פרטים בכרטיס</span>`}</div>`;
   paint(T, `
     <div class="stm-head${pick ? " picking" : ""}">
       <div class="l1">${gradeBadge(I.grade, I.cls)}<b class="nm">${esc(stName(s))}</b>${scChip(I.school)}${subjMini(subs)}${accIc}<span style="flex:1"></span><button class="btn small stm-back2" id="stBack">→ חזרה</button></div>
-      ${pick ? "" : `<div class="acc-mini">${acc}${lvl.length ? `<span class="lvl">הקבצה ${esc(lvl.join(" · ").replace(/מתמטיקה: /, "מת' ").replace(/אנגלית: /, "אנג' "))}</span>` : ""}</div>`}
+      ${pick ? "" : `<div class="acc-mini">${acc}${noAccHtml(s)}${lvl.length ? `<span class="lvl">הקבצה ${esc(lvl.join(" · ").replace(/מתמטיקה: /, "מת' ").replace(/אנגלית: /, "אנג' "))}</span>` : ""}</div>`}
       ${exL ? `<div class="ex-lines">${exL}</div>` : ""}
       ${pick ? "" : stAttHtml(s)}
       ${pick ? `<div class="stm-peekbar">${tabs.map(([k, , n]) => `<button type="button" class="pk-${k}${AD.peek === k ? " on" : ""}" data-peek="${esc(k)}"><span>${SEC[k][0]} ${SEC[k][1]}</span><b>${n}</b></button>`).join("")}</div>
@@ -4571,7 +4603,7 @@ async function renderStudentMobile(T, s){
     ${pick ? `<section class="stm-bank" id="stBankSec"><div id="stBank"></div></section>` : `<div class="stm-body">${body}</div>`}`);
 
   const q = (sel) => T.querySelector(sel);
-  q("#stBack").onclick = leaveStudent; wireExLines(T); wireStAtt(T, s);
+  q("#stBack").onclick = leaveStudent; wireExLines(T); wireStAtt(T, s); wireNoAcc(T, s, () => renderStudentMobile(T, s));
   T.querySelectorAll("[data-sec]").forEach(h => h.onclick = () => { const k = h.dataset.sec, S = AD.secShut; S.has(k) ? S.delete(k) : S.add(k); store("telem_portal_secshut", JSON.stringify([...S])); const y = window.scrollY; renderStudentMobile(T, s); window.scrollTo(0, y); });
   T.querySelectorAll("[data-peek]").forEach(b => b.onclick = () => { AD.peek = AD.peek === b.dataset.peek ? null : b.dataset.peek; const y = window.scrollY; renderStudentMobile(T, s); window.scrollTo(0, y); });
   T.querySelectorAll("[data-stab]").forEach(b => b.onclick = () => { AD.stTab = b.dataset.stab; AD.showDone = false; renderStudentMobile(T, s); window.scrollTo(0, 0); });
@@ -6561,7 +6593,9 @@ $("shRows").addEventListener("click", async (e) => {
   // 1.35.40 (נועה): לחיצה על הילד/ה (השם או השורה) – "כרטיס שיעור": כל הפרטים + הדפים. הכפתורים בשורה (✗/✓, ⊘, מקצוע) – כמו קודם
   const liT = e.target.closest("li[data-i]");
   if (liT && !liT.classList.contains("att-skip") && !e.target.closest("button, input, label, select, textarea, .seg, .att-sj2")) { const k = Number(liT.dataset.i), r = A.rows[k];
-    if (EMBED || !stById(String(r.student_id))) { setTimeout(() => attCard(k), 0); return; }   // בלי "תלם שלי", או בתוך מערכת הניהול (אין שם דף תלמיד) – הכרטיס הקטן
+    const st0 = stById(String(r.student_id));
+    if (!st0 || !st0.has_account || noAcc(r.student_id)) return;   // 1.35.45 (נועה): "אל תיתן בכלל ללחוץ על הילד… אם אין לו תלם שלי"
+    if (EMBED) { setTimeout(() => attCard(k), 0); return; }   // בתוך מערכת הניהול (אין שם דף תלמיד) – הכרטיס הקטן
     // 1.35.42 (נועה): "לא צריכה את הכרטיס שנפתח למטה" – ישר לדף של הילד/ה, עם הפרטים מהנוכחות למעלה
     const pr = (liT._det && liT._det.list || []).find(n => n.classList.contains("att-prev")), pt = liT.querySelector(".att-nm .att-pt");
     AD.attInfo = { sid: String(r.student_id), present: r.present, tracking: r.tracking || null, cmId: r.cmId || null,
@@ -6768,7 +6802,7 @@ function renderSheetRows(){
     const pg2 = li.querySelector(":scope > .att-pgs") || pgs;
     if (sjc) ch.prepend(sjc, ...(pg2 ? [pg2] : [])); else if (pg2) ch.prepend(pg2);
     if (ch.childNodes.length) li.appendChild(ch);
-    li.classList.add("att-tap"); });
+    { const st = stById(sid); li.classList.toggle("att-tap", !!(st && st.has_account && !noAcc(sid))); } });   // 1.35.45 (נועה): בלי "תלם שלי" – לא נלחץ
   updateCount();
 }
 // 1.35.40 (נועה): "כרטיס שיעור" – לחיצה על ילד/ה בנוכחות: למעלה כל הפרטים (מקצוע, הקבצה, מעקב, מבחן, לומדים עכשיו, שיעור קודם), מתחת – הדפים; ‹ › לילד/ה הבא/ה
