@@ -156,6 +156,16 @@
   .viewer.gal .g-track{ flex:1; min-height:0; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; overscroll-behavior:contain; scrollbar-width:none; background:#1b1b1b; -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y; }
   .viewer.gal .g-track::-webkit-scrollbar{ display:none; }
   .viewer.gal .g-track.locked{ overflow-x:hidden; scroll-snap-type:none; }
+  /* 1.35.36: הקלדה על הדף */
+  .viewer.gal .g-slide{ position:relative; }
+  .viewer.gal .g-ans{ position:absolute; inset:0; pointer-events:none; }
+  .viewer.gal .g-box{ position:absolute; pointer-events:auto; display:flex; align-items:flex-start; direction:ltr; }
+  .viewer.gal .g-box textarea{ font:inherit; font-family:inherit; line-height:1.2; color:#1a3fa8; background:transparent; border:1px dashed transparent; border-radius:4px; padding:0 2px; margin:0; resize:none; overflow:hidden; min-width:2.5em; outline:none; box-sizing:content-box; }
+  .viewer.gal.typing .g-box textarea{ border-color:#7aa2f7; background:rgba(255,255,240,.85); }
+  .viewer.gal .g-box .g-bx{ all:unset; display:none; } .viewer.gal.typing .g-box .g-bx{ display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; margin-inline-start:2px; border-radius:50%; background:#b23a2e; color:#fff; font-size:11px; cursor:pointer; flex:none; }
+  .viewer.gal .g-type.on{ background:#fff3c4; color:#5c4500; }
+  .viewer.gal .g-hint{ background:#fff3c4; color:#5c4500; font-size:13px; font-weight:700; text-align:center; padding:6px 10px; } .viewer.gal .g-hint .lnk{ font-weight:800; }
+  .viewer.gal.typing .g-slide img{ cursor:text; }
   .viewer.gal .g-slide{ flex:0 0 100%; width:100%; height:100%; scroll-snap-align:center; scroll-snap-stop:always; display:flex; align-items:center; justify-content:center; overflow:hidden; padding:6px; box-sizing:border-box; }
   .viewer.gal .g-slide img{ display:block; max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; background:#fff; border-radius:3px; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
   .viewer.gal .g-slide.zoomed{ direction:ltr; overflow:auto; align-items:flex-start; justify-content:flex-start; touch-action:pan-x pan-y; }
@@ -783,6 +793,7 @@
   .qr-box svg{ display:block; width:100%; height:auto; } .qr-box .qr-mid{ position:absolute; left:50%; top:50%; width:22%; transform:translate(-50%,-50%); background:#fff; padding:4px; border-radius:10px; }
   .qr-t{ font-size:22px; font-weight:800; margin:14px 0 2px; } .qr-u{ margin:0; font-size:14px; }
   .bk-list .ic-line{ flex-wrap:nowrap; gap:6px; } .bk-list .ic-line b{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; } .bk-list .ic-line .btn{ flex:none; color:var(--ink); text-decoration:none; }   /* 1.35.22 */
+  .lg-caphint{ margin:4px 0 0; padding:6px 10px; border-radius:10px; background:#fff3c4; color:#5c4500; font-size:13.5px; font-weight:700; text-align:center; }
   .lg-captcha{ display:flex; justify-content:center; margin:6px 0 2px; } .lg-captcha:empty{ display:none; }   /* 1.35.22 */
   .ic-row{ width:100%; text-align:start; font:inherit; font-size:14px; color:var(--ink); cursor:pointer; }   /* 1.34.9 (נועה): יציאה – שורה בתפריט */
   .tools-foot{ display:flex; gap:8px; margin-top:12px; } .tools-foot .btn{ flex:1; }
@@ -2115,6 +2126,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
       </div>
       <div class="err" id="lgErr"></div>
       <div id="lgCaptcha" class="lg-captcha"></div>
+      <p id="lgCapHint" class="lg-caphint" hidden>☝️ צריך לסמן את תיבת "אני לא רובוט" שמופיעה כאן – ואז הכניסה תמשיך לבד.</p>
       <button class="btn primary block" id="lgBtn" type="submit">כניסה</button>
     </form>
     <div style="text-align:center" id="forgotNote"><button class="linkish small" id="forgotBtn" type="button">שכחתי את הקוד</button></div>
@@ -2215,7 +2227,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.35",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.37",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2559,14 +2571,27 @@ function capLoad(){
 }
 async function capRender(){
   if (!(await capLoad()) || CAP.id != null || !$("lgCaptcha")) return;
-  try { CAP.id = window.turnstile.render("#lgCaptcha", { sitekey: CAPTCHA_KEY, appearance: "interaction-only", size: "flexible", language: "he" }); } catch(e) {}
+  // 1.35.37 (נועה – ילדים לא הצליחו להיכנס): מאזינים למצב הבדיקה – טוקן / צריך לסמן / שגיאה / פג תוקף
+  try { CAP.id = window.turnstile.render("#lgCaptcha", { sitekey: CAPTCHA_KEY, appearance: "interaction-only", size: "flexible", language: "he",
+    callback: (t) => { CAP.tok = t; CAP.err = null; const h = $("lgCapHint"); if (h) h.hidden = true; },
+    "before-interactive-callback": () => { CAP.inter = true; },
+    "after-interactive-callback": () => { CAP.inter = false; },
+    "expired-callback": () => { CAP.tok = null; },
+    "error-callback": (code) => { CAP.err = String(code || "x"); CAP.tok = null; return true; } }); } catch(e) { CAP.err = "render"; }
 }
+// מחכים לטוקן: בדרך כלל שנייה-שתיים. כשהבדיקה מבקשת לסמן תיבה – מחכים לילד/ה (עד 2 דקות) עם הסבר, ולא נכשלים אחרי 10 שניות כמו קודם
 async function capToken(){
   await capRender(); if (CAP.id == null || !window.turnstile) return null;
-  for (let i = 0; i < 40; i++) { const t = window.turnstile.getResponse(CAP.id); if (t) return t; await new Promise(r => setTimeout(r, 250)); }
+  const hint = $("lgCapHint");
+  for (let i = 0; i < 480; i++) { let t = null; try { t = window.turnstile.getResponse(CAP.id); } catch(e) {}
+    if (t) { if (hint) hint.hidden = true; return t; }
+    if (CAP.err && i > 8) break;
+    if ((CAP.inter || i > 24) && hint) { hint.hidden = false; }
+    if (!CAP.inter && i > 60) break;   // 15 שניות בלי בקשה לסמן – מוותרים (השרת יגיד אם צריך)
+    await new Promise(r => setTimeout(r, 250)); }
   return null;
 }
-function capReset(){ try { if (CAP.id != null && window.turnstile) window.turnstile.reset(CAP.id); } catch(e) {} }
+function capReset(){ CAP.tok = null; CAP.err = null; try { if (CAP.id != null && window.turnstile) window.turnstile.reset(CAP.id); } catch(e) {} }
 $("loginForm").onsubmit = async (ev) => {
   ev.preventDefault();
   const err = $("lgErr"); err.textContent = "";
@@ -2599,7 +2624,7 @@ $("loginForm").onsubmit = async (ev) => {
     await boot();
   } catch(e) {
     capReset();
-    err.textContent = e.status === 400 && /captcha/i.test(JSON.stringify(e.data || "")) ? "בדיקת האבטחה לא הצליחה – כדאי לנסות שוב." : e.status === 400 ? (STAFF_MODE ? "האימייל או הסיסמה לא נכונים." : "הטלפון או הקוד לא נכונים.")
+    err.textContent = e.status === 400 && /captcha/i.test(JSON.stringify(e.data || "")) ? (!window.turnstile || CAP.err ? "בדיקת האבטחה לא נטענה בדפדפן הזה. כדאי לפתוח את הקישור בכרום / ספארי (לא מתוך וואטסאפ) ולנסות שוב." : "בדיקת האבטחה לא הושלמה – לסמן את התיבה ולנסות שוב.") : e.status === 400 ? (STAFF_MODE ? "האימייל או הסיסמה לא נכונים." : "הטלפון או הקוד לא נכונים.")
                     : e.status === 429 ? "יותר מדי ניסיונות. כדאי לחכות כמה דקות." : "אין חיבור. כדאי לבדוק את האינטרנט ולנסות שוב.";
   } finally { $("lgBtn").disabled = false; $("lgBtn").textContent = "כניסה"; }
 };
@@ -2934,6 +2959,16 @@ function openStudentPage(itemId){
   const k = stTaskKey(p), T = k && ST.tasks && ST.tasks.get(k);
   if (T && T.length > 1) openGallery(T, itemId, false, true); else openGallery([p], itemId);
 }
+// 1.35.36: תשובות שהוקלדו על הדף – רק במכשיר (localStorage), לא בשרת. נמחקות אחרי 14 יום
+const ANS_K = "telem-ans-v1";
+function ansAll(){ try { return JSON.parse(localStorage.getItem(ANS_K) || "{}") || {}; } catch(e) { return {}; } }
+function ansPut(o){ try { localStorage.setItem(ANS_K, JSON.stringify(o)); } catch(e) {} }
+function ansGet(k){ const o = ansAll()[k]; return (o && o.b) || []; }
+function ansSet(k, id, t, x, y){ const o = ansAll(), e = o[k] || (o[k] = { b: [] }); let b = e.b.find(z => z.id === id);
+  if (!b) { b = { id, x: x || 0, y: y || 0, t: "" }; e.b.push(b); } b.t = t; e.at = Date.now(); ansPut(o); }
+function ansDel(k, id){ const o = ansAll(); if (!o[k]) return; o[k].b = o[k].b.filter(z => z.id !== id); if (!o[k].b.length) delete o[k]; ansPut(o); }
+function ansPurge(){ const o = ansAll(), lim = Date.now() - 14 * 864e5; let ch = false; Object.keys(o).forEach(k => { if (!o[k] || !(o[k].at > lim)) { delete o[k]; ch = true; } }); if (ch) ansPut(o); }
+try { ansPurge(); } catch(e) {}
 let VW_KEEP = false;
 function openGallery(list, startId, keep, task, deck){
   if (keep) { VW_KEEP = true; closeViewer(true); VW_KEEP = false; } else closeViewer();
@@ -2950,8 +2985,10 @@ function openGallery(list, startId, keep, task, deck){
       <button class="icon-btn" id="vClose" aria-label="חזרה">${IC.back}</button>
       <div class="ttl" id="gTtl"></div>${task ? `<span class="g-task">📎 משימה</span>` : deck ? `<span class="g-task" id="gTaskChip" hidden>📎 משימה</span>` : ""}
       ${n > 1 ? `<span class="g-cnt" id="gCnt"></span>` : ""}
+      <button class="icon-btn g-type" id="gType" aria-label="לכתוב על הדף" title="לכתוב על הדף" hidden>⌨️</button>
       <button class="icon-btn" id="vSave" aria-label="שמירה בטלפון">${IC.save}</button>
     </div>
+    <div class="g-hint" id="gHint" hidden>לגעת במקום בדף ולהקליד · נשמר רק בטלפון הזה · <button type="button" class="lnk" id="gTypeOff">סיום</button></div>
     <div class="g-track" id="gTrack" dir="${ltr ? "ltr" : "rtl"}">${list.map((p, i) => `<div class="g-slide" data-k="${esc(i)}"><img alt="${esc(p.title)}" src="${esc(ST.url(p.storage_path))}" ${Math.abs(i - cur) > 1 ? 'loading="lazy"' : ""} draggable="false"></div>`).join("")}</div>
     ${n > 1 ? `<div class="g-dots" aria-hidden="true" dir="${ltr ? "ltr" : "rtl"}">${list.map((_, i) => `<i data-d="${esc(i)}"></i>`).join("")}</div>` : ""}
     <div class="vbar g-bar" dir="${ltr ? "ltr" : "rtl"}">
@@ -2963,6 +3000,33 @@ function openGallery(list, startId, keep, task, deck){
   VIEWER = host.firstElementChild; vwLock(true);
   const V = VIEWER, tr = V.querySelector("#gTrack"), slides = [...V.querySelectorAll(".g-slide")];
   const img = (i) => slides[i] && slides[i].querySelector("img");
+  // 1.35.36 (נועה): להקליד תשובות על הדף – נשמר רק בטלפון של הילד/ה (לא בשרת), נמחק לבד אחרי שבועיים
+  let typing = false;
+  const ansKey = (i) => list[i] && String(list[i].item_id);
+  const ansDraw = (i) => { const sl = slides[i], im = img(i); if (!sl || !im) return; let ly = sl.querySelector(".g-ans"); const A = ansGet(ansKey(i));
+    if (!A.length && !ly) return; if (!ly) { ly = document.createElement("div"); ly.className = "g-ans"; sl.appendChild(ly); }
+    if (!im.complete || !im.naturalWidth) { im.addEventListener("load", () => ansDraw(i), { once: true }); return; }
+    const L = im.offsetLeft, T = im.offsetTop, W = im.offsetWidth, H = im.offsetHeight, fs = Math.max(11, Math.min(40, W * 0.032));
+    const have = new Map([...ly.children].map(c => [c.dataset.id, c]));
+    A.forEach(b => { let el = have.get(b.id); have.delete(b.id);
+      if (!el) { el = document.createElement("div"); el.className = "g-box"; el.dataset.id = b.id;
+        el.innerHTML = `<textarea rows="1" dir="auto" spellcheck="false" aria-label="תשובה"></textarea><button type="button" class="g-bx" aria-label="מחיקה">✕</button>`;
+        const ta = el.querySelector("textarea"); ta.value = b.t || "";
+        const fit = () => { const n = Math.max(3, ...String(ta.value).split("\n").map(x => x.length)) + 1, wMax = Math.max(40, im.offsetWidth * (1 - b.x) - 26);
+          ta.style.width = "min(" + n + "ch, " + wMax + "px)"; ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; };
+        ta.addEventListener("input", () => { ansSet(ansKey(i), b.id, ta.value); fit(); });
+        ta.addEventListener("blur", () => { if (!ta.value.trim()) { ansDel(ansKey(i), b.id); el.remove(); } });
+        ta.addEventListener("click", (e) => e.stopPropagation()); ta.addEventListener("touchstart", (e) => e.stopPropagation(), { passive: true });
+        el.querySelector(".g-bx").onclick = (e) => { e.stopPropagation(); ansDel(ansKey(i), b.id); el.remove(); };
+        ly.appendChild(el); el._fit = fit; }
+      el.style.left = (L + b.x * W) + "px"; el.style.top = (T + b.y * H) + "px"; el.style.fontSize = fs + "px"; el.classList.toggle("edit", typing && i === cur); el._fit && el._fit(); });
+    have.forEach(el => el.remove()); };
+  const ansAdd = (i, cx, cy) => { const im = img(i); if (!im) return; const r = im.getBoundingClientRect();
+    const x = Math.max(0, Math.min(.97, (cx - r.left) / r.width)), y = Math.max(0, Math.min(.98, (cy - r.top) / r.height)) - 0.012;
+    const id = Date.now().toString(36); ansSet(ansKey(i), id, "", x, Math.max(0, y)); ansDraw(i);
+    const ta = slides[i].querySelector(`.g-box[data-id="${id}"] textarea`); if (ta) ta.focus(); };
+  const typeMode = (on) => { typing = !!on; V.querySelector("#gType").classList.toggle("on", typing); V.querySelector("#gHint").hidden = !typing;
+    tr.classList.toggle("locked", typing || z > 100); V.classList.toggle("typing", typing); ansDraw(cur); };
   // 1.35.34 (נועה): ההגדלה סביב הנקודה שמגדילים (בין שתי האצבעות / איפה שהקישו) – לא קופצת לפינה
   const setZ = (nz, ax, ay) => { const im = img(cur), sl = slides[cur]; if (!im) return;
     const r0 = im.getBoundingClientRect(), cl = (v) => Math.max(0, Math.min(1, v));
@@ -2971,7 +3035,8 @@ function openGallery(list, startId, keep, task, deck){
     sl.classList.toggle("zoomed", z > 100); im.style.width = z > 100 ? z + "%" : ""; tr.classList.toggle("locked", z > 100);
     if (z > 100) { const r1 = im.getBoundingClientRect(), sr = sl.getBoundingClientRect();
       const tx = ax == null ? sr.left + sr.width / 2 : ax, ty = ay == null ? sr.top + sr.height / 2 : ay;
-      sl.scrollLeft += (r1.left + fx * r1.width) - tx; sl.scrollTop += (r1.top + fy * r1.height) - ty; } };
+      sl.scrollLeft += (r1.left + fx * r1.width) - tx; sl.scrollTop += (r1.top + fy * r1.height) - ty; }
+    ansDraw(cur); };
   const show = () => { const p = list[cur]; V.querySelector("#gTtl").textContent = p.title || "";
     if (V.querySelector("#gCnt")) V.querySelector("#gCnt").textContent = (cur + 1) + " / " + n;
     V.querySelectorAll("[data-d]").forEach(d => d.classList.toggle("on", Number(d.dataset.d) === cur));
@@ -2979,6 +3044,9 @@ function openGallery(list, startId, keep, task, deck){
     if (V.querySelector("#gNext")) V.querySelector("#gNext").disabled = cur === n - 1;
     if (p.is_new) { p.is_new = false; rpc("portal_seen", { p_item: p.item_id }).catch(() => {}); }
     if (deck) deckBar(V, list, cur);
+    const tb = V.querySelector("#gType"); if (tb) tb.hidden = list[cur].status !== "נשלח";   // 1.35.36: כתיבה – רק בדף שבעבודה
+    if (typing && list[cur].status !== "נשלח") typeMode(false);
+    [cur - 1, cur, cur + 1].forEach(ansDraw);
     [cur - 1, cur + 1].forEach(k => { const im = img(k); if (im) im.loading = "eager"; }); };
   const go = (k, smooth) => { k = Math.max(0, Math.min(n - 1, k)); if (z > 100) setZ(100); cur = k;
     tr.scrollTo({ left: k * tr.clientWidth * (getComputedStyle(tr).direction === "rtl" ? -1 : 1), behavior: smooth ? "smooth" : "auto" }); show(); };
@@ -2994,8 +3062,11 @@ function openGallery(list, startId, keep, task, deck){
   tr.addEventListener("touchend", (e) => { if (e.touches.length < 2) pd = 0; if (z < 115 && z > 100) setZ(100); });
   ["gesturestart", "gesturechange"].forEach(ev => tr.addEventListener(ev, (e) => e.preventDefault(), { passive: false }));
   let lastTap = 0;
-  tr.addEventListener("click", (e) => { if (!e.target.closest("img")) return; const t = Date.now(); if (t - lastTap < 320) { setZ(z > 100 ? 100 : 220, e.clientX, e.clientY); lastTap = 0; } else lastTap = t; });
+  tr.addEventListener("click", (e) => { if (typing) { const im = e.target.closest(".g-slide img"); if (im && Number(im.closest(".g-slide").dataset.k) === cur) ansAdd(cur, e.clientX, e.clientY); return; }
+    if (!e.target.closest("img")) return; const t = Date.now(); if (t - lastTap < 320) { setZ(z > 100 ? 100 : 220, e.clientX, e.clientY); lastTap = 0; } else lastTap = t; });
   slides.forEach((s, i) => { const im = s.querySelector("img"); im.onerror = () => { const p = list[i]; if (!im.dataset.retry && p.storage_path) { im.dataset.retry = "1"; delete URLS[p.storage_path]; sign([p.storage_path]).then(g => { im.src = g(p.storage_path); }); } }; });
+  V.querySelector("#gType").onclick = () => typeMode(!typing); V.querySelector("#gTypeOff").onclick = () => typeMode(false);
+  addEventListener("resize", () => { if (VIEWER === V) ansDraw(cur); });
   V.querySelector("#vClose").onclick = () => closeViewer();
   V.querySelector("#vSave").onclick = () => { const p = list[cur]; saveImage(ST.url(p.storage_path), p.title); };
   if (V.querySelector("#gPrev")) V.querySelector("#gPrev").onclick = () => go(cur - 1, true);
