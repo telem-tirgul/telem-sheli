@@ -409,6 +409,7 @@
   .wl-undo{ display:flex; align-items:center; gap:10px; margin:0 2px 8px; font-size:13px; color:var(--ok); font-weight:700; } .wl-undo .lnk{ font-size:13px; }
   .wl-all{ display:flex; justify-content:flex-start; margin:0 0 8px; } .wl-sec{ margin-top:18px; } .wl-row.in{ background:color-mix(in srgb, var(--paper) 70%, transparent); } .wl-row.in.need{ border-color:color-mix(in srgb, var(--bad) 35%, var(--border)); }
   .wl-home .wl-row{ background:transparent; border-style:dashed; opacity:.92; } .wl-home .wr-rel.primary{ background:var(--paper) !important; color:var(--accent) !important; border:1.5px solid var(--accent) !important; box-shadow:none !important; }
+  .wl-none{ margin:2px 4px 8px; font-size:13px; } .wl-qn{ flex:none; font-size:11.5px; color:var(--ink-soft); white-space:nowrap; } .wl-q .wl-add{ min-height:28px !important; padding:2px 8px !important; font-size:12px; }
   .wl-ago{ flex:none; color:var(--ink-soft); font-size:11.5px; white-space:nowrap; }
   .toast .toast-act{ all:unset; margin-inline-start:10px; padding:2px 10px; border-radius:999px; background:rgba(255,255,255,.18); font-weight:800; cursor:pointer; }   /* 1.35.27: ממתינים – שורה לכל ילד/ה */
   .wl-row{ background:var(--paper); border:1px solid var(--border); border-radius:14px; padding:6px 10px; display:flex; flex-direction:column; gap:4px; }
@@ -2214,7 +2215,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.34",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.35",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -3608,7 +3609,7 @@ async function renderWait(){
   if (byGroup) h += await waitGroupsHtml(g, list, fresh);
   else if (AD.nreq && (AD.waitTab === "idle" || AD.waitTab === "new")) {}
   else if (AD.nreq && AD.waitTab === "oth" && !list.length) h += `<div class="card muted">אין בקשות אצל מנהלים אחרים.</div>`;
-  else if (!list.length) h += `<div class="card empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.3l2.8 2.8L16.3 9.5"/></svg><h2 style="margin-top:8px">אין ממתינים כרגע</h2><p class="muted">${AD.nreq ? "כשתלמיד/ה יבקש/תבקש את המשימה הבאה, הוא/היא יופיע/תופיע כאן." : "כשתלמיד/ה ילחץ/תלחץ \"סיימתי\", הוא/היא יופיע/תופיע כאן."}</p></div>`;
+  else if (!list.length) h += `<div class="wl-none muted">✓ אין ממתינים כרגע</div>`;   // 1.35.35 (נועה): קטן – העיקר מי שבשיעור ועל מה עובד/ת
   else { const home = AD.waitTab === "oth" ? [] : waitingKids(list.filter(wHome)), wk = waitingKids(list.filter(w => AD.waitTab === "oth" || !wHome(w))), relAll = wk.flatMap(k => k.ws.map(w => queueOf(k.s.student_id, w.subj)[0]).filter(Boolean).map(p => p.id));
     if (relAll.length > 1) h += `<div class="wl-all"><button class="btn primary sm" data-relg="${relAll.join(",")}">${IC.check} שחרור הדף הבא לכל הממתינים (${relAll.length})</button></div>`;   // 1.35.27
     h += wk.length ? wlRows(wk, k => waitLine(g, k, true, AD.nreq ? presChip(k.s.student_id) : doneChip(k.s.student_id, k.ws[0].done_at)))
@@ -3887,11 +3888,13 @@ function inLessonHtml(list){
     const subs = s.subjects, many = subs.length > 1, pl = planOf(s.student_id);
     let rank = 3; const lines = subs.map(x => { const open = pl.filter(p => p.subject === x && p.status === "נשלח").sort((a, b) => String(b.released_at).localeCompare(String(a.released_at)))[0], nx = queueOf(s.student_id, x)[0];
       const chip = `<span class="subj-chip ${subjCls(x)} on sm">${esc(sh(x))}</span>`;   // 1.35.32 (נועה): המקצוע תמיד – גם למי שרשום/ה למקצוע אחד
-      if (open) { if (!open.seen_at) rank = Math.min(rank, 2);
-        return `<div class="wl-q">${chip}<button type="button" class="wl-t" data-open="${esc(s.student_id)}" data-subj="${esc(x)}">✎ <bdi>${esc(ptTitle(open))}</bdi></button><small class="wl-ago">${open.seen_at ? "" : "לא פתח/ה · "}${esc(ago(open.released_at))}</small></div>`; }
+      const qn = queueOf(s.student_id, x).length, addB = `<button class="btn sm wl-add" data-pick="${esc(s.student_id)}" data-subj="${esc(x)}" title="הוספת דפים לתור">+ דפים</button>`;   // 1.35.35 (נועה): להכין תור מראש
+      const qT = `<small class="wl-qn${qn ? "" : " bad-t"}">${qn ? "בתור " + qn : "אין בתור"}</small>`;
+      if (open) { if (!open.seen_at) rank = Math.min(rank, 2); if (!qn) rank = Math.min(rank, 2.5);
+        return `<div class="wl-q">${chip}<button type="button" class="wl-t" data-open="${esc(s.student_id)}" data-subj="${esc(x)}">✎ <bdi>${esc(ptTitle(open))}</bdi></button><small class="wl-ago">${open.seen_at ? "" : "לא פתח/ה · "}${esc(ago(open.released_at))}</small>${qT}${addB}</div>`; }
       rank = Math.min(rank, nx ? 1 : 0);
       return `<div class="wl-q">${chip}<button type="button" class="wl-t" data-open="${esc(s.student_id)}" data-subj="${esc(x)}">${nx ? `אין דף פתוח · הבא: <bdi>${esc(ptTitle(nx))}</bdi>` : `<span class="bad-t">אין דף פתוח ואין דפים בתור</span>`}</button>
-        ${nx ? `<button class="btn primary sm wr-rel" data-rel="${esc(nx.id)}">${IC.check} שחרור</button>` : `<button class="btn sm wr-rel" data-pick="${esc(s.student_id)}" data-subj="${esc(x)}">+ דפים</button>`}</div>`; });
+        ${qn ? qT + addB : ""}${nx ? `<button class="btn primary sm wr-rel" data-rel="${esc(nx.id)}">${IC.check} שחרור</button>` : `<button class="btn sm wr-rel" data-pick="${esc(s.student_id)}" data-subj="${esc(x)}">+ דפים</button>`}</div>`; });
     return { rank, name: stName(s), html: `<div class="wl-row in${rank < 2 ? " need" : ""}"><button type="button" class="wl-1" data-open="${esc(s.student_id)}" data-subj="${esc(subs[0])}"><b>${esc(stName(s))}</b>${presentNow(s.student_id) ? `<span class="chip ok">✓ נוכח/ת</span>` : ""}</button>${lines.join("")}</div>` }; });
   rows.sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name, "he"));
   const nNeed = rows.filter(r => r.rank < 2).length;
