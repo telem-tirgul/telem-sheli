@@ -2081,6 +2081,33 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .crmatt #shRows .att-pgs > .ic-btn{all:unset; display:inline-flex; align-items:center; min-height:24px; padding:1px 8px; border-radius:999px; border:1.5px solid var(--accent); color:var(--accent); font-size:13px; font-weight:800; cursor:pointer; box-sizing:border-box; background:var(--paper); white-space:nowrap;}
 /* 1.35.39: שורה של ילד/ה שממתין/ה לדף – צהוב */
 .crmatt #shRows li[data-i].att-wait{background:#fff6d6; box-shadow:inset -4px 0 0 #e0a100; border-radius:10px;}
+/* 1.35.40: כרטיס שיעור */
+.ac-sheet .ac-tabs{display:flex; gap:6px; margin:0 0 10px;} .ac-sheet .ac-tab{all:unset; flex:1; text-align:center; padding:8px 10px; border-radius:12px; border:1.5px solid var(--border); font-weight:800; cursor:pointer; background:var(--paper);}
+.ac-sheet .ac-tab.on.s-m{background:#E3F4E1; border-color:#8cc98a;} .ac-sheet .ac-tab.on.s-e{background:#FFF6CC; border-color:#e6cf63;} .ac-sheet .ac-tab.on{box-shadow:0 1px 0 rgba(0,0,0,.05);}
+.ac-sheet .ac-p{display:flex; flex-direction:column; gap:10px;} .ac-sheet .ac-1{margin-bottom:2px;}
+.ac-sheet .ac-rq{background:#fff3c4; color:#5c4500; font-weight:800; border-radius:10px; padding:6px 10px;}
+.ac-sheet .ac-w{background:var(--muted, #f5f1ea); border-radius:12px; padding:10px 12px; line-height:1.7;} .ac-sheet .ac-l{font-size:12.5px; color:var(--ink-soft); font-weight:700;}
+.ac-sheet .ac-t{font-size:12.5px; color:var(--ink-soft);} .ac-sheet .ac-rel{align-self:flex-start; min-height:40px; padding:6px 18px;}
+.ac-sheet .ac-w .pt-top{font-weight:800; font-size:15px;} .ac-sheet .ac-w .pt-nm{color:var(--ink-soft); font-size:12.5px;}
+.ac-sheet .ac-w .pt-pos, .ac-sheet .ac-w .pt-lv{font-size:12px; font-weight:800; border-radius:999px; padding:0 7px; background:var(--paper); white-space:nowrap;} .ac-sheet .ac-w .pt-pos{color:var(--accent);} .ac-sheet .ac-w .pt-lv.lv2{color:#6a3fa0;} .ac-sheet .ac-w .pt-lv.lv3{color:#b23a2e;}
+.ac-sheet .ac-f{margin-top:14px; padding-top:10px; border-top:1px solid var(--border);}
+.crmatt #shRows li.att-tap{cursor:pointer;}
+.sheet.ac-sheet{max-width:560px;} .ac-sheet .ac-top{display:flex; align-items:center; gap:10px; margin:0 0 8px; padding-inline-end:34px;}
+.ac-sheet .ac-who{flex:1; min-width:0;} .ac-sheet .ac-who h2{margin:0; font-size:20px;} .ac-sheet .ac-sub{display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; align-items:center;}
+.ac-sheet .ac-nav{all:unset; width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; border:1px solid var(--border); font-size:22px; cursor:pointer; flex:none;} .ac-sheet .ac-nav:disabled{opacity:.3; cursor:default;}
+.ac-sheet .ac-info{display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:8px 0 10px; border-bottom:1px solid var(--border); margin-bottom:10px;}
+.ac-sheet .ac-trk{all:unset; cursor:pointer; background:#fff8d6; border:1px solid #e9cf62; color:#5c4500; border-radius:8px; padding:3px 9px; font-size:13.5px; font-weight:700;} .ac-sheet .ac-trk i{font-style:normal; opacity:.7;}
+.ac-sheet .ac-ex{display:flex; flex-wrap:wrap; gap:6px; width:100%;} .ac-sheet .ac-ex > *{font-size:13px;}
+.ac-sheet .att-sj2, .ac-sheet .subj-mini{pointer-events:none;}
+.ac-sheet .att-det{display:flex; flex-direction:column; gap:12px; font-size:14px;} .ac-sheet .att-det .ad-s{display:flex; flex-direction:column; gap:4px;} .ac-sheet .att-det .ad-h{display:flex; align-items:center; gap:8px;}
+.ac-sheet .att-det .ad-q{display:flex; flex-direction:column; gap:6px; font-size:13px;} .ac-sheet .att-det .ad-qi{line-height:1.7;} .ac-sheet .att-det .ad-qi > *{margin-inline-end:4px;} .ac-sheet .att-det .ad-w{line-height:1.7;}
+.ac-sheet .att-det .ad-b{display:flex; gap:8px; flex-wrap:wrap;} .ac-sheet .att-det .ad-rq{color:#8a5a00; font-size:13px;}
+.ac-sheet .att-det .ad-qx{all:unset; cursor:pointer; color:var(--bad); font-size:12px; padding:0 6px; border-radius:999px; border:1px solid color-mix(in srgb, var(--bad) 40%, transparent);}
+.ac-sheet .att-det .ad-un{all:unset; cursor:pointer; font-size:12px; font-weight:700; color:var(--accent); padding:0 8px; border-radius:999px; border:1px solid color-mix(in srgb, var(--accent) 40%, transparent); white-space:nowrap;}
+.ac-sheet .att-det .pt-top{font-weight:800;} .ac-sheet .att-det .pt-nm{color:var(--ink-soft); font-size:12px;}
+.ac-sheet .att-det .pt-pos{font-size:11.5px; font-weight:800; color:var(--accent); background:var(--muted, #f5f1ea); border-radius:999px; padding:0 6px; white-space:nowrap;}
+.ac-sheet .att-det .pt-lv{font-size:11.5px; font-weight:700; border-radius:999px; padding:0 6px; background:var(--muted, #f5f1ea); white-space:nowrap;} .ac-sheet .att-det .pt-lv.lv2{color:#6a3fa0;} .ac-sheet .att-det .pt-lv.lv3{color:#b23a2e;}
+.ac-sheet .att-det .ad-f{padding-top:6px; border-top:1px dashed var(--border);}
 /* 1.35.38: שורה נפתחת בנוכחות */
 .crmatt #shRows .att-exp{display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:24px; margin-inline-start:4px; border-radius:999px; border:1px solid var(--border); background:var(--paper); color:var(--ink-soft); font-size:13px; cursor:pointer; flex:none;}
 .crmatt #shRows .att-exp.on{background:var(--accent); color:#fff; border-color:var(--accent);} .crmatt #shRows .att-exp.rq{border-color:#e0a100; background:#fff3c4; color:#5c4500;}
@@ -2245,7 +2272,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.39",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.40",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -6438,8 +6465,10 @@ function setPresent(r, v){
 document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && $("kidPop") && !$("kidPop").hidden) $("kidPop").hidden = true; });
 $("shRows").addEventListener("click", async (e) => {
   // 5.19.14: מנהלים - לחיצה על שם הילד/ה פותחת את כרטיס התלמיד; "חזרה לנוכחות" מחזיר לאותה קבוצה ואותו יום (הסימון נשמר בטלפון)
+  // 1.35.40 (נועה): לחיצה על הילד/ה (השם או השורה) – "כרטיס שיעור": כל הפרטים + הדפים. הכפתורים בשורה (✗/✓, ⊘, מקצוע) – כמו קודם
+  const liT = e.target.closest("li[data-i]");
+  if (liT && !liT.classList.contains("att-skip") && !e.target.closest("button, input, label, select, textarea, .seg, .att-sj2")) { const k = Number(liT.dataset.i); setTimeout(() => attCard(k), 0); return; }   // אחרי שהלחיצה נגמרת (אחרת היא סוגרת את החלון)
   const kl = e.target.closest("[data-kl]");
-  // 5.19.23: לחיצה על השם - חלון עם הפרטים העיקריים והשיבוצים; לכרטיס (לעריכה) רק בכפתור
   if (kl) { ATT_KID(kl.dataset.kl); return; }
   const tip = e.target.closest("[data-tip]"); if (tip) { toast(tip.dataset.tip); return; }   // 1.35.24: אייקון – הפרטים בלחיצה
   const trk = e.target.closest("[data-trk]");   // 1.35.13: עריכת המעקב
@@ -6629,22 +6658,71 @@ function renderSheetRows(){
     // 1.35.38 (נועה): שורה פחות עמוסה – מבחן / לומדים עכשיו / שיעור קודם עוברים לשורה הנפתחת (▾); בשורה – 🙋 כשביקש/ה דף
     const r = A.rows[Number(li.dataset.i)], sid = r ? String(r.student_id) : "", det0 = li._det && li._det.sid === sid ? li._det.list : [];   // השורה יכולה להיות מצוירת שוב (אותו li) – הפרטים שכבר הוצאו נשמרים עליה
     li.querySelectorAll(".att-exp, .att-req, :scope > .att-det").forEach(x => x.remove());
-    const fresh = [...ch.querySelectorAll(":scope > .ex-tag, :scope > .att-prev, :scope > .ic-btn.ap-trk")]; fresh.forEach(x => x.remove());
+    const fresh = [...ch.querySelectorAll(":scope > .lvl-chip, :scope > .att-track, :scope > .ex-tag, :scope > .att-prev, :scope > .ic-btn.ap-trk")]; fresh.forEach(x => x.remove());   // 1.35.40: גם ההקבצה והמעקב – לכרטיס
     const det = fresh.length ? fresh : det0; li._det = { sid, list: det };   // גם "📌+" (הוספת מעקב) – בשורה הנפתחת
     const rq = (AD.nreq || []).filter(q => String(q.student_id) === sid);
     li.classList.toggle("att-wait", rq.length > 0);   // 1.35.39 (נועה): כל השורה בצבע כשהילד/ה ממתין/ה לדף
     const pgx = li.querySelector(".att-pgs");
     if (rq.length && pgx) { const b = document.createElement("span"); b.className = "att-req"; b.title = "ביקש/ה את הדף הבא" + (rq.length > 1 ? " (" + rq.map(q => q.subject).join(", ") + ")" : ""); b.textContent = "🙋"; pgx.prepend(b); }
-    if (r && sid) { const op = A.openRows.has(r.student_id), t = document.createElement("span");
-      t.className = "att-exp" + (op ? " on" : "") + (rq.length ? " rq" : ""); t.dataset.tog = "1"; t.setAttribute("role", "button"); t.tabIndex = 0; t.title = op ? "סגירה" : "הדפים ועוד פרטים"; t.textContent = op ? "▴" : "▾";
-      // 1.35.39 (נועה): ה-▾ ירד שורה ליד השם – עכשיו בשורה השנייה, ליד סטטוס הדפים והמקצוע (לא תופס מקום בשורת השם)
-      let px = li.querySelector(".att-pgs"); if (!px) { px = document.createElement("div"); px.className = "att-pgs"; li.appendChild(px); }
-      px.appendChild(t); }
+    // 1.35.40: בלי ▾ – לחיצה על השורה פותחת את כרטיס השיעור
     const pg2 = li.querySelector(":scope > .att-pgs") || pgs;
     if (sjc) ch.prepend(sjc, ...(pg2 ? [pg2] : [])); else if (pg2) ch.prepend(pg2);
     if (ch.childNodes.length) li.appendChild(ch);
-    if (r && sid && A.openRows.has(r.student_id)) li.appendChild(attDetail(r, det)); });
+    li.classList.add("att-tap"); });
   updateCount();
+}
+// 1.35.40 (נועה): "כרטיס שיעור" – לחיצה על ילד/ה בנוכחות: למעלה כל הפרטים (מקצוע, הקבצה, מעקב, מבחן, לומדים עכשיו, שיעור קודם), מתחת – הדפים; ‹ › לילד/ה הבא/ה
+function attCard(i){
+  const vis = A.rows.map((r, k) => [r, k]).filter(([r]) => shVisible(r)).map(([, k]) => k), pos = vis.indexOf(i); if (pos < 0) return;
+  const r = A.rows[i], sid = String(r.student_id), li = $("shRows").querySelector(`li[data-i="${i}"]`);
+  const det = (li && li._det && li._det.list) || [], pick = (cls) => det.filter(n => n.classList.contains(cls));
+  const nm = ((r.first_name || "") + " " + (r.last_name || "")).trim(), pt = li && li.querySelector(".att-nm .att-pt");
+  const sch = li && li.querySelector(".att-nm .school-chip"), badge = li && li.querySelector(".g-badge, .grade-badge, [class*='gbadge']");
+  const prev = pos > 0 ? vis[pos - 1] : null, next = pos < vis.length - 1 ? vis[pos + 1] : null;
+  window.openSheet(`<div class="ac-top"><button type="button" class="ac-nav" data-acn="${prev ?? ""}" ${prev == null ? "disabled" : ""} aria-label="הקודם/ת">›</button>
+      <div class="ac-who"><h2>${esc(nm)}</h2><div class="ac-sub"></div></div>
+      <button type="button" class="ac-nav" data-acn="${next ?? ""}" ${next == null ? "disabled" : ""} aria-label="הבא/ה">‹</button></div>
+    <div class="ac-info"></div><div class="ac-pages"></div>`, (S) => {
+    const sub = S.querySelector(".ac-sub"); [sch, pt].forEach(n => { if (n) sub.appendChild(n.cloneNode(true)); });
+    if (r.present === true) sub.insertAdjacentHTML("beforeend", `<span class="chip ok">✓ נוכח/ת</span>`); else if (r.present === false) sub.insertAdjacentHTML("beforeend", `<span class="chip bad">✗ חסר/ה</span>`);
+    const info = S.querySelector(".ac-info");
+    const sj = li && li.querySelector(".att-sjc"); if (sj) { const c = sj.cloneNode(true); c.querySelectorAll("input").forEach(x => x.disabled = true); info.appendChild(c); }
+    pick("lvl-chip").forEach(n => info.appendChild(n.cloneNode(true)));
+    const trk = pick("att-track")[0], trkAdd = pick("ap-trk")[0];
+    if (trk || trkAdd) { const b = document.createElement("button"); b.type = "button"; b.className = "ac-trk"; b.innerHTML = trk ? `📌 ${esc(r.tracking || trk.textContent.replace(/^📌\s*|✎$/g, ""))} <i>✎</i>` : "📌 + מעקב";
+      b.onclick = async () => { closeSheet(); const res = await editTracking(r.student_id, r.tracking, nm, r.cmId || null); if (res) renderSheetRows(); attCard(i); }; info.appendChild(b); }
+    const ex = det.filter(n => n.classList.contains("ex-tag") || n.classList.contains("att-prev"));
+    if (ex.length) { const d = document.createElement("div"); d.className = "ac-ex"; ex.forEach(n => { const c = n.cloneNode(true); if (c.classList.contains("ic-only")) { c.textContent = c.title || c.textContent; c.classList.remove("ic-only"); } d.appendChild(c); }); info.appendChild(d);
+      d.querySelectorAll("[data-ex]").forEach(b => b.onclick = () => exSheet(b.dataset.ex)); }
+    S.querySelector(".ac-pages").appendChild(attNow(r));   // 1.35.40 (נועה): רק על מה עובד/ת עכשיו – כל מקצוע בלשונית נפרדת
+    const re = () => { renderSheetRows(); attCard(i); };
+    S.querySelectorAll("[data-acs]").forEach(b => b.onclick = () => { S.querySelectorAll("[data-acs]").forEach(x => x.classList.toggle("on", x === b)); S.querySelectorAll("[data-acp]").forEach(x => x.hidden = x.dataset.acp !== b.dataset.acs); A.acSubj = b.dataset.acs; });
+    S.querySelectorAll("[data-acn]").forEach(b => b.onclick = () => { if (b.dataset.acn !== "") attCard(Number(b.dataset.acn)); });
+    S.querySelectorAll("[data-relp]").forEach(b => b.onclick = async () => { b.disabled = true; await releaseItems([Number(b.dataset.relp)]); re(); });
+    S.querySelectorAll("[data-qrm]").forEach(b => b.onclick = async () => { b.disabled = true; await removePlan(Number(b.dataset.qrm)); re(); });
+    S.querySelectorAll("[data-unrel]").forEach(b => b.onclick = async () => { b.disabled = true; await unrelease(Number(b.dataset.unrel)); re(); });   // נועה: דף בעבודה – קודם חוזר לתור, ורק משם מוחקים
+    S.querySelectorAll("[data-addp]").forEach(b => b.onclick = () => { closeSheet(); ATT_ADD(b.dataset.addp, b.dataset.subj); });
+    S.querySelectorAll("[data-kl]").forEach(b => b.onclick = () => { closeSheet(); ATT_KID(b.dataset.kl); });
+  }, "ac-sheet");
+}
+// 1.35.40 (נועה): בכרטיס השיעור – לכל מקצוע לשונית משלו; רק על מה עובד/ת עכשיו. אין דף בעבודה – הבא בתור + "✓ שחרור" (ואם אין בתור – "+ דפים"). כל השאר – בדף התלמיד/ה
+function attNow(r){
+  const sid = String(r.student_id), st = stById(sid), sh = (x) => x === "מתמטיקה" ? "מתמטיקה" : x === "אנגלית" ? "אנגלית" : x;
+  const subs = (st && st.subjects && st.subjects.length ? st.subjects : [rowSubj(r)]).filter(Boolean), el = document.createElement("div"); el.className = "ac-now";
+  if (!st) { el.innerHTML = `<p class="muted">אין ל${esc(r.first_name || "")} חשבון ב"תלם שלי".</p>`; return el; }
+  const rqS = (x) => (AD.nreq || []).some(z => String(z.student_id) === sid && z.subject === x);
+  const openOf = (x) => planOf(sid, x).filter(p => p.status === "נשלח").sort((a, b) => String(b.released_at).localeCompare(String(a.released_at)));
+  const first = subs.find(rqS) || subs.find(x => !openOf(x).length) || (subs.includes(A.acSubj) ? A.acSubj : subs[0]);
+  el.innerHTML = (subs.length > 1 ? `<div class="ac-tabs" role="tablist">${subs.map(x => `<button type="button" role="tab" class="ac-tab ${subjCls(x)}${x === first ? " on" : ""}" data-acs="${esc(x)}">${esc(sh(x))}${rqS(x) ? " 🙋" : ""}</button>`).join("")}</div>` : "")
+    + subs.map(x => { const op = openOf(x), nx = queueOf(sid, x)[0];
+      return `<div class="ac-p" data-acp="${esc(x)}" ${x === first ? "" : "hidden"}>${subs.length === 1 ? `<div class="ac-1"><span class="subj-chip ${subjCls(x)} on">${esc(sh(x))}</span></div>` : ""}
+        ${rqS(x) ? `<div class="ac-rq">🙋 ביקש/ה את הדף הבא</div>` : ""}
+        ${op.length ? op.map(o => `<div class="ac-w"><div class="ac-l">עובד/ת עכשיו על</div>${ptLine(o)}<div class="ac-t">נשלח ${esc(ago(o.released_at))}${o.seen_at ? "" : " · <b class=\"bad-t\">עוד לא פתח/ה</b>"}</div></div>`).join("")
+          : nx ? `<div class="ac-w"><div class="ac-l">אין דף בעבודה · הבא בתור</div>${ptLine(nx)}</div><button type="button" class="btn primary ac-rel" data-relp="${esc(nx.id)}">✓ שחרור</button>`
+          : `<div class="ac-w"><div class="ac-l bad-t">אין דף בעבודה ואין דפים בתור</div></div><button type="button" class="btn ac-rel" data-addp="${esc(sid)}" data-subj="${esc(x)}">+ דפים</button>`}
+      </div>`; }).join("")
+    + `<div class="ac-f"><button type="button" class="btn ghost" data-kl="${esc(sid)}">לדף של ${esc(r.first_name || "")} – התור, דפים ועוד ←</button></div>`;
+  return el;
 }
 // 1.35.38 (נועה): השורה הנפתחת בנוכחות – לכל מקצוע: על מה עובד/ת, מה בתור, ✓ שחרור הבא / + דפים; ומתחת – מבחן, לומדים עכשיו, השיעור הקודם
 function attDetail(r, extra){
@@ -6654,7 +6732,7 @@ function attDetail(r, extra){
   el.innerHTML = (!st ? `<div class="ad-w muted">אין ל${esc(r.first_name || "")} חשבון ב"תלם שלי".</div>` : "") + (!st ? [] : subs).map(x => { const pl = planOf(sid, x), open = pl.filter(p => p.status === "נשלח").sort((a, b) => String(b.released_at).localeCompare(String(a.released_at))), q = queueOf(sid, x);
       const rq = (AD.nreq || []).some(z => String(z.student_id) === sid && z.subject === x);
       return `<div class="ad-s"><div class="ad-h"><span class="subj-chip ${subjCls(x)} on sm">${esc(sh(x))}</span>${rq ? `<b class="ad-rq">🙋 ביקש/ה את הבא</b>` : ""}</div>
-        ${open.length ? open.map(o => `<div class="ad-w">✎ ${ptLine(o)} <small>· ${o.seen_at ? "" : "לא פתח/ה · "}${esc(ago(o.released_at))}</small></div>`).join("") : `<div class="ad-w muted">אין דף בעבודה</div>`}
+        ${open.length ? open.map(o => `<div class="ad-w">✎ ${ptLine(o)} <small>· ${o.seen_at ? "" : "לא פתח/ה · "}${esc(ago(o.released_at))}</small> <button type="button" class="ad-un" data-unrel="${esc(o.id)}" title="החזרה לתור (משם אפשר למחוק)">↩ לתור</button></div>`).join("") : `<div class="ad-w muted">אין דף בעבודה</div>`}
         <div class="ad-q">${q.length ? `<span class="muted">בתור:</span>${q.slice(0, 3).map((p, i) => `<span class="ad-qi">${i + 1}. ${ptLine(p)}<button type="button" class="ad-qx" data-qrm="${esc(p.id)}" title="הסרה מהתור" aria-label="הסרה מהתור">✕</button></span>`).join("")}${q.length > 3 ? `<span class="muted">ועוד ${q.length - 3}</span>` : ""}` : `<span class="bad-t">אין דפים בתור</span>`}</div>
         <div class="ad-b">${q.length ? `<button type="button" class="btn primary sm" data-relp="${esc(q[0].id)}">✓ שחרור הבא</button>` : ""}<button type="button" class="btn sm" data-addp="${esc(sid)}" data-subj="${esc(x)}">+ דפים</button></div></div>`; }).join("")
     + `<div class="ad-x"></div>${st ? `<div class="ad-f"><button type="button" class="lnk" data-kl="${esc(sid)}">כל התוכנית ←</button></div>` : ""}`;
