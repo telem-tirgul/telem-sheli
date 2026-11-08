@@ -2079,6 +2079,8 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .crmatt #shRows .att-pgs > .pg-ic{display:inline-flex; align-items:center; justify-content:center; min-height:24px; min-width:26px; padding:1px 6px; border-radius:999px; font-size:14px; cursor:pointer; box-sizing:border-box; background:var(--ok-bg); color:var(--ok);}
 .crmatt #shRows .att-pgs > .pg-ic.pw{background:var(--warn-bg);} .crmatt #shRows .att-pgs > .pg-ic.px{background:#FDE8E6; color:var(--bad);}
 .crmatt #shRows .att-pgs > .ic-btn{all:unset; display:inline-flex; align-items:center; min-height:24px; padding:1px 8px; border-radius:999px; border:1.5px solid var(--accent); color:var(--accent); font-size:13px; font-weight:800; cursor:pointer; box-sizing:border-box; background:var(--paper); white-space:nowrap;}
+/* 1.35.39: שורה של ילד/ה שממתין/ה לדף – צהוב */
+.crmatt #shRows li[data-i].att-wait{background:#fff6d6; box-shadow:inset -4px 0 0 #e0a100; border-radius:10px;}
 /* 1.35.38: שורה נפתחת בנוכחות */
 .crmatt #shRows .att-exp{display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:24px; margin-inline-start:4px; border-radius:999px; border:1px solid var(--border); background:var(--paper); color:var(--ink-soft); font-size:13px; cursor:pointer; flex:none;}
 .crmatt #shRows .att-exp.on{background:var(--accent); color:#fff; border-color:var(--accent);} .crmatt #shRows .att-exp.rq{border-color:#e0a100; background:#fff3c4; color:#5c4500;}
@@ -2243,7 +2245,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.38",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.39",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -3372,6 +3374,7 @@ async function adPoll(){
     // מרעננים את המסך רק כשאין חלון פתוח (כדי לא להפריע באמצע עבודה)
     if (!SHEET && $("drawer").hidden && AD.view === "wait" && !AD.st) renderWait();
     else if (!SHEET && !VIEWER && $("drawer").hidden && AD.st && !AD.bank.pick) rerenderPlan();   // 1.15: גם מסך התלמיד/ה מתעדכן
+    else if (!SHEET && typeof ATTM !== "undefined" && ATTM.isOpen) ATTM.refresh();   // 1.35.39: בנוכחות – 🙋 והפס מתעדכנים מיד
   } catch(e) {}
   finally { AD_POLLING = false; updateTitle(); }
 }
@@ -6270,7 +6273,7 @@ const subjDefault = (subj) => ({ m: !subj || subj.indexOf("מתמטיקה") >= 0
 const shVisible = (r) => !r.skip && (!A.splitView || r.split_id === Number(A.splitView));
 function renderSplitBar(){
   const sp = (A.sheet && A.sheet.splits) || [], bar = $("shSplitBar");
-  if (true || !sp.length || ME.role === "instructor") { bar.hidden = true; bar.innerHTML = ""; return; }   // לא בשימוש
+  if (true || !sp.length || ME.role === "instructor") { bar.hidden = true; bar.innerHTML = ""; return; }   // לא בשימוש (1.35.39: גם בלי פס דפים – נועה: "יש לי את זה בממתינים")
   bar.hidden = false;
   bar.innerHTML = `<span class="lbl2">תת-קבוצות:</span><button type="button" data-sv2="" aria-pressed="${!A.splitView}">כולם (${A.rows.length})</button>` + sp.map(s => `<button type="button" data-sv2="${esc(s.id)}" aria-pressed="${String(A.splitView) === String(s.id)}">${esc(s.name)}${s.room ? " · " + esc(s.room) : ""}${s.instructor ? " · " + esc(s.instructor) : ""} (${A.rows.filter(r => r.split_id === s.id).length})</button>`).join("");
   bar.querySelectorAll("[data-sv2]").forEach(b => b.onclick = () => { A.splitView = b.dataset.sv2; renderSheetRows(); });
@@ -6629,12 +6632,16 @@ function renderSheetRows(){
     const fresh = [...ch.querySelectorAll(":scope > .ex-tag, :scope > .att-prev, :scope > .ic-btn.ap-trk")]; fresh.forEach(x => x.remove());
     const det = fresh.length ? fresh : det0; li._det = { sid, list: det };   // גם "📌+" (הוספת מעקב) – בשורה הנפתחת
     const rq = (AD.nreq || []).filter(q => String(q.student_id) === sid);
+    li.classList.toggle("att-wait", rq.length > 0);   // 1.35.39 (נועה): כל השורה בצבע כשהילד/ה ממתין/ה לדף
     const pgx = li.querySelector(".att-pgs");
     if (rq.length && pgx) { const b = document.createElement("span"); b.className = "att-req"; b.title = "ביקש/ה את הדף הבא" + (rq.length > 1 ? " (" + rq.map(q => q.subject).join(", ") + ")" : ""); b.textContent = "🙋"; pgx.prepend(b); }
     if (r && sid) { const op = A.openRows.has(r.student_id), t = document.createElement("span");
       t.className = "att-exp" + (op ? " on" : "") + (rq.length ? " rq" : ""); t.dataset.tog = "1"; t.setAttribute("role", "button"); t.tabIndex = 0; t.title = op ? "סגירה" : "הדפים ועוד פרטים"; t.textContent = op ? "▴" : "▾";
-      if (nm) nm.appendChild(t); }
-    if (sjc) ch.prepend(sjc, ...(pgs ? [pgs] : [])); else if (pgs) ch.prepend(pgs);
+      // 1.35.39 (נועה): ה-▾ ירד שורה ליד השם – עכשיו בשורה השנייה, ליד סטטוס הדפים והמקצוע (לא תופס מקום בשורת השם)
+      let px = li.querySelector(".att-pgs"); if (!px) { px = document.createElement("div"); px.className = "att-pgs"; li.appendChild(px); }
+      px.appendChild(t); }
+    const pg2 = li.querySelector(":scope > .att-pgs") || pgs;
+    if (sjc) ch.prepend(sjc, ...(pg2 ? [pg2] : [])); else if (pg2) ch.prepend(pg2);
     if (ch.childNodes.length) li.appendChild(ch);
     if (r && sid && A.openRows.has(r.student_id)) li.appendChild(attDetail(r, det)); });
   updateCount();
