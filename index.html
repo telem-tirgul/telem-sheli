@@ -2107,7 +2107,12 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .ac-sheet.st-att{margin:6px 0 2px;} .ac-sheet.st-att .ac-info{border-bottom:0; padding:0 0 6px; margin:0;} .ac-sheet .st-pt{font-weight:800; font-size:12.5px;}
 .ac-sheet.st-att .att-prev{background:#EEF0F2; color:#555; border-radius:999px; padding:0 8px; font-weight:700;} .ac-sheet.st-att .chip{margin:0;}
 .crmatt #shRows .pg-ic.p1{background:#FFF4DE !important; color:#9A6A00 !important; font-weight:900;} .crmatt #shRows .pg-ic.p1 .p1n{font-size:12px; padding:0 2px;}
-.td-sec{margin:0 0 16px;} .td-sec .td-n{display:inline-block; min-width:22px; border-radius:999px; background:var(--gold); color:#fff; font-size:13px; padding:0 6px; text-align:center; margin-inline-start:4px;}
+.stm-row .q-rm{width:28px !important; height:28px !important; min-width:28px; font-size:13px; color:var(--ink-soft); border-radius:50%;} .stm-cols .stm-row .q-rm{width:24px !important; height:24px !important; min-width:24px; font-size:12px;}
+.td-sec{margin:0 0 10px; background:var(--card, #fff); border:1.5px solid var(--border); border-radius:14px; overflow:hidden;}
+.td-sec > summary{list-style:none; cursor:pointer; display:flex; align-items:center; gap:8px; padding:12px 14px; font-weight:800; font-size:16px;} .td-sec > summary::-webkit-details-marker{display:none;}
+.td-sec > summary .td-t{flex:1;} .td-sec .td-car{transition:transform .15s; color:var(--ink-soft);} .td-sec[open] .td-car{transform:rotate(180deg);}
+.td-sec[open] > summary{border-bottom:1px solid var(--border);} .td-sec .td-b{padding:8px 10px 10px;} .td-sec .td-b .lb-note{margin:0 4px 8px;}
+.td-home{border-color:#e9cf62;} .td-code{border-color:#e9b44c;} .td-sec .td-n{display:inline-block; min-width:22px; border-radius:999px; background:var(--gold); color:#fff; font-size:13px; padding:0 6px; text-align:center; margin-inline-start:4px;}
 .td-noacc .td-n, .td-noq .td-n{background:var(--ink-soft);} .td-att{background:#fff8d6; border:1px solid #e9cf62; border-radius:12px; padding:8px 12px; margin:0 0 14px; font-weight:700;}
 .td-acts{justify-content:flex-end;}
 /* 1.35.38: שורה נפתחת בנוכחות */
@@ -2274,7 +2279,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.43",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.44",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -3771,6 +3776,7 @@ async function renderWait(){
   B.querySelectorAll("[data-newcode]").forEach(b => b.onclick = () => accountSheet(stById(b.dataset.newcode), true));
   B.querySelectorAll("[data-mkacc]").forEach(b => b.onclick = () => accountSheet(stById(b.dataset.mkacc), false));   // 1.35.43
   B.querySelectorAll("[data-goatt]").forEach(b => b.onclick = () => adGo("att"));
+  B.querySelectorAll("details.td-sec").forEach(d => d.addEventListener("toggle", () => { if (!AD.tdOpen) AD.tdOpen = new Set(); d.open ? AD.tdOpen.add(d.dataset.td) : AD.tdOpen.delete(d.dataset.td); store("telem_portal_tdopen", JSON.stringify([...AD.tdOpen])); }));
   B.querySelectorAll("[data-dismiss]").forEach(b => b.onclick = () => codeReqDone(b.dataset.dismiss));
   B.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { if (b.dataset.f) AD.filter = b.dataset.f; adGo(b.dataset.go); });
   B.querySelectorAll("[data-rel]").forEach(b => b.onclick = () => releaseItems([Number(b.dataset.rel)]));
@@ -3803,7 +3809,9 @@ function upcomingGroups(){
 function todoHtml(g, mine){
   let h = "";
   const sh = (x) => x === "מתמטיקה" ? "מת'" : x === "אנגלית" ? "אנג'" : x;
-  const sec = (ic, t, cnt, note, body, cls) => `<section class="td-sec ${cls || ""}"><div class="sec-h wl-sec">${ic} ${t} <b class="td-n">${cnt}</b></div>${note ? `<div class="lb-note">${note}</div>` : ""}${body}</section>`;
+  // 1.35.44 (נועה): כל נושא במסגרת שנפתחת – הכותרות עם המספר זו מתחת לזו, פותחים את מה שצריך (נזכר בטלפון)
+  if (!AD.tdOpen) { let o = null; try { o = JSON.parse(store("telem_portal_tdopen") || "null"); } catch(e) {} AD.tdOpen = new Set(Array.isArray(o) ? o : ["td-home"]); }
+  const sec = (ic, t, cnt, note, body, cls) => `<details class="td-sec ${cls}" data-td="${cls}"${AD.tdOpen.has(cls) ? " open" : ""}><summary><span class="td-ic">${ic}</span><span class="td-t">${t}</span><b class="td-n">${cnt}</b><span class="td-car" aria-hidden="true">▾</span></summary><div class="td-b">${note ? `<div class="lb-note">${note}</div>` : ""}${body}</div></details>`;
   const who = (s, sub) => `<button type="button" class="wl-1" data-open="${esc(s.student_id)}" data-subj="${esc((s.subjects || [])[0] || "")}"><b>${esc(stName(s))}</b>${sub ? `<small>${sub}</small>` : ""}</button>`;
   // 1. ביקשו דף ולא בשיעור (מהבית / מקבוצה אחרת)
   const inL = waitingKids(mine.filter(w => !wHome(w))), home = waitingKids(mine.filter(wHome));
@@ -3815,7 +3823,7 @@ function todoHtml(g, mine){
   const codeRow = (s, why, r) => `<div class="wl-row">${who(s, why)}<div class="wl-q td-acts"><button class="btn primary sm" data-newcode="${esc(s.student_id)}">${IC.wa} קוד חדש</button>${r ? `<button class="btn sm ghost" data-dismiss="${esc(s.student_id)}">התעלמות</button>` : ""}</div></div>`;
   if (reqs.length || exp.length) h += sec("🔑", "צריכים קוד חדש", reqs.length + exp.length, "בלי קוד חדש לא יוכלו להיכנס.",
     `<div class="wrows wl">` + [...reqs.map(r => codeRow(stById(r.student_id), `שכח/ה את הקוד · ${esc(ago(r.created_at))}`, r)),
-                                ...exp.map(s => codeRow(s, `הקוד הראשוני פג${s.code_expires_at ? " · " + esc(fmtDay(s.code_expires_at)) : ""}`))].join("") + `</div>`);
+                                ...exp.map(s => codeRow(s, `הקוד הראשוני פג${s.code_expires_at ? " · " + esc(fmtDay(s.code_expires_at)) : ""}`))].join("") + `</div>`, "td-code");
   // 3. אין להם "תלם שלי"
   const noA = (AD.students || []).filter(s => !s.has_account && stMine(s.student_id)).sort((a, b) => stName(a).localeCompare(stName(b), "he"));
   if (noA.length) h += sec("🚫", "אין להם \"תלם שלי\"", noA.length, "רשומים לקורס ועוד אין להם חשבון.",
@@ -4506,7 +4514,7 @@ async function renderStudentMobile(T, s){
   // 1.20 (נועה): שלושה מקטעים נפרדים (☰ בתור · ✎ בעבודה · 🏁 סיים/ה) – לחיצה על הכותרת מכווצת / פותחת.
   // משולב/ת – בכל מקטע מתמטיקה ואנגלית בעמודות; מקצוע אחד – שורות לכל הרוחב.
   const qRow = (p, i, n) => row(p, `<span class="n">${i + 1}</span>${tt(p, wsTopicName(p.worksheet_id))}
-          <span class="drag" data-drag="${esc(p.id)}" title="גרירה לשינוי הסדר" aria-label="גרירה לשינוי הסדר">⋮⋮</span>`, i === 0 ? " next" : "");
+          <button type="button" class="mini q-rm" data-qx="${esc(p.id)}" title="הסרה מהתור" aria-label="הסרה מהתור">✕</button><span class="drag" data-drag="${esc(p.id)}" title="גרירה לשינוי הסדר" aria-label="גרירה לשינוי הסדר">⋮⋮</span>`, i === 0 ? " next" : "");   // 1.35.44 (נועה): ✕ ליד הנקודות – הסרה בלי לפתוח
   const nowRow = (p) => row(p, `${tt(p, "נשלח " + ago(p.released_at), SEEN_IC(!!p.seen_at))}
         <button class="mini" title="ביטול שליחה (חזרה לתור)" data-unrel="${esc(p.id)}">${IC.undo}</button>`);
   const doneRow = (p) => row(p, `${tt(p, (multi ? "" : wsTopicName(p.worksheet_id) + " · ") + ago(p.done_at))}<span class="ok-ic">${IC.circleCheck.replace("<svg", '<svg width="20" height="20"')}</span>`);
@@ -4571,6 +4579,8 @@ async function renderStudentMobile(T, s){
   T.querySelectorAll("[data-mv]").forEach(b => b.onclick = () => movePlan(Number(b.dataset.mv), Number(b.dataset.d)));
   T.querySelectorAll(".stm-q [data-drag]").forEach(h => dragQueue(h));
   T.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => removePlan(Number(b.dataset.rm)));
+  T.querySelectorAll("[data-qx]").forEach(b => b.onclick = (e) => { e.stopPropagation(); const p = AD.plan.find(x => x.id === Number(b.dataset.qx)); if (!p) return;
+    confirmSheet(`להסיר את "${ptTitle(p)}" מהתור?`, "הסרה", () => removePlan(p.id)); });
   T.querySelectorAll(".stm-body .stm-row[data-pid] .t").forEach(t => t.onclick = () => planView(Number(t.closest(".stm-row").dataset.pid), s));
   T.querySelectorAll("[data-relnext]").forEach(b => b.onclick = () => { const qq = queueOf(s.student_id, b.dataset.relnext); if (qq[0]) releaseItems([qq[0].id]); });
   if (q("#moreDoneAd")) q("#moreDoneAd").onclick = () => { AD.showDone = !AD.showDone; const y = window.scrollY; renderStudentMobile(T, s); window.scrollTo(0, y); };
