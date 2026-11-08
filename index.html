@@ -158,7 +158,7 @@
   .viewer.gal .g-track.locked{ overflow-x:hidden; scroll-snap-type:none; }
   .viewer.gal .g-slide{ flex:0 0 100%; width:100%; height:100%; scroll-snap-align:center; scroll-snap-stop:always; display:flex; align-items:center; justify-content:center; overflow:hidden; padding:6px; box-sizing:border-box; }
   .viewer.gal .g-slide img{ display:block; max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; background:#fff; border-radius:3px; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
-  .viewer.gal .g-slide.zoomed{ overflow:auto; align-items:flex-start; justify-content:flex-start; touch-action:pan-x pan-y; }
+  .viewer.gal .g-slide.zoomed{ direction:ltr; overflow:auto; align-items:flex-start; justify-content:flex-start; touch-action:pan-x pan-y; }
   .viewer.gal .g-slide.zoomed img{ max-width:none; max-height:none; height:auto; flex:none; margin:auto; }
   .viewer.gal .g-cnt{ color:#ddd; font-weight:700; font-size:14px; white-space:nowrap; padding:0 6px; direction:ltr; }
   .viewer.gal .g-dots{ display:flex; justify-content:center; gap:6px; padding:6px 0 0; background:#111; flex-wrap:wrap; }
@@ -2214,7 +2214,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.33",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.34",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2962,8 +2962,15 @@ function openGallery(list, startId, keep, task, deck){
   VIEWER = host.firstElementChild; vwLock(true);
   const V = VIEWER, tr = V.querySelector("#gTrack"), slides = [...V.querySelectorAll(".g-slide")];
   const img = (i) => slides[i] && slides[i].querySelector("img");
-  const setZ = (nz) => { z = Math.max(100, Math.min(400, nz)); const im = img(cur); if (!im) return;
-    slides[cur].classList.toggle("zoomed", z > 100); im.style.width = z > 100 ? z + "%" : ""; tr.classList.toggle("locked", z > 100); };
+  // 1.35.34 (נועה): ההגדלה סביב הנקודה שמגדילים (בין שתי האצבעות / איפה שהקישו) – לא קופצת לפינה
+  const setZ = (nz, ax, ay) => { const im = img(cur), sl = slides[cur]; if (!im) return;
+    const r0 = im.getBoundingClientRect(), cl = (v) => Math.max(0, Math.min(1, v));
+    const fx = ax == null || !r0.width ? .5 : cl((ax - r0.left) / r0.width), fy = ay == null || !r0.height ? .5 : cl((ay - r0.top) / r0.height);
+    z = Math.max(100, Math.min(400, nz));
+    sl.classList.toggle("zoomed", z > 100); im.style.width = z > 100 ? z + "%" : ""; tr.classList.toggle("locked", z > 100);
+    if (z > 100) { const r1 = im.getBoundingClientRect(), sr = sl.getBoundingClientRect();
+      const tx = ax == null ? sr.left + sr.width / 2 : ax, ty = ay == null ? sr.top + sr.height / 2 : ay;
+      sl.scrollLeft += (r1.left + fx * r1.width) - tx; sl.scrollTop += (r1.top + fy * r1.height) - ty; } };
   const show = () => { const p = list[cur]; V.querySelector("#gTtl").textContent = p.title || "";
     if (V.querySelector("#gCnt")) V.querySelector("#gCnt").textContent = (cur + 1) + " / " + n;
     V.querySelectorAll("[data-d]").forEach(d => d.classList.toggle("on", Number(d.dataset.d) === cur));
@@ -2982,11 +2989,11 @@ function openGallery(list, startId, keep, task, deck){
   // הגדלה: שתי אצבעות או הקשה כפולה (כמו בתמונות)
   let pd = 0, pz = 100;
   tr.addEventListener("touchstart", (e) => { if (e.touches.length === 2) { pd = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); pz = z; } }, { passive: true });
-  tr.addEventListener("touchmove", (e) => { if (e.touches.length === 2 && pd) { e.preventDefault(); const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); setZ(pz * d / pd); } }, { passive: false });
+  tr.addEventListener("touchmove", (e) => { if (e.touches.length === 2 && pd) { e.preventDefault(); const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); setZ(pz * d / pd, (e.touches[0].clientX + e.touches[1].clientX) / 2, (e.touches[0].clientY + e.touches[1].clientY) / 2); } }, { passive: false });
   tr.addEventListener("touchend", (e) => { if (e.touches.length < 2) pd = 0; if (z < 115 && z > 100) setZ(100); });
   ["gesturestart", "gesturechange"].forEach(ev => tr.addEventListener(ev, (e) => e.preventDefault(), { passive: false }));
   let lastTap = 0;
-  tr.addEventListener("click", (e) => { if (!e.target.closest("img")) return; const t = Date.now(); if (t - lastTap < 320) { setZ(z > 100 ? 100 : 220); lastTap = 0; } else lastTap = t; });
+  tr.addEventListener("click", (e) => { if (!e.target.closest("img")) return; const t = Date.now(); if (t - lastTap < 320) { setZ(z > 100 ? 100 : 220, e.clientX, e.clientY); lastTap = 0; } else lastTap = t; });
   slides.forEach((s, i) => { const im = s.querySelector("img"); im.onerror = () => { const p = list[i]; if (!im.dataset.retry && p.storage_path) { im.dataset.retry = "1"; delete URLS[p.storage_path]; sign([p.storage_path]).then(g => { im.src = g(p.storage_path); }); } }; });
   V.querySelector("#vClose").onclick = () => closeViewer();
   V.querySelector("#vSave").onclick = () => { const p = list[cur]; saveImage(ST.url(p.storage_path), p.title); };
@@ -4226,7 +4233,7 @@ async function loadInfo(force){
           .forEach(r => { if (r && r.id != null) I.st.set(String(r.id), r); }); } catch(e) {}
   // 1.35 (מנ-136): רק מבחנים מ-90 יום אחורה ואילך (המבחן הבא + "לומדים עכשיו" האחרון) – לא כל השנה
   const exFrom = isoOf(new Date(Date.now() - 90 * 864e5));
-  try { I.ex = await get("school_exams", "select=id,school_name,grade,class_num,subject,exam_date,kind,source,material,topics,school:schools(city,name)&exam_date=gte." + exFrom + "&order=exam_date,id"); } catch(e) {}
+  try { I.ex = await get("school_exams", "select=*,school:schools(city,name)&exam_date=gte." + exFrom + "&order=exam_date,id"); } catch(e) {}
   if (!Array.isArray(I.ex)) I.ex = [];
   AD.info = I; return I;
 }
@@ -4244,17 +4251,21 @@ function infoOf(s){
 // שורות 📝 / 📓 (לחיצה – חלון עם הנושאים)
 function exLines(I){
   let h = "";
-  if (I.exam) h += `<button type="button" class="ex-line${exCls(I.exam.exam_date, I.t)}" data-exl="${esc(I.exam.id)}"><b>📝 ${esc(/מיפוי/.test(I.exam.kind) ? "מיפוי" : I.exam.kind)} ${fmtDM(I.exam.exam_date)}</b>${I.exam.topics ? `<span>· ${esc(I.exam.topics)}</span>` : `<span class="muted">· עוד אין נושאים</span>`}</button>`;
-  if (I.study) h += `<button type="button" class="ex-line" data-exl="${esc(I.study.id)}"><b>📓 לומדים עכשיו</b><span>${I.study.topics ? "· " + esc(I.study.topics) : `<span class="muted">· לא נכתבו נושאים</span>`}</span></button>`;
+  if (I.exam) h += `<button type="button" class="ex-line${exCls(I.exam.exam_date, I.t)}" data-exl="${esc(I.exam.id)}"><b>📝 ${esc(/מיפוי/.test(I.exam.kind) ? "מיפוי" : I.exam.kind)} ${fmtDM(I.exam.exam_date)}</b>${exTopics(I.exam) ? `<span>· ${esc(exTopics(I.exam))}</span>` : `<span class="muted">· עוד אין נושאים</span>`}</button>`;
+  if (I.study) h += `<button type="button" class="ex-line" data-exl="${esc(I.study.id)}"><b>📓 לומדים עכשיו</b><span>${exTopics(I.study) ? "· " + esc(exTopics(I.study)) : `<span class="muted">· לא נכתבו נושאים</span>`}</span></button>`;
   return h;
 }
+// 1.35.34 (או-10, AUTO-06): "חומר נוסף" שהצוות שייך למבחן – מוצג אחרי הנושאים, והקבצים שלו ליד קובץ החומר
+const exTopics = (e) => [e.topics, e.extra_topics].map(x => String(x || "").trim()).filter(Boolean).join(" · ");
+const exFiles = (e) => { const x = e.extra_files; return Array.isArray(x) ? x.map(f => typeof f === "string" ? f : (f && (f.name || f.file)) || "").filter(Boolean).join(", ") : String(x || ""); };
 function exSheet(id){
   const e = ((AD.info && AD.info.ex) || []).find(x => String(x.id) === String(id)); if (!e) return;
   const st = EX_STUDY.test(e.kind);
   openSheet(`<h2>${st ? "📓 לומדים עכשיו" : "📝 " + esc(e.kind)}</h2>
     <p class="muted small" style="margin:-6px 0 10px">${esc((e.school && e.school.name) || e.school_name || "")} · ${esc(gradeKey(e.grade))}'${esc(e.class_num || "")} · ${st ? "התקבל" : "בתאריך"} ${esc(fmtDM(e.exam_date))}</p>
     <div class="ex-topics-full">${e.topics ? esc(e.topics) : `<span class="muted">${st ? "לא נכתבו נושאים." : "עוד לא התקבלו נושאים למבחן הזה."}</span>`}</div>
-    ${e.material || e.source ? `<p class="small muted">${[e.material ? "קובץ: " + esc(e.material) : "", e.source ? "מקור: " + esc(e.source) : ""].filter(Boolean).join(" · ")}</p>` : ""}`);
+    ${e.extra_topics ? `<div class="ex-topics-full" style="margin-top:8px"><b>חומר נוסף:</b> ${esc(e.extra_topics)}</div>` : ""}
+    ${e.material || e.source || exFiles(e) ? `<p class="small muted">${[e.material ? "קובץ: " + esc(e.material) : "", exFiles(e) ? "קבצים נוספים: " + esc(exFiles(e)) : "", e.source ? "מקור: " + esc(e.source) : ""].filter(Boolean).join(" · ")}</p>` : ""}`);
 }
 const wireExLines = (T) => T.querySelectorAll("[data-exl]").forEach(b => b.onclick = () => exSheet(b.dataset.exl));
 // ---------- 1.15: מסך התלמיד/ה בנייד ----------
