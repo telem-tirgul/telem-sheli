@@ -2282,7 +2282,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.45",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.46",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -6192,7 +6192,7 @@ function pastBadge(st){
 // 1.34.6 (נועה): הקבצה בנוכחות – רק כשיש מידע. מרתון – מההרשמה למרתון; קבוצה רגילה – מהכרטיס (מת' / אנג' לפי המקצוע)
 function lvlTag(r, sessId, isMar){
   const sid = String(r.student_id), out = [];
-  if (isMar) { const regs = ((typeof L !== "undefined" && L.mar && L.mar[sid]) || []).filter(x => x.status !== "בוטל" && x.hakbatsa);
+  if (isMar) { const regs = ((typeof L !== "undefined" && L.mar && L.mar[sid]) || []).filter(x => !x.cancelled_at && x.hakbatsa);
     const reg = regs.find(x => String(x.session_id) === String(sessId)) || regs[regs.length - 1]; if (reg) out.push(reg.hakbatsa); }
   else { const I = AD.info && AD.info.st.get(sid); if (I) { const sj = rowSubj(r) || "", g = subjGrp(sj);
       const m = I.math_level, e = I.english_level;
@@ -6215,11 +6215,11 @@ function lvlChip(v, isMar){
   return `<span class="lvl-chip lv-${c}" title="הקבצה">${esc(txt)}</span>`;
 }
 function marFlag(sid){
-  const m = ((typeof L !== "undefined" && L.mar && L.mar[sid]) || []).filter(x => x.status !== "בוטל"); if (!m.length) return "";
+  const m = ((typeof L !== "undefined" && L.mar && L.mar[sid]) || []).filter(x => !x.cancelled_at); if (!m.length) return "";
   return ` <span class="mar-ic" title="${esc("רשום/ה למרתון: " + m.map(x => x.marathon ? [x.marathon.name, x.marathon.school].filter(Boolean).join(" · ") : "מרתון").join(", "))}">🏁</span>`;
 }
 function payPend(stId, sessId, isMar){
-  if (isMar) { const r = ((L.mar && L.mar[stId]) || []).find(x => x.session_id === sessId && x.payment_method === "טלפוני" && !x.paid_at && x.status === "ממתין לתשלום");
+  if (isMar) { const r = ((L.mar && L.mar[stId]) || []).find(x => x.session_id === sessId && x.payment_method === "טלפוני" && !x.paid_at && !x.cancelled_at);   // 1.35.46 (תש-73/74): בלי status בהזמנה
     return r ? { kind: "marathon", order_id: r.id, amount: r.amount, what: r.marathon ? r.marathon.name : "מרתון" } : null; }
   const e = L.pendReg && L.pendReg[stId]; return e ? { kind: "registration", order_id: e.order_id, amount: e.amount, what: e.what || "הרשמה" } : null;
 }
@@ -6230,7 +6230,7 @@ function payPend(stId, sessId, isMar){
     ids.forEach(id => TAGS_DONE.add(id)); const inn = "in.(" + ids.join(",") + ")", adm = ME.role !== "instructor";
     const [h, m, pr] = await Promise.all([
       adm ? get("student_history", "select=student_id,school_year,year_start,status&student_id=" + inn + "&order=year_start").catch(() => []) : [],
-      get("marathon_registrations", "select=id,student_id,session_id,hakbatsa,status,payment_method,paid_at,amount,created_at,marathon:marathons(name,city,school)&student_id=" + inn + "&status=neq." + encodeURIComponent("בוטל") + "&order=id").catch(() => get("marathon_registrations", "select=id,student_id,session_id,status,payment_method,paid_at,amount,created_at,marathon:marathons(name,city,school)&student_id=" + inn + "&status=neq." + encodeURIComponent("בוטל") + "&order=id")).catch(() => []),
+      get("marathon_registrations", "select=id,student_id,session_id,hakbatsa,payment_method,paid_at,cancelled_at,amount,created_at,marathon:marathons(name,city,school)&student_id=" + inn + "&cancelled_at=is.null&order=id").catch(() => []),   // 1.35.46 (תש-73/74): בלי status – בוטל = cancelled_at
       adm ? get("pending_phone_payments", "select=kind,order_id,student_id,what,amount&kind=eq.registration&student_id=" + inn).catch(() => []) : []]);
     const arr = (v) => Array.isArray(v) ? v : [];
     arr(h).forEach(x => (L.hist[x.student_id] = L.hist[x.student_id] || []).push(x));
@@ -6729,7 +6729,7 @@ function renderSheetRows(){
   A.rows.sort(attTimeSort);
   // 1.35.20 (נועה): במרתון – לפי ההקבצה (בסדר של המרתון: א׳, ב׳…; בלי הקבצה – בסוף), ובתוכה לפי השם
   const isMarS = ((G.sessions || []).find(x => x.session_id === A.sheet.session_id) || {}).kind === "מרתון" || !!(A.gref && A.gref.mar) || ((AD.groups || []).find(g => g.id === String(A.sheet.session_id)) || {}).kind === "מרתון";
-  if (isMarS) { const hk = (r) => { const regs = ((typeof L !== "undefined" && L.mar && L.mar[String(r.student_id)]) || []).filter(x => x.status !== "בוטל" && x.hakbatsa);
+  if (isMarS) { const hk = (r) => { const regs = ((typeof L !== "undefined" && L.mar && L.mar[String(r.student_id)]) || []).filter(x => !x.cancelled_at && x.hakbatsa);
       const g = regs.find(x => String(x.session_id) === String(A.sheet.session_id)) || regs[regs.length - 1]; return g ? String(g.hakbatsa) : "\uffff"; };
     A.rows.sort((a, b) => (attArr(a) ?? 9999) - (attArr(b) ?? 9999) || hk(a).localeCompare(hk(b), "he", { numeric: true }) || attSort(a, b)); }
   // 5.19.20: כותרת שעה רק כשיש בקבוצה יותר משעת הגעה אחת (מי מגיע קודם ומי אחר כך)
