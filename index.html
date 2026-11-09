@@ -1195,11 +1195,14 @@
   .stm-head .l1 .gbadge{ width:28px; height:28px; font-size:10.5px; } .stm-head .l1 .nm{ font-size:16px; } .stm-head .l1 .school-chip{ flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
   .stm-back2{ flex:none; } .stm-head{ padding-top:calc(4px + var(--safe-t)); } .stm-head .ex-line{ font-size:12.5px; padding:3px 8px; }
   .acc-mini .linkish{ font-size:12px; padding:0; } .acc-mini .bad-t{ color:#A3261D; }
+  .ex-icons{ display:flex; gap:6px; flex-wrap:wrap; margin:5px 0 0; }
+  .ex-ic{ all:unset; box-sizing:border-box; cursor:pointer; font-size:13px; font-weight:700; line-height:1.3; padding:3px 10px; border-radius:999px; border:1px solid var(--border); background:var(--paper); white-space:nowrap; }
   .ex-lines{ display:flex; flex-direction:column; gap:3px; margin:5px 0 0; }
   .ex-lines.in-bank{ margin:0 0 10px; }
   .ex-line{ all:unset; box-sizing:border-box; cursor:pointer; display:flex; gap:5px; align-items:baseline; min-width:0; max-width:100%; font-size:13px; line-height:1.35;
     background:var(--muted); border-radius:8px; padding:4px 8px; }
   .ex-line b{ flex:none; white-space:nowrap; } .ex-line > span{ min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink-soft); }
+  .ex-ic.soon{ background:#FBE3E1; color:#A3261D; border-color:#F0B8B3; } .ex-ic.near{ background:#FCEFEE; color:#B84A42; }
   .ex-line.soon{ background:#FBE3E1; } .ex-line.soon b{ color:#A3261D; } .ex-line.near{ background:#FCEFEE; } .ex-line.near b{ color:#B84A42; }
   :root[data-theme="dark"] .ex-line.soon, :root[data-theme="dark"] .ex-line.near{ background:#3a1d1b; }
   .ex-topics-full{ font-size:15px; line-height:1.6; white-space:pre-wrap; margin-bottom:10px; }
@@ -2121,8 +2124,16 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .wl-nolink{cursor:default;} .wl-nolink b{font-weight:800;}
 .crmws-v .ws-vtop .ws-who{flex:none; background:#fff3c4; color:#5c4500; border-radius:999px; padding:3px 12px; font-size:14px; font-weight:700; white-space:nowrap; max-width:45vw; overflow:hidden; text-overflow:ellipsis;} .crmws-v .ws-vtop .ws-who b{font-weight:900;}
 .crmatt #shRows .att-rel{all:unset; cursor:pointer; font-size:12.5px; font-weight:800; color:#fff; background:var(--accent); border-radius:999px; padding:3px 10px; white-space:nowrap; margin-inline-start:4px;}
-.stm-subseg{display:flex; gap:6px; margin:8px 0 6px;} .stm-subseg button{flex:1; display:flex; flex-direction:column; align-items:center; gap:1px; padding:8px 6px; border-radius:12px; border:1.5px solid var(--border); background:var(--paper); font-weight:800; font-size:15px; color:var(--ink);}
-.stm-subseg button.on{background:var(--accent); border-color:var(--accent); color:#fff;} .stm-subseg button small{font-size:11.5px; font-weight:700; opacity:.85;}
+/* 1.35.52 (נועה, אפשרות 1): לשוניות אמיתיות – הנבחרת לבנה ומתמזגת עם האזור הלבן שמתחתיה, פס בצבע המקצוע בראש הלשונית; השנייה – בז' דהוי */
+.stm-head.has-tabs{padding-bottom:0; margin-bottom:0;} .stm-head.has-tabs .st-att{margin-bottom:4px;}
+.stm-subseg{display:flex; gap:4px; margin:8px 0 0; padding:0 4px; position:relative; z-index:1;}
+.stm-subseg button{flex:1; display:flex; flex-direction:column; align-items:center; gap:1px; padding:8px 6px 7px; border:1.5px solid var(--border); border-bottom:0; border-radius:14px 14px 0 0; font-weight:800; font-size:15px; margin-bottom:-1.5px; cursor:pointer;
+  background:#EFEAE3; color:#8a8078; box-shadow:inset 0 -1.5px 0 var(--border);}
+.stm-subseg button small{font-size:11.5px; font-weight:700;}
+.stm-subseg button.s-m{--sjb:#5CB24A; --sjt:#1F6B17;} .stm-subseg button.s-e{--sjb:#E0C22E; --sjt:#6B5600;}
+.stm-subseg button.on{background:var(--paper); color:var(--sjt); border-top:5px solid var(--sjb); box-shadow:none; padding-top:9px; margin-top:-4px;}
+.stm-panel{margin:0 -10px; padding:10px 10px 16px; background:var(--paper); border-top:1.5px solid var(--border); min-height:60vh;}
+.stm-panel .stm-body{margin-top:8px;}
 .ac-sheet .ac-none{font-size:12.5px; color:var(--ink-soft);} .stm-q .stm-row.next{flex-wrap:wrap;} .stm-q .q-rel{order:9; flex:1 1 100%; justify-content:center; margin-top:6px; padding:5px 10px !important; font-size:13px !important; white-space:nowrap;}
 .ac-sheet .ac-l2{font-size:11.5px; font-weight:800; color:var(--ink-soft); margin-top:2px;}
 .ac-sheet .ac-task{background:#fff; border:1.5px solid #8cc98a; border-radius:10px; padding:6px 8px;} .ac-sheet .ac-task.later{border-color:#cfc6b8; background:#fbfaf7;}
@@ -2131,6 +2142,9 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .st-unrel{font-size:12.5px !important; padding:3px 8px !important; white-space:nowrap;}
 .pk-to{position:sticky; top:0; z-index:25; background:#fff3c4; color:#5c4500; border:1.5px solid #e9cf62; border-radius:12px; padding:6px 12px; margin:0 0 8px; font-size:14px;} .pk-to b{font-weight:900;}
 .pk-who{color:var(--accent); font-weight:900; margin-inline-end:4px;} .ac-sheet .ac-unrel{font-size:11.5px; font-weight:800;}
+/* 1.35.52 (נועה: "חזרה לתור תצמיד לשמאל… תמיד לקבע כפתורים"): ↩ חזרה לתור – תמיד בקצה השמאלי של המסגרת, באותו רוחב */
+.ac-sheet .ac-task .ac-t{display:flex; align-items:center; gap:8px; margin-top:4px;} .ac-sheet .ac-task .ac-t > span{flex:1; min-width:0;}
+.ac-sheet .ac-task .ac-unrel{flex:none; margin-inline-start:auto; min-width:118px; text-align:center;}
 .old-rq{display:inline-block; font-size:11px; font-weight:800; border-radius:999px; padding:0 7px; background:#eee8de; color:#5a5048;}
 .na-chip{display:inline-block; font-size:12px; font-weight:800; border-radius:999px; padding:0 8px; background:#FDE8E6; color:var(--bad); margin-inline-start:6px;} .na-set{font-size:12px; color:var(--ink-soft); margin-inline-start:8px;}
 .td-sec{margin:0 0 10px; background:var(--card, #fff); border:1.5px solid var(--border); border-radius:14px; overflow:hidden;}
@@ -2305,7 +2319,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.51",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.52",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2356,7 +2370,8 @@ function beep(){
     o.type = "sine"; o.frequency.value = 880; g.gain.setValueAtTime(0.0001, AUDIO.currentTime); g.gain.exponentialRampToValueAtTime(0.25, AUDIO.currentTime + 0.02);
     g.gain.exponentialRampToValueAtTime(0.0001, AUDIO.currentTime + 0.35); o.connect(g); g.connect(AUDIO.destination); o.start(); o.stop(AUDIO.currentTime + 0.4); } catch(e) {}
 }
-function toast(t, ms){ const vh = document.getElementById("viewerHost"); if (vh && vh.firstElementChild && !/לא הצלחנו|שגיאה|נכשל|נסו שוב|לנסות שוב/.test(String(t))) return;   // 1.35.32 (נועה): על מסך מלא – בלי הודעות קופצות (מסתירות את התפריט)
+function toast(t, ms){ const vh = document.getElementById("viewerHost"), err = /לא הצלחנו|שגיאה|נכשל|נסו שוב|לנסות שוב|לא נשמר|לא עבדה/.test(String(t)); if (vh && vh.firstElementChild && !err) return;
+  if (document.body.classList.contains("v-student") && !err) return;   // 1.35.52 (נועה: "תעיף מהתצוגה של הילד את ההודעות שקופצות") – אצל הילד/ה רק הודעות שגיאה   // 1.35.32 (נועה): על מסך מלא – בלי הודעות קופצות (מסתירות את התפריט)
   const el = $("toast"); el.textContent = t; toastX(el); el.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => { el.hidden = true; }, Math.min(ms || 2500, 4000)); }
 // 1.35.49 (נועה: "הודעות למטה מונעות ממני ללחוץ… נשארות מלא זמן ואני לא יכולה להעיף אותן"): ההודעה למעלה, קצרה, ולחיצה עליה סוגרת
 function toastX(el){ if (!el.querySelector(".toast-x")) { const x = document.createElement("span"); x.className = "toast-x"; x.textContent = "✕"; x.setAttribute("aria-hidden", "true"); el.appendChild(x); }
@@ -3198,8 +3213,9 @@ async function deckDone(list, cur, grp, next){
 // 1.35.29 (נועה): הדף על כל המסך (בלי שורת הכתובת של הדפדפן, איפה שאפשר). באפליקציה מהמסך הראשי – כבר מלא
 function vwFull(on){
   try {
-    if (on) { const el = document.documentElement; if (!document.fullscreenElement && el.requestFullscreen && !matchMedia("(display-mode: standalone)").matches && matchMedia("(pointer:coarse)").matches) el.requestFullscreen({ navigationUI: "hide" }).catch(() => {}); }
-    else if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    // 1.35.52 (נועה: "יש למטה הסבר על איך יוצאים ממסך גדול – תבטל לגמרי"): ההסבר הוא של הדפדפן ומופיע בכל מעבר למסך מלא – לכן בלי מסך מלא
+    if (on) return;
+    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
   } catch(e) {}
 }
 // "סיימתי את הדף" בתוך הדפדוף: אם נשארו עוד דפים – ממשיכים לדף הבא; אם לא – "כל הכבוד"
@@ -4505,8 +4521,14 @@ function infoOf(s){
   return { school, city, grade, cls, math_level: r.math_level || "", english_level: r.english_level || "", exam, study, t };
 }
 // שורות 📝 / 📓 (לחיצה – חלון עם הנושאים)
-function exLines(I){
+function exLines(I, icons){
   let h = "";
+  // 1.35.52 (נועה: "תמיד רק אייקונים, אולי תאריך מבחן. לא צריך את כל הפירוט. אם נרצה נלחץ"): בדף הילד/ה – רק 📝 + תאריך ו-📓; לחיצה פותחת את הפירוט
+  if (icons) {
+    if (I.exam) h += `<button type="button" class="ex-ic${exCls(I.exam.exam_date, I.t)}" data-exl="${esc(I.exam.id)}" title="${esc(I.exam.kind + " " + fmtDM(I.exam.exam_date))}">📝 ${fmtDM(I.exam.exam_date)}</button>`;
+    if (I.study) h += `<button type="button" class="ex-ic" data-exl="${esc(I.study.id)}" title="לומדים עכשיו">📓</button>`;
+    return h;
+  }
   if (I.exam) h += `<button type="button" class="ex-line${exCls(I.exam.exam_date, I.t)}" data-exl="${esc(I.exam.id)}"><b>📝 ${esc(/מיפוי/.test(I.exam.kind) ? "מיפוי" : I.exam.kind)} ${fmtDM(I.exam.exam_date)}</b>${exTopics(I.exam) ? `<span>· ${esc(exTopics(I.exam))}</span>` : `<span class="muted">· עוד אין נושאים</span>`}</button>`;
   if (I.study) h += `<button type="button" class="ex-line" data-exl="${esc(I.study.id)}"><b>📓 לומדים עכשיו</b><span>${exTopics(I.study) ? "· " + esc(exTopics(I.study)) : `<span class="muted">· לא נכתבו נושאים</span>`}</span></button>`;
   return h;
@@ -4538,7 +4560,7 @@ function stNowCols(s, mob, only){
       const stt = rq ? ["rq", "🙋 ביקש/ה"] : first ? (ot.some(T => T.some(p => p.seen_at)) ? ["wk", "✎ עובד/ת"] : ["un", "✎ לא פתח/ה"]) : nx ? ["nx", "אין משימה בעבודה"] : ["no", "אין משימות בתור"];
       const box = (T, i) => { const p = T[0], n = T.length, seen = T.some(q => q.seen_at);
         return `<div class="ac-task${i ? " later" : ""}"><div class="ac-tk">${i === 0 ? (seen ? "▶ עובד/ת עכשיו" : "▶ ראשונה – עוד לא פתח/ה") : `${i + 1} · מחכה אצלו/ה${seen ? "" : " (לא פתח/ה)"}`}${n > 1 ? ` · 📎 ${n} דפים` : ""}</div>
-          ${ptLine(p)}<div class="ac-t">נשלחה ${esc(ago(p.released_at))} · <button type="button" class="lnk ac-unrel" data-unrel="${esc(p.id)}" title="נשלח בטעות – חוזר לראש התור">↩ חזרה לתור</button></div></div>`; };
+          ${ptLine(p)}<div class="ac-t"><span>נשלחה ${esc(ago(p.released_at))}</span><button type="button" class="lnk ac-unrel" data-unrel="${esc(p.id)}" title="נשלח בטעות – חוזר לראש התור">↩ חזרה לתור</button></div></div>`; };
       return `<div class="ac-col ${subjCls(x)} st-${stt[0]}"><div class="ac-ch"><b>${only ? "" : esc(x === "מתמטיקה" ? "מת'" : x === "אנגלית" ? "אנג'" : x)}</b><span class="ac-st">${stt[1]}</span>${rq ? `<button type="button" class="ac-x" data-ndis="${esc(rq.id)}" title="סגירת הבקשה בלי לשלוח" aria-label="סגירת הבקשה">✕</button>` : ""}</div>
         ${ot.length ? `<div class="ac-l2">אצלו/ה עכשיו${ot.length > 1 ? ` – ${ot.length} משימות` : ""}</div>` + ot.map(box).join("") : ""}
         ${!ot.length ? `<div class="ac-none">אין משימה אצלו/ה</div>` : ""}
@@ -4552,12 +4574,14 @@ function dismissReq(id, after){
     try { await rpc("portal_request_dismiss", { p_id: Number(id) }); const r0 = (AD.nreq || []).find(r => String(r.id) === String(id)); if (r0) { AD.ndis = AD.ndis || new Map(); AD.ndis.set(r0.student_id + "|" + r0.subject, new Date().toISOString()); }
     AD.nreq = (AD.nreq || []).filter(r => String(r.id) !== String(id)); renderNav(); if (after) after(); toast("הבקשה נסגרה."); } catch(e) { toast(errText(e)); } });
 }
-function stAttHtml(s, mob, only){
+function stAttHtml(s, mob, only, part){   // part: "info" – רק פרטי השיעור (מעל הלשוניות), "cols" – רק המשימות (בתוך הלשונית) – 1.35.52
   const a = AD.attRet && AD.attInfo && AD.attInfo.sid === String(s.student_id) ? AD.attInfo : null;
+  if (part === "cols") return `<div class="ac-sheet st-att">${stNowCols(s, mob, only)}</div>`;
+  if (part === "info" && !a) return "";
   if (!a) return `<div class="ac-sheet st-att">${stNowCols(s, mob, only)}</div>`;   // 1.35.49 (נועה: "לא ברור מה בתור, מה בעבודה ומה לעשות") – העמודות תמיד
   const trk = AD.role === "instructor" ? (a.tracking ? `<span class="ac-trk">📌 ${esc(a.tracking)}</span>` : "")
             : `<button type="button" class="ac-trk" data-attrk>${a.tracking ? `📌 ${esc(a.tracking)} <i>✎</i>` : "📌 + מעקב"}</button>`;
-  return `<div class="ac-sheet st-att"><div class="ac-info">${a.pt ? `<span class="st-pt">⏰ ${esc(a.pt)}</span>` : ""}${a.present === true ? `<span class="chip ok">✓ נוכח/ת</span>` : a.present === false ? `<span class="chip bad">✗ חסר/ה</span>` : ""}${a.prev ? `<span class="att-prev" title="${esc(a.prev)}">↩ ${esc(a.prev.replace(/^בשיעור הקודם \((\d+)\.(\d+)\.\d+\) עשה\/תה (.*)$/, "קודם: $3 ($1.$2)"))}</span>` : ""}${trk}</div>${stNowCols(s, mob, only)}</div>`;
+  return `<div class="ac-sheet st-att"><div class="ac-info">${a.pt ? `<span class="st-pt">⏰ ${esc(a.pt)}</span>` : ""}${a.present === true ? `<span class="chip ok">✓ נוכח/ת</span>` : a.present === false ? `<span class="chip bad">✗ חסר/ה</span>` : ""}${a.prev ? `<span class="att-prev" title="${esc(a.prev)}">↩ ${esc(a.prev.replace(/^בשיעור הקודם \((\d+)\.(\d+)\.\d+\) עשה\/תה (.*)$/, "קודם: $3 ($1.$2)"))}</span>` : ""}${trk}</div>${part === "info" ? "" : stNowCols(s, mob, only)}</div>`;
 }
 function wireStAtt(T, s){
   T.querySelectorAll(".st-att [data-relp], .stm-q [data-relp]").forEach(b => b.onclick = async (e) => { e.stopPropagation(); b.disabled = true; await releaseItems([Number(b.dataset.relp)]); });
@@ -4583,8 +4607,8 @@ async function renderStudentMobile(T, s){
   const tab = AD.stTab || "queue";
   const subStat = (x) => { const sid = String(s.student_id), rq = (AD.nreq || []).some(z => String(z.student_id) === sid && z.subject === x), op = planOf(sid, x).filter(p => p.status === "נשלח");
     return rq ? "🙋 ביקש/ה" : op.length ? (op.some(p => p.seen_at) ? "✎ עובד/ת" : "✎ לא פתח/ה") : queueOf(sid, x).length ? "" : "אין משימות"; };
-  const subTabs = tabbed ? `<div class="seg stm-subseg">` + subs0.map(x => { const st = subStat(x);
-    return `<button type="button" data-stsub="${esc(x)}" class="${x === sel ? "on" : ""}">${esc(x)}${st ? `<small>${esc(st)}</small>` : ""}</button>`; }).join("") + `</div>` : "";
+  const subTabs = tabbed ? `<div class="stm-subseg" role="tablist">` + subs0.map(x => { const st = subStat(x);
+    return `<button type="button" role="tab" aria-selected="${x === sel}" data-stsub="${esc(x)}" class="${subjCls(x)}${x === sel ? " on" : ""}">${esc(x)}${st ? `<small>${esc(st)}</small>` : ""}</button>`; }).join("") + `</div>` : "";
   const W = (wid) => AD.wsById.get(String(wid));
   const subTag = (p) => multi ? `<span class="subj-chip ${subjCls(p.subject)} on sm">${esc(p.subject === "מתמטיקה" ? "מת'" : p.subject === "אנגלית" ? "אנג'" : p.subject)}</span>` : "";
   const waiting = (s.waiting_subjects || []).length > 0;
@@ -4640,22 +4664,22 @@ async function renderStudentMobile(T, s){
     : `<span class="ltr">${esc(fmtPhone(s.login_phone))}</span><span>${s.must_change_code ? (codeExpired(s) ? `<b class="bad-t">הקוד פג</b>` : "עוד לא נכנס/ה") : s.last_seen_at ? "נכנס/ה " + esc(ago(s.last_seen_at)) : "עוד לא נכנס/ה"}</span>`;
 
   if (!AD.info) loadInfo().then(() => { if (AD.st === s.student_id && !isDesk()) renderStudentMobile(T, s); });
-  const I = infoOf(s), exL = exLines(I);
+  const I = infoOf(s), exL = exLines(I, true);
   const lvl = [I.math_level && (s.subjects || []).includes("מתמטיקה") ? "מתמטיקה: " + I.math_level : "", I.english_level && (s.subjects || []).includes("אנגלית") ? "אנגלית: " + I.english_level : ""].filter(Boolean);
   // פרטים בשורה אחת: בית ספר · כיתה · הקבצה
   const accIc = noAcc(s.student_id) ? `<i class="si si-noacc" title="בלי תלם שלי">🚫</i>` : !s.has_account ? `<i class="si si-noacc" title="בלי חשבון">🚫</i>` : s.must_change_code ? `<i class="si ${codeExpired(s) ? "si-bad" : "si-key"}" title="${codeExpired(s) ? "הקוד הראשוני פג" : "עוד לא נכנס/ה"}">🔑</i>` : "";
   const det = `<div class="st-det">${[I.school ? esc(I.school) + (I.city ? `<span class="muted">, ${esc(I.city)}</span>` : "") : "",
     I.grade ? "כיתה " + esc(gradeKey(I.grade) + "'" + (I.cls || "")) : "", lvl.length ? "הקבצה " + esc(lvl.join(" · ").replace(/מתמטיקה: /, "מת' ").replace(/אנגלית: /, "אנג' ")) : ""].filter(Boolean).join(" · ") || `<span class="muted">אין פרטים בכרטיס</span>`}</div>`;
   paint(T, `
-    <div class="stm-head${pick ? " picking" : ""}">
-      <div class="l1">${gradeBadge(I.grade, I.cls)}<b class="nm">${esc(stName(s))}</b>${scChip(I.school)}${subjMini(subs)}${accIc}<span style="flex:1"></span><button class="btn small stm-back2" id="stBack">→ חזרה</button></div>
+    <div class="stm-head${pick ? " picking" : ""}${tabbed ? " has-tabs" : ""}">
+      <div class="l1">${gradeBadge(I.grade, I.cls)}<b class="nm">${esc(stName(s))}</b>${scChip(I.school)}${subjMini(subs0)}${accIc}<span style="flex:1"></span><button class="btn small stm-back2" id="stBack">→ חזרה</button></div>
       ${pick ? "" : `<div class="acc-mini">${acc}${noAccHtml(s)}${lvl.length ? `<span class="lvl">הקבצה ${esc(lvl.join(" · ").replace(/מתמטיקה: /, "מת' ").replace(/אנגלית: /, "אנג' "))}</span>` : ""}</div>`}
-      ${exL ? `<div class="ex-lines">${exL}</div>` : ""}
-      ${subTabs}${pick ? "" : stAttHtml(s, true, tabbed ? [sel] : null)}
+      ${exL ? `<div class="ex-icons">${exL}</div>` : ""}
+      ${tabbed ? stAttHtml(s, true, null, "info") + subTabs : pick ? "" : stAttHtml(s, true)}
       ${pick ? `<div class="stm-peekbar">${tabs.map(([k, , n]) => `<button type="button" class="pk-${k}${AD.peek === k ? " on" : ""}" data-peek="${esc(k)}"><span>${SEC[k][0]} ${SEC[k][1]}</span><b>${n}</b></button>`).join("")}</div>
         ${AD.peek ? `<div class="stm-peek">${peekList(AD.peek)}</div>` : ""}` : ""}
     </div>
-    ${pick ? `<section class="stm-bank" id="stBankSec"><div class="pk-to">📤 בחירת דפים ל<b>${esc(stName(s))}</b></div><div id="stBank"></div></section>` : `<div class="stm-body">${body}</div>`}`);
+    ${pick ? `<section class="stm-bank" id="stBankSec"><div class="pk-to">📤 בחירת דפים ל<b>${esc(stName(s))}</b></div><div id="stBank"></div></section>` : tabbed ? `<div class="stm-panel ${subjCls(sel)}">${stAttHtml(s, true, [sel], "cols")}<div class="stm-body">${body}</div></div>` : `<div class="stm-body">${body}</div>`}`);
 
   const q = (sel) => T.querySelector(sel);
   q("#stBack").onclick = leaveStudent; wireExLines(T); wireStAtt(T, s); wireNoAcc(T, s, () => renderStudentMobile(T, s));
