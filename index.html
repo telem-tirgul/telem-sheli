@@ -482,6 +482,7 @@
   .dr.sm .kick{ font-size:11.5px; }
   .dr.sm .dd2{ display:block; font-size:12px; color:var(--ok); font-weight:700; margin-top:2px; }
   .g-bar .g-done2{ display:flex; gap:8px; flex:1; min-width:0; }
+  .g-bar .g-act{ display:flex; gap:8px; flex:1 1 0; min-width:0; } .g-bar .g-act .g-done2{ flex:1; }   /* 1.35.47 (נועה): הכפתורים על כל הרוחב – ממורכזים */
   .g-bar .g-done2 .btn{ flex:1; min-width:0; white-space:normal; line-height:1.25; padding:10px 8px; font-size:14.5px; }
   .g-bar .g-done2 #gNextReq{ flex:1.5; }
   .g-bar .g-done2 .btn.ok-soft{ background:#E3F2DF; color:#1F6B17; border:1.5px solid #8FC787; }   /* 1.34.3 (נועה): "סיימתי" – ירוק רך */
@@ -2106,9 +2107,13 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .ac-sheet .ac-f{margin-top:8px; text-align:start;}
 .ac-sheet.st-att{margin:6px 0 2px;} .ac-sheet.st-att .ac-info{border-bottom:0; padding:0 0 6px; margin:0;} .ac-sheet .st-pt{font-weight:800; font-size:12.5px;}
 .ac-sheet.st-att .att-prev{background:#EEF0F2; color:#555; border-radius:999px; padding:0 8px; font-weight:700;} .ac-sheet.st-att .chip{margin:0;}
+.sk-mode{font-size:13px; font-weight:800; margin-inline-start:6px; white-space:nowrap;} .sk-mode.on{background:#fff3c4; border-radius:999px; padding:1px 8px; text-decoration:none;}
+.crmatt #shRows .pg-ic.pna{background:#FDE8E6 !important; color:var(--bad) !important; font-weight:800; font-size:11.5px; width:auto !important; padding:0 7px; border-radius:999px; white-space:nowrap;}
 .crmatt #shRows .pg-ic.p1{background:#FFF4DE !important; color:#9A6A00 !important; font-weight:900;} .crmatt #shRows .pg-ic.p1 .p1n{font-size:12px; padding:0 2px;}
 .stm-row .q-rm{width:28px !important; height:28px !important; min-width:28px; font-size:13px; color:var(--ink-soft); border-radius:50%;} .stm-cols .stm-row .q-rm{width:24px !important; height:24px !important; min-width:24px; font-size:12px;}
 .wl-nolink{cursor:default;} .wl-nolink b{font-weight:800;}
+.pk-to{position:sticky; top:0; z-index:25; background:#fff3c4; color:#5c4500; border:1.5px solid #e9cf62; border-radius:12px; padding:6px 12px; margin:0 0 8px; font-size:14px;} .pk-to b{font-weight:900;}
+.pk-who{color:var(--accent); font-weight:900; margin-inline-end:4px;} .ac-sheet .ac-unrel{font-size:11.5px; font-weight:800;}
 .na-chip{display:inline-block; font-size:12px; font-weight:800; border-radius:999px; padding:0 8px; background:#FDE8E6; color:var(--bad); margin-inline-start:6px;} .na-set{font-size:12px; color:var(--ink-soft); margin-inline-start:8px;}
 .td-sec{margin:0 0 10px; background:var(--card, #fff); border:1.5px solid var(--border); border-radius:14px; overflow:hidden;}
 .td-sec > summary{list-style:none; cursor:pointer; display:flex; align-items:center; gap:8px; padding:12px 14px; font-weight:800; font-size:16px;} .td-sec > summary::-webkit-details-marker{display:none;}
@@ -2282,7 +2287,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.46",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.47",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2616,7 +2621,7 @@ window.addEventListener("hashchange", () => { if (/^#staff\b/i.test(location.has
 // בדרך כלל בלתי נראה; מופיע רק כשצריך. הטוקן נשלח ל-Supabase Auth בכניסה (gotrue_meta_security.captcha_token).
 // כל עוד ב-Supabase לא הופעל CAPTCHA – הטוקן לא נבדק והכניסה עובדת כרגיל.
 const CAPTCHA_KEY = "0x4AAAAAAFZTWNO6VX3e-dpO";
-const CAPTCHA_ON = true;   // של-121 / מנ-241: יחד עם מערכת הניהול 5.20.35. נבדק בשרת רק אחרי שנועה מפעילה ב-Supabase
+const CAPTCHA_ON = false;   // 1.35.47 (נועה 9.11): כבוי – לא עבר באייקון במסך הבית באייפון. ב-Supabase כובה (נבדק 9.11: כניסה בלי טוקן → invalid_credentials, לא captcha)
 const CAP = { id: null, p: null };
 function capLoad(){
   if (EMBED || !CAPTCHA_ON) return Promise.resolve(false);
@@ -4496,7 +4501,7 @@ function stNowCols(s){
   return `<div class="ac-cols n${subs.length}">` + subs.map(x => { const op = openOf(x), nx = queueOf(sid, x)[0], rq = rqS(x);
       const stt = rq ? ["rq", "🙋 ביקש/ה"] : op.length ? (op[0].seen_at ? ["wk", "✎ עובד/ת"] : ["un", "✎ לא פתח/ה"]) : nx ? ["nx", "אין דף בעבודה"] : ["no", "אין דפים"];
       return `<div class="ac-col ${subjCls(x)} st-${stt[0]}"><div class="ac-ch"><b>${esc(x === "מתמטיקה" ? "מת'" : x === "אנגלית" ? "אנג'" : x)}</b><span class="ac-st">${stt[1]}</span>${rq ? `<button type="button" class="ac-x" data-ndis="${esc(rq.id)}" title="סגירת הבקשה בלי לשלוח" aria-label="סגירת הבקשה">✕</button>` : ""}</div>
-        ${op.length ? `<div class="ac-w">${ptLine(op[0])}<div class="ac-t">${esc(ago(op[0].released_at))}</div></div>` : ""}
+        ${op.length ? `<div class="ac-w">${ptLine(op[0])}<div class="ac-t">${esc(ago(op[0].released_at))} · <button type="button" class="lnk ac-unrel" data-unrel="${esc(op[0].id)}" title="נשלח בטעות – חוזר לראש התור">↩ חזרה לתור</button></div></div>` : ""}
         ${!op.length || rq ? (nx ? `<div class="ac-nx"><span class="ac-l">הבא:</span> ${ptLine(nx)}</div>${s.has_account ? `<button type="button" class="btn primary sm ac-rel" data-relp="${esc(nx.id)}">✓ שחרור</button>` : ""}`
                                 : `<button type="button" class="btn sm ac-rel" data-addp="${esc(sid)}" data-subj="${esc(x)}">+ דפים</button>`) : ""}
       </div>`; }).join("") + `</div>`;
@@ -4600,7 +4605,7 @@ async function renderStudentMobile(T, s){
       ${pick ? `<div class="stm-peekbar">${tabs.map(([k, , n]) => `<button type="button" class="pk-${k}${AD.peek === k ? " on" : ""}" data-peek="${esc(k)}"><span>${SEC[k][0]} ${SEC[k][1]}</span><b>${n}</b></button>`).join("")}</div>
         ${AD.peek ? `<div class="stm-peek">${peekList(AD.peek)}</div>` : ""}` : ""}
     </div>
-    ${pick ? `<section class="stm-bank" id="stBankSec"><div id="stBank"></div></section>` : `<div class="stm-body">${body}</div>`}`);
+    ${pick ? `<section class="stm-bank" id="stBankSec"><div class="pk-to">📤 בחירת דפים ל<b>${esc(stName(s))}</b></div><div id="stBank"></div></section>` : `<div class="stm-body">${body}</div>`}`);
 
   const q = (sel) => T.querySelector(sel);
   q("#stBack").onclick = leaveStudent; wireExLines(T); wireStAtt(T, s); wireNoAcc(T, s, () => renderStudentMobile(T, s));
@@ -4965,6 +4970,8 @@ function bankMatch(t, k){
 // תוספות של האפליקציה (CB.cardExtra / onOpen / onSel): מצב הדף בתוכנית, "לתור" / "שחרור", "לתלמידים…".
 // ======================================================================
 const CB = { ctx: "browse", cardExtra: null, onOpen: null, onSel: null };
+// 1.35.47 (נועה): "לא ברור במאגר לאיזה ילד אני שולחת" – השם בפס הבחירה
+function cbWho(){ try { const sid = CB.ctx === "plan" ? CB.plan && CB.plan.s.student_id : CB.ctx === "pick" ? AD.bank.pick && AD.bank.pick.sid : null; const st = sid && stById(String(sid)); return st ? stName(st).trim() : ""; } catch(e) { return ""; } }
 // 1.29.1 (נועה): אחרי ששלחתי (שיתוף בטלפון) – חוזרים ישר למאגר, בלי לסגור את הדף ב-✕
 const wsAfterSend = () => { setTimeout(() => { try {
   const W = CBM.WS; if (W.sel && W.sel.size) { W.sel = new Set(); W.ready = null; }   // כמה דפים: מנקים את הבחירה – בלי הפס של "שליחה / לתלמידים"
@@ -5402,7 +5409,7 @@ function wsViewerOff(){
 function wsSelUpd(){
   const n = WS.sel ? WS.sel.size : 0, bar = $("wsSelBar");
   bar.hidden = !n || !WS.topic; if (WS.ready && (WS.ready.n !== n || WS.ready.key !== [...WS.sel].join("|"))) WS.ready = null;
-  $("wsSelN").textContent = n === 1 ? "נבחר דף אחד" : "נבחרו " + n + " דפים";
+  $("wsSelN").textContent = (cbWho() ? "ל" + cbWho() + ": " : "") + (n === 1 ? "נבחר דף אחד" : "נבחרו " + n + " דפים");
   $("wsSelSend").disabled = !n;
   $("wsSelSend").textContent = wsMobile() ? "שליחה" : "הורדה (ZIP)";
   if (CB.onSel) CB.onSel(n);
@@ -5713,8 +5720,11 @@ CB.onSel = (n) => { const box = CBM.wrap.querySelector("#wsSelApp"); if (!box) r
   if (box.querySelector("#cbSelRel")) box.querySelector("#cbSelRel").onclick = () => cbAdd(cbIds(), true);
   if (box.querySelector("#cbSelStu")) box.querySelector("#cbSelStu").onclick = () => cbToStudents(cbIds()); };
 // 1.22 (נועה): שליחה (או העתקה) של דף מהמאגר כשבוחרים לילד/ה מסוים/ת – הדף נרשם אצלו/ה כ"נשלח" (גם בלי חשבון), כדי שיהיה המידע.
-async function cbRecord(sid, wids){
+async function cbRecord(sid, wids, sure){
   sid = String(sid); wids = [...new Set(wids.map(String))].filter(Boolean); if (!sid || !wids.length) return;
+  // 1.35.47 (נועה – "שלחתי לילדה אחת את כל הדפים"): יותר משני דפים בבת אחת (שליחת כל החשובים / קבוצה) – שואלים לפני שרושמים אצל הילד/ה
+  if (!sure && new Set(wids.map(w => wsTaskKey(AD.wsById.get(w)) || "w" + w)).size > 2) {
+    confirmSheet(`לרשום ${wids.length} דפים כ"נשלח" אצל ${stName(stById(sid) || {}).trim()}?`, "כן, לרשום", () => cbRecord(sid, wids, true)); return; }
   const pl = planOf(sid), have = new Map(pl.map(p => [String(p.worksheet_id), p]));
   const toRel = wids.map(w => have.get(w)).filter(p => p && p.status === "מתוכנן").map(p => p.id);
   const posBy = {}, rows = wids.filter(w => !have.has(w)).map(wid => { const subject = wsSubject((AD.wsById.get(wid) || {}).book);
@@ -5749,8 +5759,9 @@ function pickBar(){
     return;
   }
   if (!pick) { if (!inDrawer()) setActionBar(null); return; }
-  const n = AD.bank.sel.size;
-  const html = `<span class="sp">${n === 1 ? "נבחר דף אחד" : n ? "נבחרו " + n + " דפים" : "לבחור דפים"}${!n && AD.bank.topic ? `<small class="pk-hint">לחיצה ארוכה על שם הנושא – כל הדפים</small>` : ""}</span>
+  const n = AD.bank.sel.size, pk0 = stById(pick.sid), who = pk0 ? stName(pk0).trim() : "";
+  // 1.35.47 (נועה): "לא ברור במאגר לאיזה ילד אני שולחת" – השם תמיד בפס
+  const html = `<span class="sp"><b class="pk-who">ל${esc(who)}:</b> ${n === 1 ? "נבחר דף אחד" : n ? "נבחרו " + n + " דפים" : "לבחור דפים"}${!n && AD.bank.topic ? `<small class="pk-hint">לחיצה ארוכה על שם הנושא – כל הדפים</small>` : ""}</span>
     <button class="btn sm" id="pkAdd" ${n ? "" : "disabled"}>הוספה לתור</button>
     <button class="btn sm primary" id="pkAddRel" ${n ? "" : "disabled"}>הוספה ושליחה עכשיו</button>`;
   const wire = (b) => { b.querySelector("#pkAdd").onclick = () => addToPlan(false); b.querySelector("#pkAddRel").onclick = () => addToPlan(true); };
@@ -5760,6 +5771,10 @@ function pickBar(){
 async function addToPlan(releaseNow, again){
   const pick = AD.bank.pick; if (!pick || !AD.bank.sel.size) return;
   let ids = wsTaskIds(AD.ws.filter(r => AD.bank.sel.has(r.id)).map(r => r.id));   // לפי סדר המאגר; משימה – כל הדפים
+  // 1.35.47 (נועה – "שלחתי לילדה אחת את כל הדפים"): יותר משני דפים (שלא כמשימה אחת) – לשאול לפני
+  if (!again && !pick.okMany && ids.length > 2 && new Set(ids.map(w => wsTaskKey(AD.wsById.get(String(w))) || "w" + w)).size > 2) {
+    const s0 = stById(pick.sid);
+    confirmSheet(`${releaseNow ? "לשלוח עכשיו" : "להוסיף לתור"} ${ids.length} דפים ל${stName(s0).trim()}?`, releaseNow ? "כן, לשלוח" : "כן, להוסיף", () => { pick.okMany = true; addToPlan(releaseNow); }); return; }
   // 1.32 (נועה): כבר נשלח בעבר – שואלים אם לשלוח שוב (במקום שגיאה)
   const old = sentBefore(pick.sid, ids), inPlan = planOf(pick.sid).filter(p => ids.includes(String(p.worksheet_id)));
   if (old.length && !again) { const last = old.map(p => p.released_at).filter(Boolean).sort().pop(), s0 = stById(pick.sid);
@@ -6262,6 +6277,7 @@ function payPend(stId, sessId, isMar){
       return `<div class="ap-s">${two ? `<span class="subj-chip ${subjCls(x)} on sm">${esc(sh(x))}</span>` : ""}${now}${nx}</div>`; }).join("") + `</div>`; };
   // 1.20: שורה קצרה של הדפים מתחת לשם (על מה עובד/ת / סיים/ה / אין דפים)
   const ATT_PAGES_LINE = (r) => { const s = stById(String(r.student_id)); if (!s) return "";
+    if (noAcc(s.student_id)) return `<span class="pna">בלי תלם שלי</span>`;   // 1.35.47 (נועה): "חייבת לראות את זה בנוכחות"
     const subs = s.subjects || [], two = subs.length > 1, sh = (x) => x === "מתמטיקה" ? "מת'" : x === "אנגלית" ? "אנג'" : x;
     return subs.map(x => { const pl = planOf(s.student_id, x), q = queueOf(s.student_id, x)[0];
       const open = pl.filter(p => p.status === "נשלח").sort((a, b) => String(b.released_at).localeCompare(String(a.released_at)))[0];
@@ -6372,7 +6388,7 @@ async function openSheet(sessionId, retry){
     const tS = performance.now(); const sh = await rpc("attendance_sheet", { p_session: sessionId, p_date: A.date }); tmMark("דף נוכחות", tS);
     const cSub = await subjP; if (cSub && sh && sh.rows) sh.rows.forEach(r => { const v = cSub[String(r.student_id)]; if (v) r.csub = v; });
     if (!exReady) exP.then(() => { if (A.sheet && A.sheet.session_id === sessionId && !$("attSheet").hidden) renderSheetRows(); });
-    A.sheet = sh;
+    A.sheet = sh; A.skipMode = false;   // 1.35.47: מצב "מי לא מגיע היום" – כבוי בכל פתיחה
     // 5.19.15: זוכרים את הקבוצה הפתוחה (עד סוף היום) - "נוכחות" בתפריט חוזר ישר אליה
     store("telem_att_last", JSON.stringify({ sid: sessionId, date: A.date, day: todayIL(), label: [sh.location, sh.day ? "יום " + sh.day + "'" : "", (!sh.day && (A.groups || []).some(g => g.session_id === sessionId && g.kind === "מרתון") ? "מרתון · " : "") + sh.time_label].filter(Boolean).join(" · ") }));
     A.rows = sh.rows.map(r => ({ ...r, present: r.present == null ? null : r.present, did_math: !!r.did_math, did_english: !!r.did_english, saved: r.present != null || !!r.planned, present0: r.present == null ? null : r.present, skip: !!r.skip, skip0: !!r.skip }));
@@ -6614,7 +6630,11 @@ $("shRows").addEventListener("click", async (e) => {
   const addp = e.target.closest("[data-addp]"); if (addp) { ATT_ADD(addp.dataset.addp, addp.dataset.subj); return; }
   const skb = e.target.closest("[data-skip], [data-unskip]");
   if (skb && A.sheet.can_edit) { const r = A.rows[Number(skb.closest("li").dataset.i)]; r.skip = skb.hasAttribute("data-skip");
-    if (r.skip) { r.present = null; r.did_math = false; r.did_english = false; } attDirty(); renderSheetRows(); return; }
+    const was = { present: r.present, did_math: r.did_math, did_english: r.did_english };
+    if (r.skip) { r.present = null; r.did_math = false; r.did_english = false; } attDirty(); renderSheetRows();
+    // 1.35.47 (נועה): הסרה בטעות – "↩ ביטול"
+    if (r.skip) toastAct(`${r.first_name || ""} הוסר/ה מהשיעור הזה`, "↩ ביטול", () => { r.skip = false; Object.assign(r, was); attDirty(); renderSheetRows(); }, 7000);
+    return; }
   const qrm = e.target.closest("[data-qrm]"); if (qrm) { qrm.disabled = true; removePlan(Number(qrm.dataset.qrm)).then(() => renderSheetRows()); return; }   // 1.35.38: הסרה מהתור מהשורה הנפתחת
   const rm = e.target.closest("[data-rm]");
   if (rm && A.sheet.can_edit) { const i = Number(rm.closest("li").dataset.i), r = A.rows[i]; if (r.saved) A.removed.push(r.student_id); A.rows.splice(i, 1); attDirty(); renderSheetRows(); return; }
@@ -6746,7 +6766,7 @@ function renderSheetRows(){
       </div>
     <div class="att-ctl">
       ${subjGrp(rowSubj(r)) === 2 && r.present !== false ? `<span class="att-sj2${r.present && !r.did_math && !r.did_english ? " need" : ""}" title="משולב - לסמן מה עשה/תה היום"><label><input type="checkbox" data-m ${r.did_math ? "checked" : ""} ${can ? "" : "disabled"}>מת'</label><label><input type="checkbox" data-e ${r.did_english ? "checked" : ""} ${can ? "" : "disabled"}>אנג'</label></span>` : subjMini(rowSubj(r))}
-      ${can && r.in_group && A.hasPlan ? `<button type="button" class="skip-b skip-ctl" data-skip title="לא מגיע/ה היום - הסרה מהשיעור הזה בלבד (השיבוץ הקבוע לא משתנה)" aria-label="לא מגיע/ה היום – הסרה מהשיעור">⊘</button>` : ""}${can && !r.in_group && r.added ? `<button type="button" class="skip-b skip-ctl" data-rm="1" title="הסרה מהשיעור" aria-label="הסרה מהשיעור">⊘</button>` : ""}
+      ${can && r.in_group && A.hasPlan && A.skipMode ? `<button type="button" class="skip-b skip-ctl" data-skip title="לא מגיע/ה היום - הסרה מהשיעור הזה בלבד (השיבוץ הקבוע לא משתנה)" aria-label="לא מגיע/ה היום – הסרה מהשיעור">⊘</button>` : ""}${can && !r.in_group && r.added ? `<button type="button" class="skip-b skip-ctl" data-rm="1" title="הסרה מהשיעור" aria-label="הסרה מהשיעור">⊘</button>` : ""}
       <div class="seg" role="group" aria-label="נוכחות">
         <button type="button" class="no ${r.present === false ? "on" : ""}" data-p="0" ${can ? "" : "disabled"} aria-label="חסר/ה"><span class="lg">חסר/ה</span><span class="sm">✗</span></button>
         <button type="button" class="yes ${r.present === true ? "on" : ""}" data-p="1" ${can ? "" : "disabled"} aria-label="נוכח/ת"><span class="lg">נוכח/ת</span><span class="sm">✓</span></button>
@@ -6779,10 +6799,11 @@ function renderSheetRows(){
       const grp = {};   // סימן אחד לכל מצב (בלי שם המקצוע – הוא בלחיצה)
       let pre0 = ""; pr.querySelectorAll(".ar-pg > span").forEach(x => { if (x.classList.contains("ps")) { pre = pre0 = x.textContent.trim(); return; }
         if (x.classList.contains("p1")) { (grp.p1 = grp.p1 || []).push((pre0 ? pre0 + ": " : "") + x.textContent.trim()); return; }
+        if (x.classList.contains("pna")) { (grp.pna = grp.pna || []).push("בלי תלם שלי"); return; }
         const k = x.classList.contains("pn") ? "pn" : x.classList.contains("pw") ? "pw" : "px", full = (pre ? pre + ": " : "") + x.textContent.replace(/\s+/g, " ").trim();
         (grp[k] = grp[k] || []).push(full); pre = ""; });
       Object.entries(grp).forEach(([k, l]) => { const c = document.createElement("span"); c.className = "pg-ic " + k; c.dataset.tip = l.join(" · "); c.title = l.join("\n");
-        c.innerHTML = k === "pw" ? "⏳" : k === "pn" ? PG_SVG_ON : k === "p1" ? `<b class="p1n">1</b>` : PG_SVG_OFF; c.setAttribute("aria-label", l.join(" · ")); row.appendChild(c); });   // נועה: רק אייקון; דף צבוע = יש, דף ריק = אין
+        c.innerHTML = k === "pna" ? "🚫 בלי תלם שלי" : k === "pw" ? "⏳" : k === "pn" ? PG_SVG_ON : k === "p1" ? `<b class="p1n">1</b>` : PG_SVG_OFF; c.setAttribute("aria-label", l.join(" · ")); row.appendChild(c); });   // נועה: רק אייקון; דף צבוע = יש, דף ריק = אין
       pr.querySelectorAll("button").forEach(bt => { bt.classList.add("ic-btn"); if (bt.hasAttribute("data-trk")) { bt.textContent = "📌+"; ch.appendChild(bt); } else if (bt.hasAttribute("data-addp")) bt.remove(); });   // 1.35.25 (נועה): הוספת דפים – רק ב"ממתינים לדף"; כאן רק הסטטוס, לידיעה
       row.className = "att-pgs"; li.appendChild(row); pr.remove(); }   // 1.35.25 (נועה): הדפים – בשורה 2, מקביל למקצוע
     if (nm) ch.querySelectorAll(":scope > .att-pt").forEach(x => nm.appendChild(x));   // 1.35.25 (נועה): שעה אישית / שיעור כפול – בשורת השם, עם בית הספר
@@ -6887,6 +6908,11 @@ function updateCount(){
   const nSk = A.rows.filter(r => r.skip).length;
   // 1.34.7 (נועה): "לא מגיעים היום" – בסוגריים ליד מספר הילדים (לא נספרים בו), באותה שורה
   $("shTopCnt").innerHTML = `<span><b>${rows.length}</b> ילדים${nSk ? ` <span class="c-un" title="הוסרו מהשיעור הזה בלבד (⊘) – מופיעים בסוף הרשימה">(+${nSk} ${nSk === 1 ? "לא מגיע/ה" : "לא מגיעים"} היום)</span>` : ""}</span> · <b class="c-yes">${p} נוכחים</b> · <b class="c-no">${x} חסרים</b>` + (n ? ` · <span class="c-un">${n} לא סומנו</span>` : "");
+  // 1.35.47 (נועה – לחצה ⊘ במקום על הילד/ה): ⊘ בשורות רק במצב "מי לא מגיע היום"
+  if (A.sheet && A.sheet.can_edit && A.hasPlan && A.rows.some(r => r.in_group)) {
+    $("shTopCnt").insertAdjacentHTML("beforeend", ` <button type="button" class="lnk sk-mode${A.skipMode ? " on" : ""}" data-skmode>${A.skipMode ? "✓ סיום" : "⊘ מי לא מגיע היום"}</button>`);
+    $("shTopCnt").querySelector("[data-skmode]").onclick = () => { A.skipMode = !A.skipMode; renderSheetRows(); };
+  }
   $("shCount").innerHTML = "";
   const tot = A.splitView && rows.length !== A.rows.length - nSk ? `${rows.length} בתת-הקבוצה המוצגת` : "";
   $("shTotal").innerHTML = tot;
