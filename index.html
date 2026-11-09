@@ -2121,6 +2121,13 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .wl-nolink{cursor:default;} .wl-nolink b{font-weight:800;}
 .crmws-v .ws-vtop .ws-who{flex:none; background:#fff3c4; color:#5c4500; border-radius:999px; padding:3px 12px; font-size:14px; font-weight:700; white-space:nowrap; max-width:45vw; overflow:hidden; text-overflow:ellipsis;} .crmws-v .ws-vtop .ws-who b{font-weight:900;}
 .crmatt #shRows .att-rel{all:unset; cursor:pointer; font-size:12.5px; font-weight:800; color:#fff; background:var(--accent); border-radius:999px; padding:3px 10px; white-space:nowrap; margin-inline-start:4px;}
+.stm-subseg{display:flex; gap:6px; margin:8px 0 6px;} .stm-subseg button{flex:1; display:flex; flex-direction:column; align-items:center; gap:1px; padding:8px 6px; border-radius:12px; border:1.5px solid var(--border); background:var(--paper); font-weight:800; font-size:15px; color:var(--ink);}
+.stm-subseg button.on{background:var(--accent); border-color:var(--accent); color:#fff;} .stm-subseg button small{font-size:11.5px; font-weight:700; opacity:.85;}
+.ac-sheet .ac-none{font-size:12.5px; color:var(--ink-soft);} .stm-q .stm-row.next{flex-wrap:wrap;} .stm-q .q-rel{order:9; flex:1 1 100%; justify-content:center; margin-top:6px; padding:5px 10px !important; font-size:13px !important; white-space:nowrap;}
+.ac-sheet .ac-l2{font-size:11.5px; font-weight:800; color:var(--ink-soft); margin-top:2px;}
+.ac-sheet .ac-task{background:#fff; border:1.5px solid #8cc98a; border-radius:10px; padding:6px 8px;} .ac-sheet .ac-task.later{border-color:#cfc6b8; background:#fbfaf7;}
+.ac-sheet .ac-tk{font-size:12px; font-weight:900; color:#2c6b2a; margin-bottom:2px;} .ac-sheet .ac-task.later .ac-tk{color:#5a5048;}
+.ac-sheet .ac-next{border:1.5px dashed #cfc6b8; border-radius:10px; padding:6px 8px; display:flex; flex-direction:column; gap:4px; background:rgba(255,255,255,.5);}
 .st-unrel{font-size:12.5px !important; padding:3px 8px !important; white-space:nowrap;}
 .pk-to{position:sticky; top:0; z-index:25; background:#fff3c4; color:#5c4500; border:1.5px solid #e9cf62; border-radius:12px; padding:6px 12px; margin:0 0 8px; font-size:14px;} .pk-to b{font-weight:900;}
 .pk-who{color:var(--accent); font-weight:900; margin-inline-end:4px;} .ac-sheet .ac-unrel{font-size:11.5px; font-weight:800;}
@@ -2298,7 +2305,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.50",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.51",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -4519,16 +4526,24 @@ function exSheet(id){
 const wireExLines = (T) => T.querySelectorAll("[data-exl]").forEach(b => b.onclick = () => exSheet(b.dataset.exl));
 // 1.35.42 (נועה): לחיצה על ילד/ה בנוכחות פותחת ישר את הדף שלו/ה. למעלה – מה שרואים בנוכחות (שעה, נוכחות, מעקב, השיעור הקודם)
 // ועמודה לכל מקצוע עם המצב (צבע + מילה) והבא בתור / ✓ שחרור / + דפים
-function stNowCols(s){
-  const sid = String(s.student_id), subs = (s.subjects || []).filter(Boolean);
+function stNowCols(s, mob, only){
+  const sid = String(s.student_id), subs = (only || s.subjects || []).filter(Boolean);
   const rqS = (x) => (AD.nreq || []).find(z => String(z.student_id) === sid && z.subject === x);
-  const openOf = (x) => planOf(sid, x).filter(p => p.status === "נשלח").sort((a, b) => String(b.released_at).localeCompare(String(a.released_at)));
-  return `<div class="ac-cols n${subs.length}">` + subs.map(x => { const op = openOf(x), nx = queueOf(sid, x)[0], rq = rqS(x);
-      const stt = rq ? ["rq", "🙋 ביקש/ה"] : op.length ? (op[0].seen_at ? ["wk", "✎ עובד/ת"] : ["un", "✎ לא פתח/ה"]) : nx ? ["nx", "אין משימה בעבודה"] : ["no", "אין משימות בתור"];   // 1.35.50 (נועה): "משימה", כמו אצל הילדים
-      return `<div class="ac-col ${subjCls(x)} st-${stt[0]}"><div class="ac-ch"><b>${esc(x === "מתמטיקה" ? "מת'" : x === "אנגלית" ? "אנג'" : x)}</b><span class="ac-st">${stt[1]}</span>${rq ? `<button type="button" class="ac-x" data-ndis="${esc(rq.id)}" title="סגירת הבקשה בלי לשלוח" aria-label="סגירת הבקשה">✕</button>` : ""}</div>
-        ${op.length ? `<div class="ac-w">${ptLine(op[0])}<div class="ac-t">${esc(ago(op[0].released_at))} · <button type="button" class="lnk ac-unrel" data-unrel="${esc(op[0].id)}" title="נשלח בטעות – חוזר לראש התור">↩ חזרה לתור</button></div></div>` : ""}
-        ${nx ? `<div class="ac-nx"><span class="ac-l">הבאה:</span> ${ptLine(nx)}</div>${s.has_account ? `<button type="button" class="btn ${!op.length || rq ? "primary" : ""} sm ac-rel" data-relp="${esc(nx.id)}">✓ שחרור${relTaskExpand([nx.id]).length > 1 ? " המשימה" : ""}</button>` : ""}`
-             : !op.length || rq ? `<button type="button" class="btn sm ac-rel" data-addp="${esc(sid)}" data-subj="${esc(x)}">+ דפים</button>` : ""}
+  // 1.35.51 (נועה: "לא ברור שיש משימה אחת שעובד עליה ועוד אחת שמחכה אצלו"): כל משימה שאצלו/ה – קופסה משלה, באותו סדר כמו אצל הילד/ה;
+  // הבאה בתור (עוד לא נשלחה) – קופסה נפרדת, מקווקוות
+  const ordA = (a, b) => String(a.released_at || "").localeCompare(String(b.released_at || "")) || (a.position || 0) - (b.position || 0);
+  const openTasks = (x) => { const L = planOf(sid, x).filter(p => p.status === "נשלח").sort(ordA), seen = new Map();
+    L.forEach(p => { const k = planTaskKey(p) || "p" + p.id; if (!seen.has(k)) seen.set(k, []); seen.get(k).push(p); }); return [...seen.values()]; };
+  return `<div class="ac-cols n${subs.length}">` + subs.map(x => { const ot = openTasks(x), nx = queueOf(sid, x)[0], rq = rqS(x), first = ot[0] && ot[0][0];
+      const stt = rq ? ["rq", "🙋 ביקש/ה"] : first ? (ot.some(T => T.some(p => p.seen_at)) ? ["wk", "✎ עובד/ת"] : ["un", "✎ לא פתח/ה"]) : nx ? ["nx", "אין משימה בעבודה"] : ["no", "אין משימות בתור"];
+      const box = (T, i) => { const p = T[0], n = T.length, seen = T.some(q => q.seen_at);
+        return `<div class="ac-task${i ? " later" : ""}"><div class="ac-tk">${i === 0 ? (seen ? "▶ עובד/ת עכשיו" : "▶ ראשונה – עוד לא פתח/ה") : `${i + 1} · מחכה אצלו/ה${seen ? "" : " (לא פתח/ה)"}`}${n > 1 ? ` · 📎 ${n} דפים` : ""}</div>
+          ${ptLine(p)}<div class="ac-t">נשלחה ${esc(ago(p.released_at))} · <button type="button" class="lnk ac-unrel" data-unrel="${esc(p.id)}" title="נשלח בטעות – חוזר לראש התור">↩ חזרה לתור</button></div></div>`; };
+      return `<div class="ac-col ${subjCls(x)} st-${stt[0]}"><div class="ac-ch"><b>${only ? "" : esc(x === "מתמטיקה" ? "מת'" : x === "אנגלית" ? "אנג'" : x)}</b><span class="ac-st">${stt[1]}</span>${rq ? `<button type="button" class="ac-x" data-ndis="${esc(rq.id)}" title="סגירת הבקשה בלי לשלוח" aria-label="סגירת הבקשה">✕</button>` : ""}</div>
+        ${ot.length ? `<div class="ac-l2">אצלו/ה עכשיו${ot.length > 1 ? ` – ${ot.length} משימות` : ""}</div>` + ot.map(box).join("") : ""}
+        ${!ot.length ? `<div class="ac-none">אין משימה אצלו/ה</div>` : ""}
+        ${mob ? (!nx ? `<button type="button" class="btn sm ac-rel" data-addp="${esc(sid)}" data-subj="${esc(x)}">+ דפים</button>` : "") : nx ? `<div class="ac-next"><div class="ac-l2">הבאה בתור – עוד לא נשלחה</div>${ptLine(nx)}${s.has_account ? `<button type="button" class="btn ${!ot.length || rq ? "primary" : ""} sm ac-rel" data-relp="${esc(nx.id)}">✓ שחרור${relTaskExpand([nx.id]).length > 1 ? " המשימה" : ""}</button>` : ""}</div>`
+             : !ot.length || rq ? `<button type="button" class="btn sm ac-rel" data-addp="${esc(sid)}" data-subj="${esc(x)}">+ דפים</button>` : ""}
       </div>`; }).join("") + `</div>`;
 }
 // סגירת בקשה בלי לשלוח (✕) – מ"לטיפול" ומהדף של הילד/ה
@@ -4537,15 +4552,15 @@ function dismissReq(id, after){
     try { await rpc("portal_request_dismiss", { p_id: Number(id) }); const r0 = (AD.nreq || []).find(r => String(r.id) === String(id)); if (r0) { AD.ndis = AD.ndis || new Map(); AD.ndis.set(r0.student_id + "|" + r0.subject, new Date().toISOString()); }
     AD.nreq = (AD.nreq || []).filter(r => String(r.id) !== String(id)); renderNav(); if (after) after(); toast("הבקשה נסגרה."); } catch(e) { toast(errText(e)); } });
 }
-function stAttHtml(s){
+function stAttHtml(s, mob, only){
   const a = AD.attRet && AD.attInfo && AD.attInfo.sid === String(s.student_id) ? AD.attInfo : null;
-  if (!a) return `<div class="ac-sheet st-att">${stNowCols(s)}</div>`;   // 1.35.49 (נועה: "לא ברור מה בתור, מה בעבודה ומה לעשות") – העמודות תמיד
+  if (!a) return `<div class="ac-sheet st-att">${stNowCols(s, mob, only)}</div>`;   // 1.35.49 (נועה: "לא ברור מה בתור, מה בעבודה ומה לעשות") – העמודות תמיד
   const trk = AD.role === "instructor" ? (a.tracking ? `<span class="ac-trk">📌 ${esc(a.tracking)}</span>` : "")
             : `<button type="button" class="ac-trk" data-attrk>${a.tracking ? `📌 ${esc(a.tracking)} <i>✎</i>` : "📌 + מעקב"}</button>`;
-  return `<div class="ac-sheet st-att"><div class="ac-info">${a.pt ? `<span class="st-pt">⏰ ${esc(a.pt)}</span>` : ""}${a.present === true ? `<span class="chip ok">✓ נוכח/ת</span>` : a.present === false ? `<span class="chip bad">✗ חסר/ה</span>` : ""}${a.prev ? `<span class="att-prev" title="${esc(a.prev)}">↩ ${esc(a.prev.replace(/^בשיעור הקודם \((\d+)\.(\d+)\.\d+\) עשה\/תה (.*)$/, "קודם: $3 ($1.$2)"))}</span>` : ""}${trk}</div>${stNowCols(s)}</div>`;
+  return `<div class="ac-sheet st-att"><div class="ac-info">${a.pt ? `<span class="st-pt">⏰ ${esc(a.pt)}</span>` : ""}${a.present === true ? `<span class="chip ok">✓ נוכח/ת</span>` : a.present === false ? `<span class="chip bad">✗ חסר/ה</span>` : ""}${a.prev ? `<span class="att-prev" title="${esc(a.prev)}">↩ ${esc(a.prev.replace(/^בשיעור הקודם \((\d+)\.(\d+)\.\d+\) עשה\/תה (.*)$/, "קודם: $3 ($1.$2)"))}</span>` : ""}${trk}</div>${stNowCols(s, mob, only)}</div>`;
 }
 function wireStAtt(T, s){
-  T.querySelectorAll(".st-att [data-relp]").forEach(b => b.onclick = async () => { b.disabled = true; await releaseItems([Number(b.dataset.relp)]); });
+  T.querySelectorAll(".st-att [data-relp], .stm-q [data-relp]").forEach(b => b.onclick = async (e) => { e.stopPropagation(); b.disabled = true; await releaseItems([Number(b.dataset.relp)]); });
   T.querySelectorAll(".st-att [data-ndis]").forEach(b => b.onclick = () => dismissReq(b.dataset.ndis, adRender));
   T.querySelectorAll(".st-att [data-addp]").forEach(b => b.onclick = () => { AD.subj = b.dataset.subj; startPick(s); });
   const t = T.querySelector(".st-att [data-attrk]"); if (t) t.onclick = async () => { const a = AD.attInfo;
@@ -4555,14 +4570,21 @@ function wireStAtt(T, s){
 // למעלה (קבוע בגלילה): שם · כיתה · בית ספר · מקצוע, שורה שנייה – על מה עובד/ת עכשיו (מוסתרת כשהמאגר פתוח),
 // ולשוניות "הבאים בתור / אצל… / סיים/ה". "+ הוספת דפים" פותח את המאגר באותו מסך, מתחת.
 async function renderStudentMobile(T, s){
-  const subs = s.subjects || [], multi = subs.length > 1, first = (s.first_name || "").trim() || "התלמיד/ה";
-  const all = planOf(s.student_id);
+  // 1.35.51 (נועה: "אם עדיף לעשות אצלנו לשוניות זה גם טוב"): משולב/ת – לשונית לכל מקצוע (כמו אצל הילד/ה), מקצוע אחד על כל הרוחב
+  const subs0 = s.subjects || [], pick = AD.bank.pick && AD.bank.pick.sid === s.student_id ? AD.bank.pick : null, tabbed = subs0.length > 1 && !pick;
+  const sel = tabbed ? (subs0.includes(AD.stSubjTab) ? AD.stSubjTab : AD.subj && subs0.includes(AD.subj) ? AD.subj : subs0[0]) : null;
+  if (tabbed) AD.subj = sel;
+  const subs = tabbed ? [sel] : subs0, multi = subs.length > 1, first = (s.first_name || "").trim() || "התלמיד/ה";
+  const all = planOf(s.student_id).filter(p => !tabbed || p.subject === sel);
   const open = tColl(all.filter(p => p.status === "נשלח").sort((a, b) => String(b.released_at).localeCompare(String(a.released_at))));
   const done = tColl(all.filter(p => p.status === "הושלם").sort((a, b) => String(b.done_at).localeCompare(String(a.done_at))));
   const queues = subs.map(x => [x, tColl(queueOf(s.student_id, x))]);
   const qn = queues.reduce((n, x) => n + x[1].length, 0);
-  const pick = AD.bank.pick && AD.bank.pick.sid === s.student_id ? AD.bank.pick : null;
   const tab = AD.stTab || "queue";
+  const subStat = (x) => { const sid = String(s.student_id), rq = (AD.nreq || []).some(z => String(z.student_id) === sid && z.subject === x), op = planOf(sid, x).filter(p => p.status === "נשלח");
+    return rq ? "🙋 ביקש/ה" : op.length ? (op.some(p => p.seen_at) ? "✎ עובד/ת" : "✎ לא פתח/ה") : queueOf(sid, x).length ? "" : "אין משימות"; };
+  const subTabs = tabbed ? `<div class="seg stm-subseg">` + subs0.map(x => { const st = subStat(x);
+    return `<button type="button" data-stsub="${esc(x)}" class="${x === sel ? "on" : ""}">${esc(x)}${st ? `<small>${esc(st)}</small>` : ""}</button>`; }).join("") + `</div>` : "";
   const W = (wid) => AD.wsById.get(String(wid));
   const subTag = (p) => multi ? `<span class="subj-chip ${subjCls(p.subject)} on sm">${esc(p.subject === "מתמטיקה" ? "מת'" : p.subject === "אנגלית" ? "אנג'" : p.subject)}</span>` : "";
   const waiting = (s.waiting_subjects || []).length > 0;
@@ -4577,6 +4599,7 @@ async function renderStudentMobile(T, s){
   // 1.20 (נועה): שלושה מקטעים נפרדים (☰ בתור · ✎ בעבודה · 🏁 סיים/ה) – לחיצה על הכותרת מכווצת / פותחת.
   // משולב/ת – בכל מקטע מתמטיקה ואנגלית בעמודות; מקצוע אחד – שורות לכל הרוחב.
   const qRow = (p, i, n) => row(p, `<span class="n">${i + 1}</span>${tt(p, wsTopicName(p.worksheet_id))}
+          ${i === 0 && !pick && s.has_account && !noAcc(s.student_id) ? `<button type="button" class="btn sm primary q-rel" data-relp="${esc(p.id)}" title="שחרור – נשלחת לילד/ה">✓ שחרור${relTaskExpand([p.id]).length > 1 ? " המשימה" : ""}</button>` : ""}
           <button type="button" class="mini q-rm" data-qx="${esc(p.id)}" title="הסרה מהתור" aria-label="הסרה מהתור">✕</button><span class="drag" data-drag="${esc(p.id)}" title="גרירה לשינוי הסדר" aria-label="גרירה לשינוי הסדר">⋮⋮</span>`, i === 0 ? " next" : "");   // 1.35.44 (נועה): ✕ ליד הנקודות – הסרה בלי לפתוח
   const nowRow = (p) => row(p, `${tt(p, "נשלח " + ago(p.released_at), SEEN_IC(!!p.seen_at))}
         <button class="btn sm ghost st-unrel" title="נשלח בטעות – חוזר לראש התור" data-unrel="${esc(p.id)}">↩ חזרה לתור</button>`);   // 1.35.49: עם מילים
@@ -4594,7 +4617,8 @@ async function renderStudentMobile(T, s){
       else { const all = done.filter(p => !multi || p.subject === x), L = AD.showDone ? all : all.slice(0, 2); hid += all.length - L.length;
         h += L.map(doneRow).join("") || `<div class="stm-empty">${EMPTY.done}</div>`; }
       return h; };
-    if (multi) body += `<div class="stm-cols">` + subs.map(x => `<div class="stm-col"><div class="stm-colh"><span class="subj-chip ${subjCls(x)} on sm">${esc(x)}</span>${(s.waiting_subjects || []).includes(x) && tab !== "done" ? `<span class="chip new">ממתין/ה</span>` : ""}</div>${part(x)}</div>`).join("") + `</div>`;
+    // 1.35.51 (נועה: "יש מלא פעמים את המקצועות… אפשר לכתוב פעם אחת למעלה"): המקצוע – רק בראש העמודה למעלה; כאן אותן עמודות, בלי כותרת
+    if (multi) body += `<div class="stm-cols">` + subs.map(x => `<div class="stm-col">${pick ? `<div class="stm-colh"><span class="subj-chip ${subjCls(x)} on sm">${esc(x)}</span></div>` : ""}${part(x)}</div>`).join("") + `</div>`;
     else body += part(subs[0]);
     // 1.34.1: בלי "עוד N בתור" – התור מוצג כולו
     if (tab === "done") { if (hid) body += `<button class="linkish small stm-more" id="moreDoneAd">עוד ${hid} שסיים/ה ▾</button>`; else if (AD.showDone && done.length > 2) body += `<button class="linkish small stm-more" id="moreDoneAd">להציג פחות ▴</button>`; }
@@ -4606,9 +4630,9 @@ async function renderStudentMobile(T, s){
       || `<div class="pk-row muted">${k === "queue" ? "התור ריק." : k === "now" ? "אין דף פתוח." : "עוד לא סיים/ה דפים."}</div>`; };
   const shut = AD.secShut || (AD.secShut = new Set(JSON.parse(store("telem_portal_secshut") || "[]")));
   // 1.34.1 (נועה): משולב/ת – הספירה בכותרת לפי מקצוע (מת' 4 · אנג' 2), לא רק סה"כ
-  const secN = (k, n) => !multi ? `<b>${n}</b>` : subs.map(x => { const c = k === "queue" ? (queues.find(q => q[0] === x) || [, []])[1].length : (k === "now" ? open : done).filter(p => p.subject === x).length;
+  const secN = (k, n) => !multi || !pick ? `<b>${n}</b>` : subs.map(x => { const c = k === "queue" ? (queues.find(q => q[0] === x) || [, []])[1].length : (k === "now" ? open : done).filter(p => p.subject === x).length;
     return `<b class="sn ${subjCls(x)}">${esc(x === "מתמטיקה" ? "מת'" : x === "אנגלית" ? "אנג'" : x)} ${c}</b>`; }).join("");
-  const body = tabs.filter(([k]) => !(attCtx && k === "now" && !moreOpen)).map(([k, , n]) => `<section class="stm-sec sec-${k}${shut.has(k) ? " shut" : ""}"><h3 class="stm-sec-h" data-sec="${esc(k)}" role="button" aria-expanded="${!shut.has(k)}"><span class="ic">${SEC[k][0]}</span>${SEC[k][1]}${secN(k, n)}${SEC[k][2] ? `<small>${esc(SEC[k][2])}</small>` : ""}<span class="sec-car">${shut.has(k) ? "▸" : "▾"}</span></h3>${shut.has(k) ? "" : `<div class="stm-sec-b">${secBody(k)}</div>`}</section>`).join("");
+  const body = tabs.filter(([k]) => !(attCtx && k === "now")).map(([k, , n]) => `<section class="stm-sec sec-${k}${shut.has(k) ? " shut" : ""}"><h3 class="stm-sec-h" data-sec="${esc(k)}" role="button" aria-expanded="${!shut.has(k)}"><span class="ic">${SEC[k][0]}</span>${SEC[k][1]}${secN(k, n)}${SEC[k][2] ? `<small>${esc(SEC[k][2])}</small>` : ""}<span class="sec-car">${shut.has(k) ? "▸" : "▾"}</span></h3>${shut.has(k) ? "" : `<div class="stm-sec-b">${secBody(k)}</div>`}</section>`).join("");
 
   // 1.18: החשבון בשורה קטנה מתחת לפרטים (בלי "חשבון ◂"): טלפון · כניסה אחרונה · קוד חדש
   const acc = !s.has_account
@@ -4627,7 +4651,7 @@ async function renderStudentMobile(T, s){
       <div class="l1">${gradeBadge(I.grade, I.cls)}<b class="nm">${esc(stName(s))}</b>${scChip(I.school)}${subjMini(subs)}${accIc}<span style="flex:1"></span><button class="btn small stm-back2" id="stBack">→ חזרה</button></div>
       ${pick ? "" : `<div class="acc-mini">${acc}${noAccHtml(s)}${lvl.length ? `<span class="lvl">הקבצה ${esc(lvl.join(" · ").replace(/מתמטיקה: /, "מת' ").replace(/אנגלית: /, "אנג' "))}</span>` : ""}</div>`}
       ${exL ? `<div class="ex-lines">${exL}</div>` : ""}
-      ${pick ? "" : stAttHtml(s)}
+      ${subTabs}${pick ? "" : stAttHtml(s, true, tabbed ? [sel] : null)}
       ${pick ? `<div class="stm-peekbar">${tabs.map(([k, , n]) => `<button type="button" class="pk-${k}${AD.peek === k ? " on" : ""}" data-peek="${esc(k)}"><span>${SEC[k][0]} ${SEC[k][1]}</span><b>${n}</b></button>`).join("")}</div>
         ${AD.peek ? `<div class="stm-peek">${peekList(AD.peek)}</div>` : ""}` : ""}
     </div>
@@ -4635,6 +4659,7 @@ async function renderStudentMobile(T, s){
 
   const q = (sel) => T.querySelector(sel);
   q("#stBack").onclick = leaveStudent; wireExLines(T); wireStAtt(T, s); wireNoAcc(T, s, () => renderStudentMobile(T, s));
+  T.querySelectorAll("[data-stsub]").forEach(b => b.onclick = () => { AD.stSubjTab = b.dataset.stsub; AD.subj = b.dataset.stsub; renderStudentMobile(T, s); });
   T.querySelectorAll("[data-sec]").forEach(h => h.onclick = () => { const k = h.dataset.sec, S = AD.secShut; S.has(k) ? S.delete(k) : S.add(k); store("telem_portal_secshut", JSON.stringify([...S])); const y = window.scrollY; renderStudentMobile(T, s); window.scrollTo(0, y); });
   T.querySelectorAll("[data-peek]").forEach(b => b.onclick = () => { AD.peek = AD.peek === b.dataset.peek ? null : b.dataset.peek; const y = window.scrollY; renderStudentMobile(T, s); window.scrollTo(0, y); });
   T.querySelectorAll("[data-stab]").forEach(b => b.onclick = () => { AD.stTab = b.dataset.stab; AD.showDone = false; renderStudentMobile(T, s); window.scrollTo(0, 0); });
