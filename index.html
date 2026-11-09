@@ -2112,6 +2112,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .crmatt #shRows .pg-ic.p1{background:#FFF4DE !important; color:#9A6A00 !important; font-weight:900;} .crmatt #shRows .pg-ic.p1 .p1n{font-size:12px; padding:0 2px;}
 .stm-row .q-rm{width:28px !important; height:28px !important; min-width:28px; font-size:13px; color:var(--ink-soft); border-radius:50%;} .stm-cols .stm-row .q-rm{width:24px !important; height:24px !important; min-width:24px; font-size:12px;}
 .wl-nolink{cursor:default;} .wl-nolink b{font-weight:800;}
+.crmws-v .ws-vtop .ws-who{flex:none; background:#fff3c4; color:#5c4500; border-radius:999px; padding:3px 12px; font-size:14px; font-weight:700; white-space:nowrap; max-width:45vw; overflow:hidden; text-overflow:ellipsis;} .crmws-v .ws-vtop .ws-who b{font-weight:900;}
 .pk-to{position:sticky; top:0; z-index:25; background:#fff3c4; color:#5c4500; border:1.5px solid #e9cf62; border-radius:12px; padding:6px 12px; margin:0 0 8px; font-size:14px;} .pk-to b{font-weight:900;}
 .pk-who{color:var(--accent); font-weight:900; margin-inline-end:4px;} .ac-sheet .ac-unrel{font-size:11.5px; font-weight:800;}
 .na-chip{display:inline-block; font-size:12px; font-weight:800; border-radius:999px; padding:0 8px; background:#FDE8E6; color:var(--bad); margin-inline-start:6px;} .na-set{font-size:12px; color:var(--ink-soft); margin-inline-start:8px;}
@@ -2287,7 +2288,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.47",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.48",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -5694,6 +5695,10 @@ function cbToStudents(ids){ if (!ids.length) return; CBM.wsViewerOff(); AD.bank.
 CB.onOpen = (r) => { const box = document.getElementById("wsAppBtns"); if (!box) return;
   const tt = document.getElementById("wsVTitle"), lv = lvOf(r) ? " " + ((LV[r.level] || [""])[0] + (r.is_word ? "📖" : "")) : "";
   if (tt && lv && !tt.textContent.endsWith(lv)) tt.textContent += lv;
+  // 1.35.48 (נועה): "כשלוחצים על הדף במאגר בתוך הילד אני לא רואה למי אני שולחת" – השם תמיד למעלה בדף הפתוח
+  { const top = document.querySelector(".crmws-v .ws-vtop"), who = cbWho(); let w = document.getElementById("cbWhoV");
+    if (who && top) { if (!w) { w = document.createElement("div"); w.id = "cbWhoV"; w.className = "ws-who"; top.appendChild(w); } w.innerHTML = `📤 ל<b>${esc(who)}</b>`; }
+    else if (w) w.remove(); }
   document.body.classList.toggle("ws-app-on", CB.ctx !== "browse" || r.type === "page");
   if (r.type !== "page") { box.innerHTML = ""; return; }
   // 1.24.2 (נועה): "לתלמידים…" בשורה של השליחה (למטה), לא בשורה משלו
