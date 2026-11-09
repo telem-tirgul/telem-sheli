@@ -1129,6 +1129,11 @@
   .kick{ display:block; color:var(--accent-2); font-weight:800; font-size:13px; line-height:1.35; }
   .now-card{ display:block; width:100%; text-align:start; background:var(--paper); border:1.5px solid var(--gold); border-radius:18px; overflow:hidden; margin-bottom:14px; padding:0; cursor:pointer; color:inherit;
     box-shadow:0 4px 14px color-mix(in srgb, var(--accent-2) 10%, transparent); }
+  .now-card.sm2{ display:flex; align-items:stretch; } .now-card.sm2 .now-img{ flex:0 0 96px; height:auto; min-height:104px; border-bottom:0; border-inline-end:1px solid var(--border); background-size:cover; }
+  .now-card.sm2 .now-tx{ flex:1; min-width:0; } .now-card.sm2 .t{ font-size:16px; } .now-card.sm2 .now-row .btn{ padding:4px 10px; font-size:13px; }
+  .now-img .chip.ord{ position:absolute; top:10px; inset-inline-end:10px; background:#eee8de; color:#5a5048; font-weight:800; font-size:12px; } .now-img .chip.ord.first{ background:var(--accent); color:#fff; font-size:13px; }
+  .now-card.sm2 .now-row{ flex-wrap:wrap; gap:6px; } .now-card.sm2 .now-row .s{ font-size:12px; } .now-card.sm2 .now-row .btn{ white-space:nowrap; }
+  .now-card.sm2 .now-img .chip.ord{ top:4px; inset-inline-end:auto; inset-inline-start:4px; font-size:11px; padding:1px 6px; } .now-card.sm2 .chip.new, .now-card.sm2 .chip.task-n{ display:none; }
   .now-img{ position:relative; display:block; height:160px; background:#fff center top / 92% auto no-repeat; border-bottom:1px solid var(--border); }
   .now-img .chip.new{ position:absolute; top:10px; inset-inline-start:10px; }
   .now-tx{ display:block; padding:12px 14px 14px; }
@@ -2119,6 +2124,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .st-unrel{font-size:12.5px !important; padding:3px 8px !important; white-space:nowrap;}
 .pk-to{position:sticky; top:0; z-index:25; background:#fff3c4; color:#5c4500; border:1.5px solid #e9cf62; border-radius:12px; padding:6px 12px; margin:0 0 8px; font-size:14px;} .pk-to b{font-weight:900;}
 .pk-who{color:var(--accent); font-weight:900; margin-inline-end:4px;} .ac-sheet .ac-unrel{font-size:11.5px; font-weight:800;}
+.old-rq{display:inline-block; font-size:11px; font-weight:800; border-radius:999px; padding:0 7px; background:#eee8de; color:#5a5048;}
 .na-chip{display:inline-block; font-size:12px; font-weight:800; border-radius:999px; padding:0 8px; background:#FDE8E6; color:var(--bad); margin-inline-start:6px;} .na-set{font-size:12px; color:var(--ink-soft); margin-inline-start:8px;}
 .td-sec{margin:0 0 10px; background:var(--card, #fff); border:1.5px solid var(--border); border-radius:14px; overflow:hidden;}
 .td-sec > summary{list-style:none; cursor:pointer; display:flex; align-items:center; gap:8px; padding:12px 14px; font-weight:800; font-size:16px;} .td-sec > summary::-webkit-details-marker{display:none;}
@@ -2292,7 +2298,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.49",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.50",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2828,21 +2834,25 @@ function renderStudent(){
   const tasks = new Map(); open.forEach(p => { const k = stTaskKey(p); if (k) { if (!tasks.has(k)) tasks.set(k, []); tasks.get(k).push(p); } });
   tasks.forEach(L => L.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))); ST.tasks = tasks;
   const seenT = new Set();
-  const cards = open.filter(p => { const k = stTaskKey(p); if (!k) return true; if (seenT.has(k)) return false; seenT.add(k); return true; });
+  // 1.35.50 (נועה: "לא ברור מי הבאה בתור ומי אחריה"): לפי הסדר שנשלחו – הראשונה גדולה ("להתחיל כאן"), האחרות קטנות וממוספרות
+  const ordA = (a, b) => String(a.released_at || "").localeCompare(String(b.released_at || "")) || (a.sort_order || 0) - (b.sort_order || 0);
+  const cards = open.slice().sort(ordA).filter(p => { const k = stTaskKey(p); if (!k) return true; if (seenT.has(k)) return false; seenT.add(k); return true; });
+  ST.openList = ST.openList.slice().sort(ordA);
+  const nC = cards.length, ordChip = (i) => nC < 2 ? "" : i === 0 ? `<span class="chip ord first">▶ להתחיל כאן</span>` : `<span class="chip ord">${i + 1} · אחר כך</span>`;
   if (open.length) {
     h += `<h2 class="st-h"><span class="hl">לעבודה עכשיו</span></h2>`;
-    h += cards.map(p0 => { const k = stTaskKey(p0), T = k ? tasks.get(k) : null, p = T ? T[0] : p0, isNew = T ? T.some(x => x.is_new) : p.is_new;
+    h += cards.map((p0, ci) => { const k = stTaskKey(p0), T = k ? tasks.get(k) : null, p = T ? T[0] : p0, isNew = T ? T.some(x => x.is_new) : p.is_new, sm = nC > 1 && ci > 0 ? " sm2" : "";
       return T ? `
-      <button class="now-card task ${isNew ? "is-new" : ""}" data-task="${esc(k)}">
-        <span class="now-img" style="background-image:url('${esc(ST.url(p.storage_path))}')">${isNew ? `<span class="chip new">חדש</span>` : ""}<span class="chip task-n">📎 ${T.length} דפים</span></span>
+      <button class="now-card task ${isNew ? "is-new" : ""}${sm}" data-task="${esc(k)}">
+        <span class="now-img" style="background-image:url('${esc(ST.url(p.storage_path))}')">${ordChip(ci)}${isNew ? `<span class="chip new">חדש</span>` : ""}<span class="chip task-n">📎 ${T.length} דפים</span></span>
         <span class="now-tx">
           ${kick(p) ? `<span class="kick">${esc(kick(p))}</span>` : ""}
           <span class="t">משימה: <bdi>${esc(p.sub || p.title)}</bdi></span>
           <span class="now-row"><span class="s">נשלח ${esc(ago(p.released_at))}</span><span class="btn primary sm">לפתיחת המשימה ←</span></span>
         </span>
       </button>` : `
-      <button class="now-card ${p.is_new ? "is-new" : ""}" data-i="${esc(p.item_id)}">
-        <span class="now-img" style="background-image:url('${esc(ST.url(p.storage_path))}')">${p.is_new ? `<span class="chip new">חדש</span>` : ""}</span>
+      <button class="now-card ${p.is_new ? "is-new" : ""}${sm}" data-i="${esc(p.item_id)}">
+        <span class="now-img" style="background-image:url('${esc(ST.url(p.storage_path))}')">${ordChip(ci)}${p.is_new ? `<span class="chip new">חדש</span>` : ""}</span>
         <span class="now-tx">
           ${kick(p) ? `<span class="kick">${esc(kick(p))}</span>` : ""}
           <span class="t">${esc(p.title)}</span>
@@ -2853,7 +2863,7 @@ function renderStudent(){
     h += `<div class="card empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.3l2.8 2.8L16.3 9.5"/></svg>
       <h2 style="margin-top:8px">${done.length ? "כל הכבוד, סיימת הכול!" : "עוד אין משימות"}</h2>
-      <p class="muted">${ST.req ? "רוצים משימה? לוחצים על \"שלחו לי…\" למעלה, והיא תגיע לכאן." : done.length ? "עדכנו שסיימת. משימה חדשה תגיע לכאן בקרוב." : "כשתישלח אליך משימה, היא תופיע כאן."}</p></div>`;
+      <p class="muted">${ST.req ? "רוצים משימה? לוחצים על \"שלחו לי…\" למעלה, והמורה תשלח אותה בשיעור." : done.length ? "עדכנו שסיימת. משימה חדשה תגיע בשיעור." : "כשתישלח אליך משימה, היא תופיע כאן."}</p></div>`;
   }
   if (done.length) {
     const dv = store("telem_portal_done_view") === "topics" ? "topics" : "order";
@@ -2883,7 +2893,7 @@ function renderStudentCols(subs){
     const seenT = new Set(), cards = open.filter(p => { const k = stTaskKey(p); if (!k) return true; if (seenT.has(k)) return false; seenT.add(k); return true; });
     let h = `<div class="stc-h"><span class="subj-chip ${subjCls(x)} on">${esc(x)}</span></div>`;
     if (ST.req && !open.length) h += ST.req.has(x)
-      ? `<div class="rq-on"><span>✓ ביקשת משימה – היא כבר בדרך</span><button type="button" class="lnk" data-rqc="${esc(x)}">ביטול</button></div>`
+      ? `<div class="rq-on"><span>✓ ביקשת משימה – המורה תשלח אותה בשיעור</span><button type="button" class="lnk" data-rqc="${esc(x)}">ביטול</button></div>`
       : `<button type="button" class="btn primary block rq-b" data-rq="${esc(x)}">📨 שלחו לי משימה ב${esc(x)}</button>`;
     h += cards.map(p0 => { const k = stTaskKey(p0), T = k ? tasks.get(k) : null, p = T ? T[0] : p0, isNew = T ? T.some(y => y.is_new) : p.is_new;
       return `<button class="now-card sm${T ? " task" : ""} ${isNew ? "is-new" : ""}" ${T ? `data-task="${esc(k)}"` : `data-i="${esc(p.item_id)}"`}>
@@ -2918,7 +2928,7 @@ function reqBar(subs){
   if (!items.length) return "";
   // 1.33 (נועה): כל כפתור מתחת ללשונית של המקצוע שלו (מתמטיקה מימין, אנגלית משמאל)
   return `<div class="rq-bar${two ? " two" : ""}">` + subs.map(x => stOpenIn(x) ? `<span></span>` : ST.req.has(x)
-    ? `<div class="rq-on"><span>✓ ביקשת ${two ? "משימה ב" + esc(x) : "את המשימה הבאה"} – היא כבר בדרך</span><button type="button" class="lnk" data-rqc="${esc(x)}">ביטול</button></div>`
+    ? `<div class="rq-on"><span>✓ ביקשת ${two ? "משימה ב" + esc(x) : "את המשימה הבאה"} – המורה תשלח אותה בשיעור</span><button type="button" class="lnk" data-rqc="${esc(x)}">ביטול</button></div>`
     : `<button type="button" class="btn primary block rq-b" data-rq="${esc(x)}">📨 שלחו לי ${two ? "משימה ב" + esc(x) : "את המשימה הבאה"}</button>`).join("") + `</div>`;
 }
 async function requestNext(subj, on, quiet){
@@ -2926,14 +2936,14 @@ async function requestNext(subj, on, quiet){
     if (quiet) { if (r && r.ok !== false && ST.req) ST.req.add(subj); renderStudent(); return; }
     if (r && r.ok === false) { toast(r.reason === "open" ? "קודם מסיימים את המשימה הפתוחה 🙂" : "לא הצלחנו לשלוח את הבקשה."); return; }
     if (ST.req) on ? ST.req.add(subj) : ST.req.delete(subj);
-    renderStudent(); toast(on ? "✓ ביקשנו! המשימה הבאה תגיע לכאן בקרוב." : "הבקשה בוטלה.");
+    renderStudent(); toast(on ? "✓ ביקשנו! המורה תשלח את המשימה הבאה בשיעור." : "הבקשה בוטלה.");   // 1.35.50 (נועה): לא להבטיח "בדרך" – אולי זה מהבית
   } catch(e) { toast(errText(e)); }
 }
 // אחרי "סיימתי": שתי אפשרויות – לבקש את הבאה, או רק לסגור
 function cheerHtml(text, subj){
   const ask = ST.req && subj && !stOpenIn(subj) && !ST.req.has(subj), two = (ST.me.subjects || []).length > 1;
   return `<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.3l2.8 2.8L16.3 9.5"/></svg>
-    <h2 style="margin-top:8px">כל הכבוד!</h2><p class="muted">${text}${ask ? "" : " המשימה הבאה תגיע לכאן בקרוב."}</p>
+    <h2 style="margin-top:8px">כל הכבוד!</h2><p class="muted">${text}${ask ? "" : " המשימה הבאה תגיע בשיעור."}</p>
     ${ask ? `<button class="btn primary block" id="chNext">📨 סיימתי – שלחו לי את המשימה הבאה${two ? " ב" + esc(subj) : ""}</button><button class="btn block" style="margin-top:8px" onclick="closeSheet()">רק סיימתי</button>`
           : `<button class="btn primary block" onclick="closeSheet()">מעולה</button>`}</div>`;
 }
@@ -3419,8 +3429,9 @@ async function adPoll(){
     AD.plan = plan; AD.codeReqs = reqs; AD.nreq = nreq; refreshWaitingLocal();
     loadMgrs();
     // 1.35.49 (נועה: "ההתראות לא עובדות טוב… קופץ בכל מיני מקומות"): הודעה + צליל רק על ילד/ה בקבוצה שפתוחה עכשיו בנוכחות. כל השאר – רק המספר על "נוכחות" והשורה הצהובה
-    const inSheet = (sid) => typeof ATTM !== "undefined" && ATTM.isOpen && [...document.querySelectorAll("#shRows [data-kl]")].some(k => k.dataset.kl === String(sid));
-    const newW = waitingKids(waitingList(true).filter(w => !beforeW.has(w.s.student_id + "|" + w.subj) && alertMine(w) && !wHome(w) && inSheet(w.s.student_id))), newR = [];
+    // 1.35.50 (נועה): גם כשעברתי למאגר / לדף של ילד/ה – הקבוצה שפתחתי היום; וגם מי שעוד לא סימנתי נוכח/ת ("מבקשים בדרך ותיכף מגיעים")
+    const kidsNow = typeof ATTM !== "undefined" && ATTM.kidsNow ? ATTM.kidsNow() : new Set();
+    const newW = waitingKids(waitingList(true).filter(w => !beforeW.has(w.s.student_id + "|" + w.subj) && kidsNow.has(String(w.s.student_id)))), newR = [];
     if (newW.length || newR.length) {
       const names = [...newW.map(w => stName(w.s).trim()), ...newR.map(r => stName(stById(r.student_id)).trim() + " (קוד)")];
       const msg = newW.length && !newR.length ? (newW.length === 1 ? (AD.nreq ? `🔔 ${names[0]} ביקש/ה את המשימה הבאה` : `🔔 ${names[0]} סיים/ה דף ומחכה לדף הבא`) : `🔔 ${newW.length} תלמידים מחכים לדף: ${names.join(", ")}`)
@@ -3865,7 +3876,7 @@ function todoHtml(g, mine){
   // 1. ביקשו דף ולא בשיעור (מהבית / מקבוצה אחרת)
   const inL = waitingKids(mine.filter(w => !wHome(w))), home = waitingKids(mine.filter(wHome));
   if (inL.length) h += `<div class="td-att">🙋 ${inL.length === 1 ? esc(stName(inL[0].s)) + " ביקש/ה" : inL.length + " ביקשו"} דף בשיעור – <button type="button" class="lnk" data-goatt>לנוכחות ←</button></div>`;
-  if (home.length) h += sec("🙋", "ביקשו דף ולא בשיעור", home.length, "מהבית או מקבוצה אחרת – אין צליל ולא נספרים בנוכחות.", wlRows(home, k => waitLine(g, k, false, "")), "td-home");
+  if (home.length) h += sec("🙋", "ביקשו משימה ולא בשיעור", home.length, "מהבית או מקבוצה אחרת – אין צליל ולא נספרים בנוכחות. בקשה מיום קודם – \"ישנה\".", wlRows(home, k => waitLine(g, k, false, "")), "td-home");
   // 2. צריכים קוד חדש
   const reqs = myReqs(), rq = new Set(reqs.map(r => String(r.student_id)));
   const exp = (AD.students || []).filter(s => s.has_account && codeExpired(s) && stMine(s.student_id) && !rq.has(String(s.student_id)) && !noAcc(s.student_id));
@@ -3884,7 +3895,7 @@ function todoHtml(g, mine){
         const need = (st.subjects || []).filter(x => !queueOf(st.student_id, x).length); if (!need.length) return ""; used.add(String(st.student_id)); n++;
         return `<div class="wl-row">${who(st, "")}${need.map(x => `<div class="wl-q"><span class="subj-chip ${subjCls(x)} on sm">${esc(sh(x))}</span><span class="wl-t bad-t">אין דפים בתור</span><button class="btn sm wr-rel" data-pick="${esc(st.student_id)}" data-subj="${esc(x)}">+ דפים</button></div>`).join("")}</div>`; }).join("");
       return rows ? `<div class="wl-gh">${esc(up.label)} · <bdi>${esc(gr.start || gr.time || "")}</bdi> · ${esc(gr.city || "")}${gr.loc ? " – " + esc(gr.loc) : ""}</div><div class="wrows wl">${rows}</div>` : ""; }).join("");
-    if (n) h += sec("📭", `אין דפים בתור – ${up.label === "היום" ? "לקבוצות של היום" : "ל" + up.label}`, n, "", body, "td-noq"); }
+    if (n) h += sec("📭", `אין משימות בתור – ${up.label === "היום" ? "לקבוצות של היום" : "ל" + up.label}`, n, "", body, "td-noq"); }
   return h || `<div class="wl-none muted">✓ אין מה לטפל</div>`;
 }
 // ---------- ממתינים לפי קבוצות: עיר → מקום תרגול → יום ושעה ----------
@@ -4139,7 +4150,7 @@ function inLessonHtml(list){
 function waitLine(g, k, hot, chip, sub0, extra){
   const s = k.s, ord = (x) => x === "מתמטיקה" ? 0 : 1, sh = (x) => x === "מתמטיקה" ? "מת'" : x === "אנגלית" ? "אנג'" : x;
   const ws = (k.ws || []).filter(w => w.subj).slice().sort((a, b) => ord(a.subj) - ord(b.subj)), w0 = ws[0] || {}, many = ws.length > 1 || (s.subjects || []).length > 1;
-  const when = sub0 != null ? sub0 : w0.req ? `ביקש/ה ${esc(ago(w0.req.requested_at))}` : w0.done_at ? `סיים/ה ${esc(ago(w0.done_at))}` : "";
+  const when = sub0 != null ? sub0 : w0.req ? `ביקש/ה ${esc(ago(w0.req.requested_at))}${String(w0.req.requested_at || "").slice(0, 10) < new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(new Date()) ? ` <span class="old-rq">ישנה</span>` : ""}` : w0.done_at ? `סיים/ה ${esc(ago(w0.done_at))}` : "";
   const last = ws.filter(w => w.last).map(w => (many ? sh(w.subj) + ": " : "") + ptTitle(w.last)).join(" · ");
   const lines = ws.map(w => { const nx = queueOf(s.student_id, w.subj)[0];
     return `<div class="wl-q"><span class="subj-chip ${subjCls(w.subj)} on sm">${esc(sh(w.subj))}</span>
@@ -4210,7 +4221,8 @@ async function releaseItems(ids){
     // 1.35.32 (נועה): בממתינים – בלי הודעה קופצת (הסתירה את "+ דפים"); הביטול – שורה קטנה למעלה, 2 דקות
     if (AD.view === "wait") { const nm = [...new Set(rel0.map(p => { const st = stById(p.student_id); return st ? st.first_name : ""; }).filter(Boolean))].join(", ");
       AD.lastRel = { undo, at: Date.now(), txt: (n === 1 ? "נשלח דף" : "נשלחו " + n + " דפים") + (nm ? " ל" + nm : "") }; }
-    else toastAct(n === 1 ? "הדף נשלח לתלמיד/ה." : n + " דפים נשלחו.", "↩ ביטול", undo);
+    else { const nm1 = [...new Set(rel0.map(p => { const st = stById(p.student_id); return st ? st.first_name : ""; }).filter(Boolean))].join(", ");
+      toastAct("המשימה נשלחה" + (nm1 ? " ל" + nm1 : "") + (n > 1 ? " (" + n + " דפים)" : "") + ".", "↩ ביטול", undo); }
     adRender();
   } catch(e) { toast(errText(e)); }
 }
@@ -4512,10 +4524,10 @@ function stNowCols(s){
   const rqS = (x) => (AD.nreq || []).find(z => String(z.student_id) === sid && z.subject === x);
   const openOf = (x) => planOf(sid, x).filter(p => p.status === "נשלח").sort((a, b) => String(b.released_at).localeCompare(String(a.released_at)));
   return `<div class="ac-cols n${subs.length}">` + subs.map(x => { const op = openOf(x), nx = queueOf(sid, x)[0], rq = rqS(x);
-      const stt = rq ? ["rq", "🙋 ביקש/ה"] : op.length ? (op[0].seen_at ? ["wk", "✎ עובד/ת"] : ["un", "✎ לא פתח/ה"]) : nx ? ["nx", "אין דף בעבודה"] : ["no", "אין דפים"];
+      const stt = rq ? ["rq", "🙋 ביקש/ה"] : op.length ? (op[0].seen_at ? ["wk", "✎ עובד/ת"] : ["un", "✎ לא פתח/ה"]) : nx ? ["nx", "אין משימה בעבודה"] : ["no", "אין משימות בתור"];   // 1.35.50 (נועה): "משימה", כמו אצל הילדים
       return `<div class="ac-col ${subjCls(x)} st-${stt[0]}"><div class="ac-ch"><b>${esc(x === "מתמטיקה" ? "מת'" : x === "אנגלית" ? "אנג'" : x)}</b><span class="ac-st">${stt[1]}</span>${rq ? `<button type="button" class="ac-x" data-ndis="${esc(rq.id)}" title="סגירת הבקשה בלי לשלוח" aria-label="סגירת הבקשה">✕</button>` : ""}</div>
         ${op.length ? `<div class="ac-w">${ptLine(op[0])}<div class="ac-t">${esc(ago(op[0].released_at))} · <button type="button" class="lnk ac-unrel" data-unrel="${esc(op[0].id)}" title="נשלח בטעות – חוזר לראש התור">↩ חזרה לתור</button></div></div>` : ""}
-        ${nx ? `<div class="ac-nx"><span class="ac-l">הבא:</span> ${ptLine(nx)}</div>${s.has_account ? `<button type="button" class="btn ${!op.length || rq ? "primary" : ""} sm ac-rel" data-relp="${esc(nx.id)}">✓ שחרור${relTaskExpand([nx.id]).length > 1 ? " המשימה" : ""}</button>` : ""}`
+        ${nx ? `<div class="ac-nx"><span class="ac-l">הבאה:</span> ${ptLine(nx)}</div>${s.has_account ? `<button type="button" class="btn ${!op.length || rq ? "primary" : ""} sm ac-rel" data-relp="${esc(nx.id)}">✓ שחרור${relTaskExpand([nx.id]).length > 1 ? " המשימה" : ""}</button>` : ""}`
              : !op.length || rq ? `<button type="button" class="btn sm ac-rel" data-addp="${esc(sid)}" data-subj="${esc(x)}">+ דפים</button>` : ""}
       </div>`; }).join("") + `</div>`;
 }
@@ -6830,8 +6842,8 @@ function renderSheetRows(){
         if (st0 && st0.has_account && !noAcc(st0.student_id) && A.sheet && A.sheet.can_edit) { const subs0 = st0.subjects || [], two0 = subs0.length > 1;
           subs0.forEach(x => { const nx = queueOf(st0.student_id, x)[0]; if (!nx) return; const n0 = relTaskExpand([nx.id]).length;
             const b = document.createElement("button"); b.type = "button"; b.className = "att-rel"; b.dataset.relp = nx.id;
-            b.title = "שחרור " + (n0 > 1 ? "המשימה הבאה (" + n0 + " דפים)" : "הדף הבא") + ": " + ptTitle(nx);
-            b.textContent = (n0 > 1 ? "▶ משימה · " + n0 + " דפים" : "▶ הבא") + (two0 ? " " + (x === "מתמטיקה" ? "מת'" : x === "אנגלית" ? "אנג'" : x) : ""); row.appendChild(b); }); } }
+            b.title = "שחרור המשימה הבאה" + (n0 > 1 ? " (" + n0 + " דפים)" : "") + ": " + ptTitle(nx);
+            b.textContent = (n0 > 1 ? "▶ משימה · " + n0 + " דפים" : "▶ הבאה") + (two0 ? " " + (x === "מתמטיקה" ? "מת'" : x === "אנגלית" ? "אנג'" : x) : ""); row.appendChild(b); }); } }
       row.className = "att-pgs"; li.appendChild(row); pr.remove(); }   // 1.35.25 (נועה): הדפים – בשורה 2, מקביל למקצוע
     if (nm) ch.querySelectorAll(":scope > .att-pt").forEach(x => nm.appendChild(x));   // 1.35.25 (נועה): שעה אישית / שיעור כפול – בשורת השם, עם בית הספר
     const sj = ctl && ctl.querySelector(":scope > .subj-mini, :scope > .att-sj2"); if (sj) { sj.classList.add("att-sjc"); li.appendChild(sj); }   // המקצוע – מתחת ל-✗/✓
@@ -6989,7 +7001,9 @@ async function loadHistory(sessionId, date){
   const detach = () => { isOpen = false; delete document.body.dataset.att; };
   const HOLX = { load: () => loadHol(), cx: (g, d) => lessonCx(g, d, g.cancelled, g.cancel_reason),
     chips: (d) => (HOL.rows || []).filter(h => d >= h.date_from && d <= h.date_to && !h.city && !h.school).map(h => `<span class="hol-chip hol-${esc(String(h.kind || "").replace(/[^a-zא-ת_-]/gi, ""))}">${esc(h.name)}</span>`).join("") };
-  return { HOLX, open, close, onPop, detach, refresh, last: attLast, get isOpen(){ return isOpen; } };
+  // 1.35.50: הילדים של הקבוצה שפתוחה / שנפתחה היום (גם כשעברתי למאגר) – להתראות
+  const kidsNow = () => { const m = attLast(); if (!A.sheet || !(isOpen || (m && String(m.sid) === String(A.sheet.session_id)))) return new Set(); return new Set((A.rows || []).filter(r => !r.skip).map(r => String(r.student_id))); };
+  return { HOLX, open, close, onPop, detach, refresh, kidsNow, last: attLast, get isOpen(){ return isOpen; } };
 })();
 // ===================== /נוכחות =====================
 // עדכון אוטומטי: בכל חזרה לאפליקציה (וכל חצי שעה) בודקים אם יש גרסה חדשה.
