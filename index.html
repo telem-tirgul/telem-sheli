@@ -2319,7 +2319,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.52",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.53",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -4233,11 +4233,13 @@ async function releaseItems(ids){
   if (!ids.length) return;
   ids = relTaskExpand(ids);
   const rel0 = AD.plan.filter(p => ids.includes(p.id)), rq0 = (AD.nreq || []).filter(r => rel0.some(p => String(p.student_id) === String(r.student_id) && p.subject === r.subject));   // 1.35.29: לביטול – הבקשות שייסגרו
+  // 1.35.53 (נועה: "למה לוקח לזה שניה להופיע?"): המסך מתעדכן מיד, והשמירה בשרת אחר כך; אם נכשלה – חוזר למה שהיה + הודעת שגיאה
+  const now = new Date().toISOString(), was = AD.plan.filter(p => ids.includes(p.id) && p.status === "מתוכנן").map(p => ({ p, b: { status: p.status, released_at: p.released_at, released_by: p.released_by, done_at: p.done_at, seen_at: p.seen_at } }));
+  const nreq0 = AD.nreq ? AD.nreq.slice() : AD.nreq;
+  was.forEach(({ p }) => { p.status = "נשלח"; p.released_at = now; p.released_by = myUid(); p.done_at = null; p.seen_at = null; });
+  refreshWaitingLocal(); AD.sel.clear(); adRender(); if (typeof ATTM !== "undefined" && ATTM.isOpen) ATTM.refresh();
   try {
     const n = await rpc("portal_release", { p_items: ids });
-    const now = new Date().toISOString();
-    AD.plan.forEach(p => { if (ids.includes(p.id) && p.status === "מתוכנן") { p.status = "נשלח"; p.released_at = now; p.released_by = myUid(); p.done_at = null; p.seen_at = null; } });
-    refreshWaitingLocal(); AD.sel.clear();
     const undo = async () => { AD.lastRel = null; for (const id of ids) await unrelease(id);
       for (const r of rq0) { try { const x = await rpc("portal_request_reopen", { p_id: r.id }); if (x && x.ok && AD.nreq && !AD.nreq.some(y => y.id === r.id)) AD.nreq.push(r); } catch(e) {} }   // 1.35.29 (TS-16): גם הבקשה של הילד/ה חוזרת
       refreshWaitingLocal(); if (AD.view === "wait" || AD.view === "att") adRender(); };   // 1.35.27: אפשר לבטל
@@ -4245,9 +4247,9 @@ async function releaseItems(ids){
     if (AD.view === "wait") { const nm = [...new Set(rel0.map(p => { const st = stById(p.student_id); return st ? st.first_name : ""; }).filter(Boolean))].join(", ");
       AD.lastRel = { undo, at: Date.now(), txt: (n === 1 ? "נשלח דף" : "נשלחו " + n + " דפים") + (nm ? " ל" + nm : "") }; }
     else { const nm1 = [...new Set(rel0.map(p => { const st = stById(p.student_id); return st ? st.first_name : ""; }).filter(Boolean))].join(", ");
-      toastAct("המשימה נשלחה" + (nm1 ? " ל" + nm1 : "") + (n > 1 ? " (" + n + " דפים)" : "") + ".", "↩ ביטול", undo); }
-    adRender();
-  } catch(e) { toast(errText(e)); }
+      /* 1.35.53 (נועה: "אל תקפיץ לי הודעות של מה הוספתי למי… לא מה הוספתי ולא מה הורדתי") */ }
+    if (AD.view === "wait") adRender();
+  } catch(e) { was.forEach(({ p, b }) => Object.assign(p, b)); AD.nreq = nreq0; adRender(); if (typeof ATTM !== "undefined" && ATTM.isOpen) ATTM.refresh(); toast("השליחה לא נשמרה – " + errText(e)); }
 }
 // חישוב מחדש של "ממתין" בלי לטעון מהשרת
 function refreshWaitingLocal(){
@@ -4783,7 +4785,7 @@ async function unrelease(id){
   try { await rpc("portal_unrelease", { p_item: id });
     const p = AD.plan.find(x => x.id === id); if (p) { p.status = "מתוכנן"; p.released_at = null; p.done_at = null; p.seen_at = null;
       const qq = queueOf(p.student_id, p.subject).filter(x => x.id !== id); p.position = qq.length ? Math.min(...qq.map(x => x.position)) - 1 : 0; patch("portal_plan_items", "id=eq." + id, { position: p.position }).catch(() => {}); }
-    refreshWaitingLocal(); toast("הדף חזר לראש התור."); rerenderPlan();
+    refreshWaitingLocal(); rerenderPlan();
   } catch(e) { toast(errText(e)); }
 }
 async function movePlan(id, d){
@@ -5814,7 +5816,7 @@ async function cbRecord(sid, wids, sure){
     if (toRel.length) { await rpc("portal_release", { p_items: toRel }); const now = new Date().toISOString();
       AD.plan.forEach(p => { if (toRel.includes(p.id)) { p.status = "נשלח"; p.released_at = now; p.done_at = null; p.seen_at = null; } }); }
     refreshWaitingLocal();
-    if (rows.length || toRel.length) toast(`נשלח ל${stName(stById(sid) || {}).trim()}: ${rows.length + toRel.length === 1 ? wsTitle(wids[0]) : (rows.length + toRel.length) + " דפים"} ✓`);
+    /* 1.35.53 (נועה: "אל תקפיץ לי הודעות של מה הוספתי למי… לא מה הוספתי ולא מה הורדתי") */
     // 1.35.49: אחרי שליחה מהמאגר של הילד/ה – חוזרים לדף שלו/ה (בעבודה), לא נשארים במאגר
     if ((rows.length || toRel.length) && CB.ctx === "pick" && AD.bank.pick && String(AD.bank.pick.sid) === sid && !isDesk()) {
       AD.hl = new Set(toRel); setTimeout(() => { AD.hl = null; }, 4000); AD.stTab = "now"; setTimeout(() => { try { closeInlineBank(); } catch(e) {} }, 600); return; }
@@ -5867,7 +5869,7 @@ async function addToPlan(releaseNow, again){
     ids = ids.filter(w => !inPlan.some(p => String(p.worksheet_id) === w));
     if (!ids.length) { AD.bank.sel.clear(); const sid = pick.sid, subj = inPlan[0].subject; closeDrawer(true); AD.bank.pick = null;
       if (releaseNow && toRel.length) await releaseItems([...new Set(toRel)]); refreshWaitingLocal();
-      toast(releaseNow ? "נשלח שוב ✓" : "חזר לתור ✓");
+      /* 1.35.53 (נועה: "אל תקפיץ לי הודעות של מה הוספתי למי… לא מה הוספתי ולא מה הורדתי") */
       if (!isDesk()) { navBackTo(AD.bankD); AD.bankD = 0; } else AD.view = "students";
       AD.st = String(sid); AD.subj = subj; AD.stTab = releaseNow ? "now" : "queue"; adRender(); return; }
     if (releaseNow && toRel.length) AD.relExtra = toRel; }
@@ -5883,12 +5885,12 @@ async function addToPlan(releaseNow, again){
     closeDrawer(true); AD.bank.pick = null;
     if (releaseNow) { const ex = AD.relExtra || []; AD.relExtra = null; await releaseItems([...ex, ...(res || []).map(p => p.id)]); }
     refreshWaitingLocal();
-    toast(releaseNow ? (ids.length === 1 ? "הדף נוסף ונשלח לתלמיד/ה." : ids.length + " דפים נוספו ונשלחו.") : (ids.length === 1 ? "דף אחד נוסף לתור." : ids.length + " דפים נוספו לתור."));
+    /* 1.35.53 (נועה: "אל תקפיץ לי הודעות של מה הוספתי למי… לא מה הוספתי ולא מה הורדתי") */
     const inline = !isDesk();
     AD.hl = new Set((res || []).map(p => p.id)); setTimeout(() => { AD.hl = null; document.querySelectorAll(".stm-row.hl").forEach(x => x.classList.remove("hl")); }, 4000);
     AD.stTab = releaseNow ? "now" : "queue";
     // 1.35.49 (נועה: "כשאני שולחת דף האפליקציה קופצת לי אחורה… לא זוכרת למי שלחתי מה"): נשארים בדף של הילד/ה – רואים מה נשלח. חזרה לנוכחות – בכפתור "חזרה"
-    toast((releaseNow ? "נשלח ל" : "נוסף לתור של ") + stName(stById(sid) || {}).trim() + ": " + (ids.length === 1 ? wsTitle(ids[0]) : ids.length + " דפים") + " ✓");   // 1.34.3   // 1.30: מ"+ דפים" בנוכחות – חוזרים ישר לנוכחות
+    /* 1.35.53 (נועה: "אל תקפיץ לי הודעות של מה הוספתי למי… לא מה הוספתי ולא מה הורדתי") */   // 1.34.3   // 1.30: מ"+ דפים" בנוכחות – חוזרים ישר לנוכחות
     if (inline) { navBackTo(AD.bankD); AD.bankD = 0; }
     const st = stById(sid); if (!inline) AD.view = "students"; AD.st = String(sid); AD.subj = subj; AD.sel.clear(); if (st) { window.scrollTo(0, 0); adRender(); }
   } catch(e) { toast(/duplicate|unique/i.test(e.message) ? "חלק מהדפים כבר בתוכנית." : errText(e)); }
@@ -6079,7 +6081,7 @@ async function bulkSend(sids, wids, releaseNow, again){
         AD.plan.forEach(p => { if (ids.includes(p.id)) { p.status = "נשלח"; p.released_at = now; p.released_by = myUid(); p.done_at = null; p.seen_at = null; } }); }
     }
     refreshWaitingLocal(); closeSheet(); AD.bank.sel.clear(); AD.bank.multi = false;
-    toast(releaseNow ? "נשלח ל-" + sids.length + (sids.length === 1 ? " תלמיד/ה." : " תלמידים.") : "נוסף לתור של " + sids.length + (sids.length === 1 ? " תלמיד/ה." : " תלמידים."));
+    /* 1.35.53 (נועה: "אל תקפיץ לי הודעות של מה הוספתי למי… לא מה הוספתי ולא מה הורדתי") */
     adRender();
   } catch(e) { toast(errText(e)); }
 }
