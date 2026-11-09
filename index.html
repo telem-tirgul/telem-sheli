@@ -98,7 +98,7 @@
   .bulk-btn{ width:100%; margin:0 0 10px; }
   .res-list{ margin:6px 0 12px; padding:0; list-style:none; max-height:40vh; overflow:auto; }
   .res-list li{ padding:6px 2px; border-bottom:1px solid var(--border); font-size:14px; }
-  .toast{ position:fixed; inset-inline:16px; bottom:calc(20px + var(--safe-b)); margin:0 auto; max-width:480px; background:#2B2320; color:#fff; border-radius:14px; padding:14px 16px; font-weight:700; z-index:100; text-align:center; box-shadow:0 8px 24px rgba(0,0,0,.25); }
+  .toast{ position:fixed; inset-inline:16px; top:calc(10px + var(--safe-t, 0px)); bottom:auto; cursor:pointer; margin:0 auto; max-width:480px; background:#2B2320; color:#fff; border-radius:14px; padding:14px 16px; font-weight:700; z-index:100; text-align:center; box-shadow:0 8px 24px rgba(0,0,0,.25); }
   .empty{ text-align:center; padding:36px 16px; }
   .empty svg{ width:56px; height:56px; color:var(--gold); }
 
@@ -2037,7 +2037,9 @@ html:has(body.ws-vopen), body.ws-vopen{background:#161118 !important;}
 .crmatt .past-ic{ display:inline-flex; vertical-align:middle; margin-inline-start:6px; color:#b3a69a; cursor:help; } .crmatt .past-ic.reg{ color:#8a7a6c; }
 .crmatt .pay-q{ display:inline-flex; align-items:center; gap:3px; font-size:11.5px; font-weight:800; color:#8A5A12; background:#FBF1E2; border:1px solid #E8CFA0; border-radius:999px; padding:0 7px; margin-inline-start:4px; white-space:nowrap; }
 #attListV, .crmatt#view-att{ max-width:760px; margin-inline:auto; }
-body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + var(--safe-t, 0px)); }   /* ההודעה לא מסתירה את "שמירה" */
+body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + var(--safe-t, 0px)); }
+.toast .toast-x{ display:inline-block; margin-inline-start:10px; opacity:.6; font-size:13px; }
+.toast{ background:rgba(43,35,32,.72) !important; -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); box-shadow:0 4px 14px rgba(0,0,0,.18) !important; }   /* 1.35.49 (נועה): שקוף – רואים מה מאחור */   /* ההודעה לא מסתירה את "שמירה" */
 @media (max-width:760px){ .crmatt .att-stick, .crmatt .sh-stick{ margin-inline:-10px; padding-inline:10px !important; } }
 
 /* ===== /נוכחות ===== */
@@ -2113,6 +2115,8 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .stm-row .q-rm{width:28px !important; height:28px !important; min-width:28px; font-size:13px; color:var(--ink-soft); border-radius:50%;} .stm-cols .stm-row .q-rm{width:24px !important; height:24px !important; min-width:24px; font-size:12px;}
 .wl-nolink{cursor:default;} .wl-nolink b{font-weight:800;}
 .crmws-v .ws-vtop .ws-who{flex:none; background:#fff3c4; color:#5c4500; border-radius:999px; padding:3px 12px; font-size:14px; font-weight:700; white-space:nowrap; max-width:45vw; overflow:hidden; text-overflow:ellipsis;} .crmws-v .ws-vtop .ws-who b{font-weight:900;}
+.crmatt #shRows .att-rel{all:unset; cursor:pointer; font-size:12.5px; font-weight:800; color:#fff; background:var(--accent); border-radius:999px; padding:3px 10px; white-space:nowrap; margin-inline-start:4px;}
+.st-unrel{font-size:12.5px !important; padding:3px 8px !important; white-space:nowrap;}
 .pk-to{position:sticky; top:0; z-index:25; background:#fff3c4; color:#5c4500; border:1.5px solid #e9cf62; border-radius:12px; padding:6px 12px; margin:0 0 8px; font-size:14px;} .pk-to b{font-weight:900;}
 .pk-who{color:var(--accent); font-weight:900; margin-inline-end:4px;} .ac-sheet .ac-unrel{font-size:11.5px; font-weight:800;}
 .na-chip{display:inline-block; font-size:12px; font-weight:800; border-radius:999px; padding:0 8px; background:#FDE8E6; color:var(--bad); margin-inline-start:6px;} .na-set{font-size:12px; color:var(--ink-soft); margin-inline-start:8px;}
@@ -2288,7 +2292,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.48",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.49",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2340,10 +2344,13 @@ function beep(){
     g.gain.exponentialRampToValueAtTime(0.0001, AUDIO.currentTime + 0.35); o.connect(g); g.connect(AUDIO.destination); o.start(); o.stop(AUDIO.currentTime + 0.4); } catch(e) {}
 }
 function toast(t, ms){ const vh = document.getElementById("viewerHost"); if (vh && vh.firstElementChild && !/לא הצלחנו|שגיאה|נכשל|נסו שוב|לנסות שוב/.test(String(t))) return;   // 1.35.32 (נועה): על מסך מלא – בלי הודעות קופצות (מסתירות את התפריט)
-  const el = $("toast"); el.textContent = t; el.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => { el.hidden = true; }, ms || 3200); }
+  const el = $("toast"); el.textContent = t; toastX(el); el.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => { el.hidden = true; }, Math.min(ms || 2500, 4000)); }
+// 1.35.49 (נועה: "הודעות למטה מונעות ממני ללחוץ… נשארות מלא זמן ואני לא יכולה להעיף אותן"): ההודעה למעלה, קצרה, ולחיצה עליה סוגרת
+function toastX(el){ if (!el.querySelector(".toast-x")) { const x = document.createElement("span"); x.className = "toast-x"; x.textContent = "✕"; x.setAttribute("aria-hidden", "true"); el.appendChild(x); }
+  el.onclick = () => { el.hidden = true; clearTimeout(toast._t); }; }
 // 1.35.27: הודעה עם פעולה (למשל "↩ ביטול" אחרי שחרור דף)
 function toastAct(t, label, fn, ms){ const el = $("toast"); el.textContent = t + " "; const b = document.createElement("button"); b.type = "button"; b.className = "toast-act"; b.textContent = label;
-  b.onclick = (e) => { e.stopPropagation(); el.hidden = true; clearTimeout(toast._t); fn(); }; el.appendChild(b); el.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => { el.hidden = true; }, ms || 7000); }
+  b.onclick = (e) => { e.stopPropagation(); el.hidden = true; clearTimeout(toast._t); fn(); }; el.appendChild(b); toastX(el); el.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => { el.hidden = true; }, Math.min(ms || 5000, 6000)); }
 function store(k, v){ try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch(e) { return null; } }
 const IC = {
   list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>',
@@ -3411,7 +3418,9 @@ async function adPoll(){
     const beforeW = new Set(waitingList(true).map(w => w.s.student_id + "|" + w.subj)), beforeR = new Set(myReqs().map(r => r.id));
     AD.plan = plan; AD.codeReqs = reqs; AD.nreq = nreq; refreshWaitingLocal();
     loadMgrs();
-    const newW = waitingKids(waitingList(true).filter(w => !beforeW.has(w.s.student_id + "|" + w.subj) && alertMine(w) && !wHome(w))), newR = myReqs().filter(r => !beforeR.has(r.id));
+    // 1.35.49 (נועה: "ההתראות לא עובדות טוב… קופץ בכל מיני מקומות"): הודעה + צליל רק על ילד/ה בקבוצה שפתוחה עכשיו בנוכחות. כל השאר – רק המספר על "נוכחות" והשורה הצהובה
+    const inSheet = (sid) => typeof ATTM !== "undefined" && ATTM.isOpen && [...document.querySelectorAll("#shRows [data-kl]")].some(k => k.dataset.kl === String(sid));
+    const newW = waitingKids(waitingList(true).filter(w => !beforeW.has(w.s.student_id + "|" + w.subj) && alertMine(w) && !wHome(w) && inSheet(w.s.student_id))), newR = [];
     if (newW.length || newR.length) {
       const names = [...newW.map(w => stName(w.s).trim()), ...newR.map(r => stName(stById(r.student_id)).trim() + " (קוד)")];
       const msg = newW.length && !newR.length ? (newW.length === 1 ? (AD.nreq ? `🔔 ${names[0]} ביקש/ה את המשימה הבאה` : `🔔 ${names[0]} סיים/ה דף ומחכה לדף הבא`) : `🔔 ${newW.length} תלמידים מחכים לדף: ${names.join(", ")}`)
@@ -3562,6 +3571,9 @@ function adGo(v){
   if (v !== "bank" || isDesk()) AD.bank.pick = null;
   if (v === "bank" && !AD.bank.pick) { AD.bank.topic = null; AD.bank.from = null; AD.bank.showAll = false; AD.bank.sel.clear(); if (CBM.WS.sel) CBM.WS.sel = new Set(); CBM.WS.topic = null; }
   window.scrollTo(0, 0); adRender();
+  // 1.35.49 (נועה: "עוברת למאגר… ואז חוזרת לנוכחות בתפריט למעלה" – נפתחה רשימת הקבוצות): חוזרים לקבוצה שהייתה פתוחה היום, עם הסימון שלא נשמר
+  if (v === "att" && !EMBED && typeof ATTM !== "undefined" && !ATTM.isOpen) { const m = ATTM.last();
+    if (m) loadGroups().then(gs => { if (AD.view === "att" && !ATTM.isOpen && !SHEET) ATTM.open(m.sid, m.date, (gs || []).find(g => g.id === String(m.sid))); }).catch(() => {}); }
 }
 function adRender(){
   if (typeof ATTM !== "undefined" && ATTM.isOpen) { renderNav(); ATTM.refresh(); return; }   // 1.20: דף הנוכחות פתוח – רק מרעננים את השורות
@@ -4503,8 +4515,8 @@ function stNowCols(s){
       const stt = rq ? ["rq", "🙋 ביקש/ה"] : op.length ? (op[0].seen_at ? ["wk", "✎ עובד/ת"] : ["un", "✎ לא פתח/ה"]) : nx ? ["nx", "אין דף בעבודה"] : ["no", "אין דפים"];
       return `<div class="ac-col ${subjCls(x)} st-${stt[0]}"><div class="ac-ch"><b>${esc(x === "מתמטיקה" ? "מת'" : x === "אנגלית" ? "אנג'" : x)}</b><span class="ac-st">${stt[1]}</span>${rq ? `<button type="button" class="ac-x" data-ndis="${esc(rq.id)}" title="סגירת הבקשה בלי לשלוח" aria-label="סגירת הבקשה">✕</button>` : ""}</div>
         ${op.length ? `<div class="ac-w">${ptLine(op[0])}<div class="ac-t">${esc(ago(op[0].released_at))} · <button type="button" class="lnk ac-unrel" data-unrel="${esc(op[0].id)}" title="נשלח בטעות – חוזר לראש התור">↩ חזרה לתור</button></div></div>` : ""}
-        ${!op.length || rq ? (nx ? `<div class="ac-nx"><span class="ac-l">הבא:</span> ${ptLine(nx)}</div>${s.has_account ? `<button type="button" class="btn primary sm ac-rel" data-relp="${esc(nx.id)}">✓ שחרור</button>` : ""}`
-                                : `<button type="button" class="btn sm ac-rel" data-addp="${esc(sid)}" data-subj="${esc(x)}">+ דפים</button>`) : ""}
+        ${nx ? `<div class="ac-nx"><span class="ac-l">הבא:</span> ${ptLine(nx)}</div>${s.has_account ? `<button type="button" class="btn ${!op.length || rq ? "primary" : ""} sm ac-rel" data-relp="${esc(nx.id)}">✓ שחרור${relTaskExpand([nx.id]).length > 1 ? " המשימה" : ""}</button>` : ""}`
+             : !op.length || rq ? `<button type="button" class="btn sm ac-rel" data-addp="${esc(sid)}" data-subj="${esc(x)}">+ דפים</button>` : ""}
       </div>`; }).join("") + `</div>`;
 }
 // סגירת בקשה בלי לשלוח (✕) – מ"לטיפול" ומהדף של הילד/ה
@@ -4514,7 +4526,8 @@ function dismissReq(id, after){
     AD.nreq = (AD.nreq || []).filter(r => String(r.id) !== String(id)); renderNav(); if (after) after(); toast("הבקשה נסגרה."); } catch(e) { toast(errText(e)); } });
 }
 function stAttHtml(s){
-  const a = AD.attRet && AD.attInfo && AD.attInfo.sid === String(s.student_id) ? AD.attInfo : null; if (!a) return "";
+  const a = AD.attRet && AD.attInfo && AD.attInfo.sid === String(s.student_id) ? AD.attInfo : null;
+  if (!a) return `<div class="ac-sheet st-att">${stNowCols(s)}</div>`;   // 1.35.49 (נועה: "לא ברור מה בתור, מה בעבודה ומה לעשות") – העמודות תמיד
   const trk = AD.role === "instructor" ? (a.tracking ? `<span class="ac-trk">📌 ${esc(a.tracking)}</span>` : "")
             : `<button type="button" class="ac-trk" data-attrk>${a.tracking ? `📌 ${esc(a.tracking)} <i>✎</i>` : "📌 + מעקב"}</button>`;
   return `<div class="ac-sheet st-att"><div class="ac-info">${a.pt ? `<span class="st-pt">⏰ ${esc(a.pt)}</span>` : ""}${a.present === true ? `<span class="chip ok">✓ נוכח/ת</span>` : a.present === false ? `<span class="chip bad">✗ חסר/ה</span>` : ""}${a.prev ? `<span class="att-prev" title="${esc(a.prev)}">↩ ${esc(a.prev.replace(/^בשיעור הקודם \((\d+)\.(\d+)\.\d+\) עשה\/תה (.*)$/, "קודם: $3 ($1.$2)"))}</span>` : ""}${trk}</div>${stNowCols(s)}</div>`;
@@ -4544,7 +4557,7 @@ async function renderStudentMobile(T, s){
 
   const tabs = [["queue", "☰ בתור", qn], ["now", "✎ בעבודה", open.length], ["done", "🏁 סיים/ה", done.length]];
   // 1.35.42 (נועה: "הרבה כפילות"): הגיעו מהנוכחות – העמודות למעלה מראות מה בעבודה ומשחררות; בלי "בעבודה" (אלא אם יש יותר מדף אחד במקצוע) ובלי "שליחת הדף הבא"
-  const attCtx = !pick && !!(AD.attRet && AD.attInfo && AD.attInfo.sid === String(s.student_id)), moreOpen = subs.some(x => open.filter(p => p.subject === x).length > 1);
+  const attCtx = !pick, moreOpen = subs.some(x => open.filter(p => p.subject === x).length > 1);
   const row = (p, inner, cls) => `<div class="stm-row${cls || ""}${AD.hl && AD.hl.has(p.id) ? " hl" : ""}" data-pid="${esc(p.id)}">${inner}</div>`;
   const tt = (p, sub, pre) => `<div class="t" data-zoom="${esc(String(p.worksheet_id))}">${esc(ptTitle(p))}<small>${pre || ""}${esc(sub)}</small></div>${lvIc(W(p.worksheet_id))}`;
 
@@ -4554,7 +4567,7 @@ async function renderStudentMobile(T, s){
   const qRow = (p, i, n) => row(p, `<span class="n">${i + 1}</span>${tt(p, wsTopicName(p.worksheet_id))}
           <button type="button" class="mini q-rm" data-qx="${esc(p.id)}" title="הסרה מהתור" aria-label="הסרה מהתור">✕</button><span class="drag" data-drag="${esc(p.id)}" title="גרירה לשינוי הסדר" aria-label="גרירה לשינוי הסדר">⋮⋮</span>`, i === 0 ? " next" : "");   // 1.35.44 (נועה): ✕ ליד הנקודות – הסרה בלי לפתוח
   const nowRow = (p) => row(p, `${tt(p, "נשלח " + ago(p.released_at), SEEN_IC(!!p.seen_at))}
-        <button class="mini" title="ביטול שליחה (חזרה לתור)" data-unrel="${esc(p.id)}">${IC.undo}</button>`);
+        <button class="btn sm ghost st-unrel" title="נשלח בטעות – חוזר לראש התור" data-unrel="${esc(p.id)}">↩ חזרה לתור</button>`);   // 1.35.49: עם מילים
   const doneRow = (p) => row(p, `${tt(p, (multi ? "" : wsTopicName(p.worksheet_id) + " · ") + ago(p.done_at))}<span class="ok-ic">${IC.circleCheck.replace("<svg", '<svg width="20" height="20"')}</span>`);
   const EMPTY = { queue: "התור ריק.", now: "אין דף פתוח.", done: "עוד לא סיים/ה דפים." };
   const secBody = (tab) => { let body = "", hid = 0;
@@ -5740,7 +5753,10 @@ async function cbRecord(sid, wids, sure){
     if (toRel.length) { await rpc("portal_release", { p_items: toRel }); const now = new Date().toISOString();
       AD.plan.forEach(p => { if (toRel.includes(p.id)) { p.status = "נשלח"; p.released_at = now; p.done_at = null; p.seen_at = null; } }); }
     refreshWaitingLocal();
-    if (rows.length || toRel.length) toast(`נרשם אצל ${stName(stById(sid) || {})}: ${rows.length + toRel.length === 1 ? "דף אחד נשלח" : (rows.length + toRel.length) + " דפים נשלחו"}`);
+    if (rows.length || toRel.length) toast(`נשלח ל${stName(stById(sid) || {}).trim()}: ${rows.length + toRel.length === 1 ? wsTitle(wids[0]) : (rows.length + toRel.length) + " דפים"} ✓`);
+    // 1.35.49: אחרי שליחה מהמאגר של הילד/ה – חוזרים לדף שלו/ה (בעבודה), לא נשארים במאגר
+    if ((rows.length || toRel.length) && CB.ctx === "pick" && AD.bank.pick && String(AD.bank.pick.sid) === sid && !isDesk()) {
+      AD.hl = new Set(toRel); setTimeout(() => { AD.hl = null; }, 4000); AD.stTab = "now"; setTimeout(() => { try { closeInlineBank(); } catch(e) {} }, 600); return; }
     const cur = CBM.WS.list && CBM.WS.list[CBM.WS.idx]; if (CBM.viewerOpen() && cur && CB.onOpen) CB.onOpen(cur);
   } catch(e) { toast("השליחה עברה, אבל הרישום לא נשמר: " + errText(e)); }
 }
@@ -5791,7 +5807,6 @@ async function addToPlan(releaseNow, again){
     if (!ids.length) { AD.bank.sel.clear(); const sid = pick.sid, subj = inPlan[0].subject; closeDrawer(true); AD.bank.pick = null;
       if (releaseNow && toRel.length) await releaseItems([...new Set(toRel)]); refreshWaitingLocal();
       toast(releaseNow ? "נשלח שוב ✓" : "חזר לתור ✓");
-      if (AD.attRet) { setTimeout(leaveStudent, 50); return; }
       if (!isDesk()) { navBackTo(AD.bankD); AD.bankD = 0; } else AD.view = "students";
       AD.st = String(sid); AD.subj = subj; AD.stTab = releaseNow ? "now" : "queue"; adRender(); return; }
     if (releaseNow && toRel.length) AD.relExtra = toRel; }
@@ -5811,8 +5826,8 @@ async function addToPlan(releaseNow, again){
     const inline = !isDesk();
     AD.hl = new Set((res || []).map(p => p.id)); setTimeout(() => { AD.hl = null; document.querySelectorAll(".stm-row.hl").forEach(x => x.classList.remove("hl")); }, 4000);
     AD.stTab = releaseNow ? "now" : "queue";
-    if (AD.attRet) { toast(releaseNow ? "נשלח ✓ – חזרה לנוכחות" : "נוסף לתור ✓ – חזרה לנוכחות"); setTimeout(leaveStudent, 50); return; }
-    if (AD.waitRet) { AD.waitRet = false; toast(releaseNow ? "נשלח ✓ – חזרה לממתינים" : "נוסף לתור ✓ – חזרה לממתינים"); setTimeout(leaveStudent, 50); return; }   // 1.34.3   // 1.30: מ"+ דפים" בנוכחות – חוזרים ישר לנוכחות
+    // 1.35.49 (נועה: "כשאני שולחת דף האפליקציה קופצת לי אחורה… לא זוכרת למי שלחתי מה"): נשארים בדף של הילד/ה – רואים מה נשלח. חזרה לנוכחות – בכפתור "חזרה"
+    toast((releaseNow ? "נשלח ל" : "נוסף לתור של ") + stName(stById(sid) || {}).trim() + ": " + (ids.length === 1 ? wsTitle(ids[0]) : ids.length + " דפים") + " ✓");   // 1.34.3   // 1.30: מ"+ דפים" בנוכחות – חוזרים ישר לנוכחות
     if (inline) { navBackTo(AD.bankD); AD.bankD = 0; }
     const st = stById(sid); if (!inline) AD.view = "students"; AD.st = String(sid); AD.subj = subj; AD.sel.clear(); if (st) { window.scrollTo(0, 0); adRender(); }
   } catch(e) { toast(/duplicate|unique/i.test(e.message) ? "חלק מהדפים כבר בתוכנית." : errText(e)); }
@@ -6810,6 +6825,13 @@ function renderSheetRows(){
       Object.entries(grp).forEach(([k, l]) => { const c = document.createElement("span"); c.className = "pg-ic " + k; c.dataset.tip = l.join(" · "); c.title = l.join("\n");
         c.innerHTML = k === "pna" ? "🚫 בלי תלם שלי" : k === "pw" ? "⏳" : k === "pn" ? PG_SVG_ON : k === "p1" ? `<b class="p1n">1</b>` : PG_SVG_OFF; c.setAttribute("aria-label", l.join(" · ")); row.appendChild(c); });   // נועה: רק אייקון; דף צבוע = יש, דף ריק = אין
       pr.querySelectorAll("button").forEach(bt => { bt.classList.add("ic-btn"); if (bt.hasAttribute("data-trk")) { bt.textContent = "📌+"; ch.appendChild(bt); } else if (bt.hasAttribute("data-addp")) bt.remove(); });   // 1.35.25 (נועה): הוספת דפים – רק ב"ממתינים לדף"; כאן רק הסטטוס, לידיעה
+      // 1.35.49 (נועה): "חייבת אופציה לשחרר את הדף הבא מהנוכחות… כמשימה ולא כדף. גם אם מישהו עוד עובד" – כפתור לכל מקצוע שיש בו תור
+      { const r0 = A.rows[Number(li.dataset.i)], st0 = r0 && stById(String(r0.student_id));
+        if (st0 && st0.has_account && !noAcc(st0.student_id) && A.sheet && A.sheet.can_edit) { const subs0 = st0.subjects || [], two0 = subs0.length > 1;
+          subs0.forEach(x => { const nx = queueOf(st0.student_id, x)[0]; if (!nx) return; const n0 = relTaskExpand([nx.id]).length;
+            const b = document.createElement("button"); b.type = "button"; b.className = "att-rel"; b.dataset.relp = nx.id;
+            b.title = "שחרור " + (n0 > 1 ? "המשימה הבאה (" + n0 + " דפים)" : "הדף הבא") + ": " + ptTitle(nx);
+            b.textContent = (n0 > 1 ? "▶ משימה · " + n0 + " דפים" : "▶ הבא") + (two0 ? " " + (x === "מתמטיקה" ? "מת'" : x === "אנגלית" ? "אנג'" : x) : ""); row.appendChild(b); }); } }
       row.className = "att-pgs"; li.appendChild(row); pr.remove(); }   // 1.35.25 (נועה): הדפים – בשורה 2, מקביל למקצוע
     if (nm) ch.querySelectorAll(":scope > .att-pt").forEach(x => nm.appendChild(x));   // 1.35.25 (נועה): שעה אישית / שיעור כפול – בשורת השם, עם בית הספר
     const sj = ctl && ctl.querySelector(":scope > .subj-mini, :scope > .att-sj2"); if (sj) { sj.classList.add("att-sjc"); li.appendChild(sj); }   // המקצוע – מתחת ל-✗/✓
@@ -6892,13 +6914,19 @@ function renderSheetCx(){
   box.hidden = false;
   if (cx) box.innerHTML = `<div class="cx-on"><b>התרגול לא התקיים</b>${cx.reason ? " · " + esc(cx.reason) : ""}${cx.auto ? ` <span class="muted">(לפי לוח החגים)</span>` : ""}</div>
     ${adm ? `<button type="button" class="btn small" data-cx="held">התקיים בכל זאת</button>${cx.auto ? "" : `<button type="button" class="btn small" data-cx="auto" title="חזרה ללוח החגים">ביטול הסימון</button>`}` : ""}`;
-  else box.innerHTML = `<button type="button" class="btn small cx-btn" data-cx="open" title="לסמן שהתרגול לא התקיים (חג, אירוע...)">⊘ לא התקיים</button>
+  else box.innerHTML = `<button type="button" class="btn small cx-btn" data-cxmenu title="מי לא מגיע היום / התרגול לא התקיים">⊘ ביטולים ▾</button><button type="button" data-cx="open" hidden></button>
     <span class="cx-form" hidden><select id="cxReason">${CX_REASONS.map(r => `<option>${esc(r)}</option>`).join("")}<option value="">אחר...</option></select>
     <input id="cxOther" placeholder="סיבה" hidden><button type="button" class="btn small primary" data-cx="save">שמירה</button></span>
     ${L0.cancelled === false ? `<span class="muted" style="font-size:12.5px;">סומן "התקיים" למרות החג.</span>` : ""}`;
   const set = async (v, reason) => { try { await rpc("set_lesson_cancelled", { p_session: sh.session_id, p_date: A.date, p_cancelled: v, p_reason: reason || null });
       sh.lesson = Object.assign({}, sh.lesson || {}, { cancelled: v, cancel_reason: v ? reason : null }); toast(v ? "סומן: לא התקיים" : "נשמר"); renderSheetCx(); embPost({ saved: { sid: sh.session_id, date: A.date } }); }
     catch(e) { toast(/set_lesson_cancelled|404/.test(e.message + e.status) ? "צריך להריץ את קובץ 46" : "לא נשמר: " + e.message); } };
+  // 1.35.49 (נועה: "יש לי גם מי לא מגיע היום וגם לא התקיים למעלה"): כפתור אחד – ובו שתי האפשרויות
+  { const mb = box.querySelector("[data-cxmenu]"); if (mb) mb.onclick = () => window.openSheet(`<h2>⊘ ביטולים</h2>
+      <button type="button" class="btn block" id="cxmKids" style="margin-bottom:10px; flex-direction:column; gap:2px">ילדים שלא מגיעים היום<br><small class="muted">מסמנים ⊘ ליד כל ילד/ה – רק לשיעור הזה</small></button>
+      <button type="button" class="btn block" id="cxmLesson" style="flex-direction:column; gap:2px">התרגול לא התקיים<br><small class="muted">חג, אירוע…</small></button>`, (sh2) => {
+      sh2.querySelector("#cxmKids").onclick = () => { closeSheet(); A.skipMode = true; renderSheetRows(); };
+      sh2.querySelector("#cxmLesson").onclick = () => { closeSheet(); const o = box.querySelector('[data-cx="open"]'); if (o) o.click(); }; }); }
   box.querySelectorAll("[data-cx]").forEach(b => b.onclick = () => {
     const a = b.dataset.cx;
     if (a === "open") { box.querySelector(".cx-form").hidden = false; b.hidden = true; $("cxReason").onchange = () => { $("cxOther").hidden = $("cxReason").value !== ""; }; }
@@ -6914,7 +6942,7 @@ function updateCount(){
   // 1.34.7 (נועה): "לא מגיעים היום" – בסוגריים ליד מספר הילדים (לא נספרים בו), באותה שורה
   $("shTopCnt").innerHTML = `<span><b>${rows.length}</b> ילדים${nSk ? ` <span class="c-un" title="הוסרו מהשיעור הזה בלבד (⊘) – מופיעים בסוף הרשימה">(+${nSk} ${nSk === 1 ? "לא מגיע/ה" : "לא מגיעים"} היום)</span>` : ""}</span> · <b class="c-yes">${p} נוכחים</b> · <b class="c-no">${x} חסרים</b>` + (n ? ` · <span class="c-un">${n} לא סומנו</span>` : "");
   // 1.35.47 (נועה – לחצה ⊘ במקום על הילד/ה): ⊘ בשורות רק במצב "מי לא מגיע היום"
-  if (A.sheet && A.sheet.can_edit && A.hasPlan && A.rows.some(r => r.in_group)) {
+  if (A.sheet && A.sheet.can_edit && A.hasPlan && A.rows.some(r => r.in_group) && (A.skipMode || !document.querySelector("#attSheet [data-cxmenu]"))) {
     $("shTopCnt").insertAdjacentHTML("beforeend", ` <button type="button" class="lnk sk-mode${A.skipMode ? " on" : ""}" data-skmode>${A.skipMode ? "✓ סיום" : "⊘ מי לא מגיע היום"}</button>`);
     $("shTopCnt").querySelector("[data-skmode]").onclick = () => { A.skipMode = !A.skipMode; renderSheetRows(); };
   }
