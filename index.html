@@ -2123,6 +2123,9 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .ac-sheet.st-att .att-prev{background:#EEF0F2; color:#555; border-radius:999px; padding:0 8px; font-weight:700;} .ac-sheet.st-att .chip{margin:0;}
 .sk-mode{font-size:13px; font-weight:800; margin-inline-start:6px; white-space:nowrap;} .sk-mode.on{background:#fff3c4; border-radius:999px; padding:1px 8px; text-decoration:none;}
 .crmatt #shRows .pg-ic.pna{background:#FDE8E6 !important; color:var(--bad) !important; font-weight:800; font-size:11.5px; width:auto !important; padding:0 7px; border-radius:999px; white-space:nowrap;}
+.crmatt #shRows .pg-ic.pnoa{background:#EEEBE6 !important; color:#6B635A !important; font-weight:800; font-size:11.5px; width:auto !important; padding:0 7px; border-radius:999px; white-space:nowrap; cursor:pointer;}
+/* 1.35.55 (נועה: "אל תעשה לי ילדים דהויים") – בלי דהייה; רק התגית */
+
 .crmatt #shRows .pg-ic.p1{background:#FFF4DE !important; color:#9A6A00 !important; font-weight:900;} .crmatt #shRows .pg-ic.p1 .p1n{font-size:12px; padding:0 2px;}
 .stm-row .q-rm{width:28px !important; height:28px !important; min-width:28px; font-size:13px; color:var(--ink-soft); border-radius:50%;} .stm-cols .stm-row .q-rm{width:24px !important; height:24px !important; min-width:24px; font-size:12px;}
 .wl-nolink{cursor:default;} .wl-nolink b{font-weight:800;}
@@ -2323,7 +2326,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.54",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.55",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -3494,7 +3497,8 @@ DESK.addEventListener("change", () => { if (!$("adminView").hidden) { if (!isDes
 
 function renderNav(){
   // 1.35.43 (נועה): המספר על "נוכחות" – מי שביקש/ה דף בשיעור; על "לטיפול" – ביקשו מהבית + קוד שפג
-  const na = waitN(), nt = todoN(), n = na + nt, B = { att: na, wait: nt };
+  // 1.35.55 (נועה: "כשנכנסים יש התראות בלטיפול שנעלמות אחרי שניה. הן לא נכונות"): עד שהנתונים מהשרת מגיעים (מוצג מהזיכרון) – בלי מספרים
+  const fresh = !AD.fromCache, na = fresh ? waitN() : 0, nt = fresh ? todoN() : 0, n = na + nt, B = { att: na, wait: nt };
   try { if (AD.loaded) document.title = (n ? `(${n}) ` : "") + "תלם שלי"; } catch(e) {}
   $("adNav").innerHTML = NAV.map(([v, l, ic, sl]) => `<button data-v="${esc(v)}" data-sl="${esc(sl)}" ${AD.view === v ? 'aria-current="page"' : ""}>${ic}<span>${l}</span>${B[v] ? `<span class="badge">${B[v]}</span>` : ""}</button>`).join("");
   $("adNav").querySelectorAll("button").forEach(b => b.onclick = () => adGo(b.dataset.v));
@@ -3503,10 +3507,10 @@ function renderNav(){
 const AD_CACHE = {
   key: "telem_portal_adcache",
   save(){ try { store(this.key, JSON.stringify({ t: Date.now(), students: AD.students, plan: AD.plan, planSince: AD.planSince || null, settings: AD.settings, codeReqs: AD.codeReqs,
-    nreq: AD.nreq, ndis: AD.ndis ? [...AD.ndis.entries()] : null })); } catch(e) {} },   // 1.35.18: גם הבקשות – בלי "1 ממתינים" ישן בפתיחה
+    nreq: AD.nreq, ndis: AD.ndis ? [...AD.ndis.entries()] : null, noAcc: AD.noAcc ? [...AD.noAcc.entries()] : null })); } catch(e) {} },   // 1.35.55: גם "בלי תלם שלי"   // 1.35.18: גם הבקשות – בלי "1 ממתינים" ישן בפתיחה
   load(){ try { const c = JSON.parse(store(this.key) || "null"); if (!c || !c.students || Date.now() - c.t > 3 * 864e5) return false;
     AD.students = c.students; AD.plan = c.plan || []; AD.planSince = c.planSince || null; AD.settings = c.settings || null; AD.codeReqs = c.codeReqs || [];
-    if (Array.isArray(c.nreq)) AD.nreq = c.nreq; if (Array.isArray(c.ndis)) AD.ndis = new Map(c.ndis);
+    if (Array.isArray(c.nreq)) AD.nreq = c.nreq; if (Array.isArray(c.ndis)) AD.ndis = new Map(c.ndis); if (Array.isArray(c.noAcc)) AD.noAcc = new Map(c.noAcc);
     let ws = null; try { ws = JSON.parse(store(WS_CACHE) || "null"); } catch(e) {}
     if (!ws || !ws.rows || !ws.rows.length) return false;
     AD.ws = ws.rows.map(r => Object.assign(r, { id: String(r.id) })); AD.wsById = new Map(AD.ws.map(r => [r.id, r]));
@@ -3572,7 +3576,7 @@ async function adLoad(){
   // אם כבר עובדים על משהו (חלון, דף פתוח, מאגר) – לא לקפוץ; רק לעדכן את מה שבטוח
   if (wasCache && sig0 === adSig()) { renderNav(); loadGroups().then(() => { if (insWant()) insChanged(); }).catch(() => {}); return; }   // 1.26: לא השתנה כלום – לא מציירים מחדש
   if (wasCache && (SHEET || VIEWER || AD.bank.pick || !$("drawer").hidden)) { renderNav(); return; }
-  if (wasCache && AD.st && !isDesk()) { rerenderPlan(); return; }
+  if (wasCache && AD.st && !isDesk()) { renderNav(); rerenderPlan(); return; }
   adRender();
   // ברקע: קבוצות, נוכחות היום, מבחנים וכרטיסים – מוכנים כשנכנסים ל"תלמידים"
   loadGroups().then(() => { if (insWant()) insChanged(); }).catch(() => {});
@@ -6367,6 +6371,7 @@ function payPend(stId, sessId, isMar){
   // 1.20: שורה קצרה של הדפים מתחת לשם (על מה עובד/ת / סיים/ה / אין דפים)
   const ATT_PAGES_LINE = (r) => { const s = stById(String(r.student_id)); if (!s) return "";
     if (noAcc(s.student_id)) return `<span class="pna">בלי תלם שלי</span>`;   // 1.35.47 (נועה): "חייבת לראות את זה בנוכחות"
+    if (!s.has_account) return `<span class="pnoa">אין חשבון עדיין</span>`;   // 1.35.55 (נועה): "שאין להם – לעומת אלה שיש להם"
     const subs = s.subjects || [], two = subs.length > 1, sh = (x) => x === "מתמטיקה" ? "מת'" : x === "אנגלית" ? "אנג'" : x;
     return subs.map(x => { const pl = planOf(s.student_id, x), q = queueOf(s.student_id, x)[0];
       const open = pl.filter(p => p.status === "נשלח").sort((a, b) => String(b.released_at).localeCompare(String(a.released_at)))[0];
@@ -6696,6 +6701,8 @@ document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && $("kid
 $("shRows").addEventListener("click", async (e) => {
   // 5.19.14: מנהלים - לחיצה על שם הילד/ה פותחת את כרטיס התלמיד; "חזרה לנוכחות" מחזיר לאותה קבוצה ואותו יום (הסימון נשמר בטלפון)
   // 1.35.40 (נועה): לחיצה על הילד/ה (השם או השורה) – "כרטיס שיעור": כל הפרטים + הדפים. הכפתורים בשורה (✗/✓, ⊘, מקצוע) – כמו קודם
+  const mk = e.target.closest("[data-mkacc]");   // 1.35.55: "🔑 אין חשבון" – יצירת קוד
+  if (mk && e.currentTarget.contains(mk)) { const st1 = stById(String(mk.dataset.mkacc)); if (st1) setTimeout(() => accountSheet(st1, false), 0); return; }
   const liT = e.target.closest("li[data-i]");
   if (liT && !liT.classList.contains("att-skip") && !e.target.closest("button, input, label, select, textarea, .seg, .att-sj2")) { const k = Number(liT.dataset.i), r = A.rows[k];
     const st0 = stById(String(r.student_id));
@@ -6889,10 +6896,12 @@ function renderSheetRows(){
       let pre0 = ""; pr.querySelectorAll(".ar-pg > span").forEach(x => { if (x.classList.contains("ps")) { pre = pre0 = x.textContent.trim(); return; }
         if (x.classList.contains("p1")) { (grp.p1 = grp.p1 || []).push((pre0 ? pre0 + ": " : "") + x.textContent.trim()); return; }
         if (x.classList.contains("pna")) { (grp.pna = grp.pna || []).push("בלי תלם שלי"); return; }
+        if (x.classList.contains("pnoa")) { (grp.pnoa = grp.pnoa || []).push("אין חשבון עדיין – לחיצה ליצירת קוד"); return; }
         const k = x.classList.contains("pn") ? "pn" : x.classList.contains("pw") ? "pw" : "px", full = (pre ? pre + ": " : "") + x.textContent.replace(/\s+/g, " ").trim();
         (grp[k] = grp[k] || []).push(full); pre = ""; });
       Object.entries(grp).forEach(([k, l]) => { const c = document.createElement("span"); c.className = "pg-ic " + k; c.dataset.tip = l.join(" · "); c.title = l.join("\n");
-        c.innerHTML = k === "pna" ? "🚫 בלי תלם שלי" : k === "pw" ? "⏳" : k === "pn" ? PG_SVG_ON : k === "p1" ? `<b class="p1n">1</b>` : PG_SVG_OFF; c.setAttribute("aria-label", l.join(" · ")); row.appendChild(c); });   // נועה: רק אייקון; דף צבוע = יש, דף ריק = אין
+        if (k === "pnoa") { const r1 = A.rows[Number(li.dataset.i)]; if (r1 && ME.role !== "instructor") c.dataset.mkacc = r1.student_id; }
+        c.innerHTML = k === "pnoa" ? "🔑 אין חשבון" : k === "pna" ? "🚫 בלי תלם שלי" : k === "pw" ? "⏳" : k === "pn" ? PG_SVG_ON : k === "p1" ? `<b class="p1n">1</b>` : PG_SVG_OFF; c.setAttribute("aria-label", l.join(" · ")); row.appendChild(c); });   // נועה: רק אייקון; דף צבוע = יש, דף ריק = אין
       pr.querySelectorAll("button").forEach(bt => { bt.classList.add("ic-btn"); if (bt.hasAttribute("data-trk")) { bt.textContent = "📌+"; ch.appendChild(bt); } else if (bt.hasAttribute("data-addp")) bt.remove(); });   // 1.35.25 (נועה): הוספת דפים – רק ב"ממתינים לדף"; כאן רק הסטטוס, לידיעה
       // 1.35.49 (נועה): "חייבת אופציה לשחרר את הדף הבא מהנוכחות… כמשימה ולא כדף. גם אם מישהו עוד עובד" – כפתור לכל מקצוע שיש בו תור
       { const r0 = A.rows[Number(li.dataset.i)], st0 = r0 && stById(String(r0.student_id));
@@ -6911,7 +6920,7 @@ function renderSheetRows(){
     li.querySelectorAll(".att-exp, .att-req, :scope > .att-det").forEach(x => x.remove());
     const fresh = [...ch.querySelectorAll(":scope > .lvl-chip, :scope > .att-track, :scope > .ex-tag, :scope > .att-prev, :scope > .ic-btn.ap-trk")]; fresh.forEach(x => x.remove());   // 1.35.40: גם ההקבצה והמעקב – לכרטיס
     const det = fresh.length ? fresh : det0; li._det = { sid, list: det };   // גם "📌+" (הוספת מעקב) – בשורה הנפתחת
-    const rq = (AD.nreq || []).filter(q => String(q.student_id) === sid);
+    const rq = noAcc(sid) ? [] : (AD.nreq || []).filter(q => String(q.student_id) === sid);   // 1.35.55: בלי תלם שלי – בלי 🙋
     li.classList.toggle("att-wait", rq.length > 0);   // 1.35.39 (נועה): כל השורה בצבע כשהילד/ה ממתין/ה לדף
     const pgx = li.querySelector(".att-pgs");
     if (rq.length && pgx) { const b = document.createElement("span"); b.className = "att-req"; b.title = "ביקש/ה את הדף הבא" + (rq.length > 1 ? " (" + rq.map(q => q.subject).join(", ") + ")" : ""); b.textContent = "🙋"; pgx.prepend(b); }
@@ -6919,7 +6928,8 @@ function renderSheetRows(){
     const pg2 = li.querySelector(":scope > .att-pgs") || pgs;
     if (sjc) ch.prepend(sjc, ...(pg2 ? [pg2] : [])); else if (pg2) ch.prepend(pg2);
     if (ch.childNodes.length) li.appendChild(ch);
-    { const st = stById(sid); li.classList.toggle("att-tap", !!(st && st.has_account && !noAcc(sid))); } });   // 1.35.45 (נועה): בלי "תלם שלי" – לא נלחץ
+    { const st = stById(sid); li.classList.toggle("att-tap", !!(st && st.has_account && !noAcc(sid)));
+      li.classList.toggle("att-nots", !!(st && (!st.has_account || noAcc(sid)))); } });   // 1.35.55 (נועה): בלי תלם שלי / בלי חשבון – השורה דהויה   // 1.35.45 (נועה): בלי "תלם שלי" – לא נלחץ
   updateCount();
 }
 // 1.35.40 (נועה): "כרטיס שיעור" – לחיצה על ילד/ה בנוכחות: למעלה כל הפרטים (מקצוע, הקבצה, מעקב, מבחן, לומדים עכשיו, שיעור קודם), מתחת – הדפים; ‹ › לילד/ה הבא/ה
