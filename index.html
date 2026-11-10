@@ -1227,6 +1227,10 @@
   .stm-tabs button[aria-selected="true"]{ background:var(--paper); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.15); }
   .stm-tabs button[aria-selected="true"] b{ background:var(--accent); color:#fff; }
   .stm-sec-h{ cursor:pointer; user-select:none; } .stm-sec-h .sec-car{ margin-inline-start:auto; color:var(--ink-soft); font-size:14px; }
+  .sec-done .stm-row{ background:none; border:0; border-bottom:1px dashed var(--border); border-radius:0; margin:0; padding:5px 4px; color:var(--ink-soft); }
+  .sec-done .stm-row .t b{ font-weight:600; color:var(--ink-soft); } .sec-done .stm-row .t small{ color:var(--ink-soft); opacity:.85; } .sec-done .stm-row:last-child{ border-bottom:0; }
+  .sec-done .stm-row .ok-ic svg{ width:16px; height:16px; } .sec-done .stm-sec-h{ color:var(--ink-soft); font-size:14px; }
+  .stm-sec-h .sec-last{ font-family:var(--font-body, inherit); font-weight:600; font-size:12px; color:var(--ink-soft); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
   .stm-sec.shut{ margin-bottom:6px; } .stm-sec.shut .stm-sec-h{ border-bottom-style:dashed; }
   .stm-cols .stm-row{ padding:6px 8px; gap:6px; } .stm-cols .stm-row .t{ font-size:13.5px; } .stm-cols .stm-row .t small{ font-size:11.5px; }
   .stm-cols .stm-rel{ width:100%; margin-top:2px; font-size:13px; min-height:34px !important; height:34px !important; padding:0 8px !important; border-radius:10px; } .stm-cols .stm-q .t small{ display:none; }
@@ -2319,7 +2323,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.53",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.54",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -4655,10 +4659,12 @@ async function renderStudentMobile(T, s){
     return L.map(p => `<div class="pk-row">${multi ? subTag(p) : ""}<b>${esc(ptTitle(p))}</b><small>${esc(k === "done" ? ago(p.done_at) : k === "now" ? "נשלח " + ago(p.released_at) : (W(p.worksheet_id) || {}).topic_name || "")}</small>${lvIc(W(p.worksheet_id))}</div>`).join("")
       || `<div class="pk-row muted">${k === "queue" ? "התור ריק." : k === "now" ? "אין דף פתוח." : "עוד לא סיים/ה דפים."}</div>`; };
   const shut = AD.secShut || (AD.secShut = new Set(JSON.parse(store("telem_portal_secshut") || "[]")));
+  // 1.35.54 (נועה: "הרשימה של סיים מאד קרובה לרשימה של בתור… מבלבל"): "סיים/ה" מקופל כברירת מחדל (שורה אחת עם האחרון); פתוח – רשימה שטוחה ואפורה
+  const isShut = (k) => k === "done" ? !shut.has("done+") : shut.has(k);
   // 1.34.1 (נועה): משולב/ת – הספירה בכותרת לפי מקצוע (מת' 4 · אנג' 2), לא רק סה"כ
   const secN = (k, n) => !multi || !pick ? `<b>${n}</b>` : subs.map(x => { const c = k === "queue" ? (queues.find(q => q[0] === x) || [, []])[1].length : (k === "now" ? open : done).filter(p => p.subject === x).length;
     return `<b class="sn ${subjCls(x)}">${esc(x === "מתמטיקה" ? "מת'" : x === "אנגלית" ? "אנג'" : x)} ${c}</b>`; }).join("");
-  const body = tabs.filter(([k]) => !(attCtx && k === "now")).map(([k, , n]) => `<section class="stm-sec sec-${k}${shut.has(k) ? " shut" : ""}"><h3 class="stm-sec-h" data-sec="${esc(k)}" role="button" aria-expanded="${!shut.has(k)}"><span class="ic">${SEC[k][0]}</span>${SEC[k][1]}${secN(k, n)}${SEC[k][2] ? `<small>${esc(SEC[k][2])}</small>` : ""}<span class="sec-car">${shut.has(k) ? "▸" : "▾"}</span></h3>${shut.has(k) ? "" : `<div class="stm-sec-b">${secBody(k)}</div>`}</section>`).join("");
+  const body = tabs.filter(([k]) => !(attCtx && k === "now")).map(([k, , n]) => `<section class="stm-sec sec-${k}${isShut(k) ? " shut" : ""}"><h3 class="stm-sec-h" data-sec="${esc(k)}" role="button" aria-expanded="${!isShut(k)}"><span class="ic">${SEC[k][0]}</span>${SEC[k][1]}${secN(k, n)}${SEC[k][2] ? `<small>${esc(SEC[k][2])}</small>` : k === "done" && isShut(k) && done.length ? `<small class="sec-last">אחרון: ${esc(ptTitle(done[0]))} · ${esc(ago(done[0].done_at))}</small>` : ""}<span class="sec-car">${isShut(k) ? "▸" : "▾"}</span></h3>${isShut(k) ? "" : `<div class="stm-sec-b">${secBody(k)}</div>`}</section>`).join("");
 
   // 1.18: החשבון בשורה קטנה מתחת לפרטים (בלי "חשבון ◂"): טלפון · כניסה אחרונה · קוד חדש
   const acc = !s.has_account
@@ -4686,7 +4692,7 @@ async function renderStudentMobile(T, s){
   const q = (sel) => T.querySelector(sel);
   q("#stBack").onclick = leaveStudent; wireExLines(T); wireStAtt(T, s); wireNoAcc(T, s, () => renderStudentMobile(T, s));
   T.querySelectorAll("[data-stsub]").forEach(b => b.onclick = () => { AD.stSubjTab = b.dataset.stsub; AD.subj = b.dataset.stsub; renderStudentMobile(T, s); });
-  T.querySelectorAll("[data-sec]").forEach(h => h.onclick = () => { const k = h.dataset.sec, S = AD.secShut; S.has(k) ? S.delete(k) : S.add(k); store("telem_portal_secshut", JSON.stringify([...S])); const y = window.scrollY; renderStudentMobile(T, s); window.scrollTo(0, y); });
+  T.querySelectorAll("[data-sec]").forEach(h => h.onclick = () => { const k = h.dataset.sec === "done" ? "done+" : h.dataset.sec, S = AD.secShut; S.has(k) ? S.delete(k) : S.add(k); store("telem_portal_secshut", JSON.stringify([...S])); const y = window.scrollY; renderStudentMobile(T, s); window.scrollTo(0, y); });
   T.querySelectorAll("[data-peek]").forEach(b => b.onclick = () => { AD.peek = AD.peek === b.dataset.peek ? null : b.dataset.peek; const y = window.scrollY; renderStudentMobile(T, s); window.scrollTo(0, y); });
   T.querySelectorAll("[data-stab]").forEach(b => b.onclick = () => { AD.stTab = b.dataset.stab; AD.showDone = false; renderStudentMobile(T, s); window.scrollTo(0, 0); });
   T.querySelectorAll("[data-unrel]").forEach(b => b.onclick = () => unrelease(Number(b.dataset.unrel)));
