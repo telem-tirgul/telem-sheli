@@ -168,7 +168,6 @@
   .viewer.gal.typing .g-slide img{ cursor:text; }
   .viewer.gal .g-slide{ flex:0 0 100%; width:100%; height:100%; scroll-snap-align:center; scroll-snap-stop:always; display:flex; align-items:center; justify-content:center; overflow:hidden; padding:6px; box-sizing:border-box; }
   /* 1.35.56: בלי תשובות – התחתית של הדף לא מוצגת; בלי לחיצה ארוכה לשמירה */
-  .noans-img{ -webkit-mask-image:linear-gradient(to bottom, #000 90%, transparent 90%); mask-image:linear-gradient(to bottom, #000 90%, transparent 90%); }
   .viewer.noans img{ -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
   .viewer.gal .g-slide img{ display:block; max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; background:#fff; border-radius:3px; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
   .viewer.gal .g-slide.zoomed{ direction:ltr; overflow:auto; align-items:flex-start; justify-content:flex-start; touch-action:pan-x pan-y; }
@@ -2333,7 +2332,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.56",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.57",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2790,7 +2789,7 @@ async function boot(){
       { label: "בקשת קוד חדש", fn: () => { try { sessionStorage.setItem("telem_portal_forgot", $("lgPhone").value || "1"); } catch(e) {} logout(); } }); return; }
   if (me.status === "inactive") { showMsg("החשבון לא פעיל כרגע", "הגישה למשימות פתוחה רק לתלמידים רשומים. לשאלות – לכתוב לנו בוואטסאפ."); return; }
   ST.me = me;
-  { const f = await flagsP; HIDE_ANS = !!(f && f.hide_answers); }   // 1.35.56 (TS-26; אם לא הורץ – כמו קודם)
+  { const f = await flagsP; HIDE_ANS = !!(f && f.hide_answers); ANS_BOXES = (f && f.boxes) || {}; }   // 1.35.57 (TS-26; אם לא הורץ – כמו קודם)
   if (me.must_change_code) { showCodeChange(); return; }
   studentStart();
 }
@@ -3120,7 +3119,9 @@ function openGallery(list, startId, keep, task, deck){
     </div></div>`;
   VIEWER = host.firstElementChild; vwLock(true);
   const V = VIEWER, tr = V.querySelector("#gTrack"), slides = [...V.querySelectorAll(".g-slide")];
-  if (HIDE_ANS) { V.classList.add("noans"); slides.forEach(sl => { const im = sl.querySelector("img"); if (im) { im.classList.add("noans-img"); im.addEventListener("contextmenu", e => e.preventDefault()); } }); }   // 1.35.56
+  // 1.35.57: בלי תשובות – הדף מוצג עם מלבן לבן מתחת ל"תשובות:" (המיקום מהסריקה, TS-27); בלי לחיצה ארוכה לשמירה
+  if (HIDE_ANS) { V.classList.add("noans"); slides.forEach((sl, i) => { const im = sl.querySelector("img"), box = list[i] && ANS_BOXES[String(list[i].item_id)]; if (!im) return;
+    im.addEventListener("contextmenu", e => e.preventDefault()); if (box) maskImg(im, box); }); }
   const img = (i) => slides[i] && slides[i].querySelector("img");
   // 1.35.36 (נועה): להקליד תשובות על הדף – נשמר רק בטלפון של הילד/ה (לא בשרת), נמחק לבד אחרי שבועיים
   let typing = false;
@@ -3180,7 +3181,7 @@ function openGallery(list, startId, keep, task, deck){
   V.querySelector("#gType").onclick = () => typeMode(!typing); V.querySelector("#gTypeOff").onclick = () => typeMode(false);
   addEventListener("resize", () => { if (VIEWER === V) { ansDraw(cur); if (ZM[cur]) ZM[cur].refresh(); } });
   V.querySelector("#vClose").onclick = () => closeViewer();
-  V.querySelector("#vSave").onclick = () => { const p = list[cur]; saveImage(ST.url(p.storage_path), p.title); };
+  V.querySelector("#vSave").onclick = () => { const p = list[cur]; saveImage(ST.url(p.storage_path), p.title, HIDE_ANS ? ANS_BOXES[String(p.item_id)] : null); };
   if (V.querySelector("#gPrev")) V.querySelector("#gPrev").onclick = () => go(cur - 1, true);
   if (V.querySelector("#gNext")) V.querySelector("#gNext").onclick = () => go(cur + 1, true);
   if (V.querySelector("#gDone")) V.querySelector("#gDone").onclick = () => galDone(list, cur);
@@ -3350,19 +3351,25 @@ function makeZoom(stage, els, base, o){
   return { get s(){ return Z.s; }, set, reset, refresh(){ if (Z.s > 1) { clamp(); apply(); } } };
 }
 // 1.35.56 (נועה: "יש ילדים שלא מסוגלים לעבוד כשיש שם את התשובות… התשובות תמיד למטה"): ילד/ה מסומן/ת (TS-26) –
-// התחתית של הדף (ANS_FR מהגובה) לא מוצגת ולא נשמרת. הקובץ במאגר לא משתנה.
-const ANS_FR = 0.1;
-const HIDE_ANS_ON = false;   // נועה: "אסור שהמלבן יהיה לפי גודל – למצוא איפה כתוב 'תשובות:'" – כבוי עד שהמיקום בכל דף יימצא (TS-26 ישתנה)
-let HIDE_ANS = false;
-async function maskBlob(blob){
-  const bm = await createImageBitmap(blob), h = Math.round(bm.height * (1 - ANS_FR)), c = document.createElement("canvas");
-  c.width = bm.width; c.height = h; const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, h); x.drawImage(bm, 0, 0);
+// 1.35.57 (נועה: "אסור שהמלבן יהיה לפי גודל, צריך שימצא איפה כתוב 'תשובות:' ואז מתחתיו לעשות מלבן"): המלבן לכל דף – מסריקת הדפים
+// (portal_ws_answers, TS-26/27; שברים מהרוחב / הגובה). דף בלי "תשובות:" – לא מכוסה. הקובץ במאגר לא משתנה.
+const HIDE_ANS_ON = true;
+let HIDE_ANS = false, ANS_BOXES = {};
+async function maskBlob(blob, box){
+  const bm = await createImageBitmap(blob), c = document.createElement("canvas"); c.width = bm.width; c.height = bm.height;
+  const x = c.getContext("2d"); x.drawImage(bm, 0, 0); x.fillStyle = "#fff";
+  const [x0, y0, x1, y1] = box.map(Number); x.fillRect(Math.floor(x0 * c.width), Math.floor(y0 * c.height), Math.ceil((x1 - x0) * c.width), Math.ceil((y1 - y0) * c.height));
   return await new Promise((ok, no) => c.toBlob(b => b ? ok(b) : no(new Error("mask")), "image/png"));
 }
+// התמונה עצמה מוחלפת בגרסה המכוסה (בתוך הטלפון) – כך גם ההגדלה, הכתיבה על הדף והשמירה – בלי התשובות
+async function maskImg(im, box){ if (!im || !box || im.dataset.masked) return; const src = im.currentSrc || im.src; if (!src) return;
+  im.dataset.masked = "1"; im.style.visibility = "hidden";
+  try { const b = await maskBlob(await fetchBlob(src), box); im.src = URL.createObjectURL(b); } catch(e) { /* לא הצלחנו לכסות – לא מציגים את הדף עם התשובות */ return; }
+  im.style.visibility = ""; }
 async function fetchBlob(url){ const r = await fetch(url); if (!r.ok) throw new Error("fetch"); return r.blob(); }
-async function saveImage(url, title){
+async function saveImage(url, title, box){
   try {
-    let blob = await fetchBlob(url); if (HIDE_ANS) blob = await maskBlob(blob);   // 1.35.56: בלי התשובות גם בקובץ שנשמר
+    let blob = await fetchBlob(url); if (HIDE_ANS && box) blob = await maskBlob(blob, box);   // 1.35.57: בלי התשובות גם בקובץ שנשמר
     const name = (String(title || "page").replace(/[\\/:*?"<>|]/g, "").trim() || "page") + ".png";
     const file = new File([blob], name, { type: blob.type || "image/png" });
     if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; }
@@ -3547,7 +3554,8 @@ DESK.addEventListener("change", () => { if (!$("adminView").hidden) { if (!isDes
 function renderNav(){
   // 1.35.43 (נועה): המספר על "נוכחות" – מי שביקש/ה דף בשיעור; על "לטיפול" – ביקשו מהבית + קוד שפג
   // 1.35.55 (נועה: "כשנכנסים יש התראות בלטיפול שנעלמות אחרי שניה. הן לא נכונות"): עד שהנתונים מהשרת מגיעים (מוצג מהזיכרון) – בלי מספרים
-  const fresh = !AD.fromCache, na = fresh ? waitN() : 0, nt = fresh ? todoN() : 0, n = na + nt, B = { att: na, wait: nt };
+  // 1.35.57 (נועה: "למה יש לי תזכורת על הלשונית של הנוכחות? זה מיותר ממש"): בלי מספר על "נוכחות" – רואים בשורה (צהוב + 🙋)
+  const fresh = !AD.fromCache, nt = fresh ? todoN() : 0, n = nt, B = { wait: nt };
   try { if (AD.loaded) document.title = (n ? `(${n}) ` : "") + "תלם שלי"; } catch(e) {}
   $("adNav").innerHTML = NAV.map(([v, l, ic, sl]) => `<button data-v="${esc(v)}" data-sl="${esc(sl)}" ${AD.view === v ? 'aria-current="page"' : ""}>${ic}<span>${l}</span>${B[v] ? `<span class="badge">${B[v]}</span>` : ""}</button>`).join("");
   $("adNav").querySelectorAll("button").forEach(b => b.onclick = () => adGo(b.dataset.v));
@@ -3608,9 +3616,11 @@ async function adLoad(){
       opt(getNreq()),   // 1.33: "שלחו לי את המשימה הבאה" (TS-08; אם לא הורץ – כמו קודם)
       loadWs(),
       opt(get("portal_no_access", "select=student_id,reason")),   // 1.35.45: "🚫 בלי תלם שלי" (TS-22; אם לא הורץ – אף אחד)
-      HIDE_ANS_ON ? opt(get("portal_hide_answers", "select=student_id")) : Promise.resolve(null)   // 1.35.56: "🙈 בלי תשובות" (TS-26; אם לא הורץ – null, בלי הכפתור)
+      HIDE_ANS_ON ? opt(get("portal_hide_answers", "select=student_id")) : Promise.resolve(null),   // 1.35.56: "🙈 בלי תשובות" (TS-26; אם לא הורץ – null, בלי הכפתור)
+      HIDE_ANS_ON ? opt(get("portal_ws_answers", "select=worksheet_id,x0,y0,x1,y1")) : Promise.resolve(null)   // 1.35.57: המלבן מתחת ל"תשובות:" בכל דף (TS-27)
     ]).then(r => { AD.noAcc = new Map((Array.isArray(r[6]) ? r[6] : []).map(x => [String(x.student_id), x.reason || ""]));
-      AD.hideAns = Array.isArray(r[7]) ? new Set(r[7].map(x => String(x.student_id))) : null; return r; });
+      AD.hideAns = Array.isArray(r[7]) ? new Set(r[7].map(x => String(x.student_id))) : null;
+      AD.wsAns = new Map((Array.isArray(r[8]) ? r[8] : []).map(x => [String(x.worksheet_id), [x.x0, x.y0, x.x1, x.y1]])); return r; });
     AD.nreq = nreq === undefined ? null : nreq;
     AD.students = (students || []).map(s => Object.assign(s, { student_id: String(s.student_id) }));
     AD.plan = (plan || []).map(planNorm);
@@ -5742,7 +5752,8 @@ async function wsOpen(i, fromPop){
   const sign = await wsSign([r.storage_path]); const url = sign(r.storage_path);
   if (WS.idx !== i) return;
   $("wsVImg").src = url; $("wsCopy").disabled = false;
-  { const pk = typeof AD !== "undefined" && AD.bank && AD.bank.pick; $("wsVImg").classList.toggle("noans-img", !!(pk && hideAns(pk.sid))); }   // 1.35.56: כמו שהילד/ה יראה
+  { const pk = typeof AD !== "undefined" && AD.bank && AD.bank.pick, box = pk && hideAns(pk.sid) && AD.wsAns && AD.wsAns.get(String(r.id)); const im = $("wsVImg"); delete im.dataset.masked; im.style.visibility = "";
+    if (box) maskImg(im, box); }   // 1.35.57: בבחירת דפים לילד/ה "בלי תשובות" – הדף כמו שהוא/היא יראה
   // מכינים את הקובץ מראש - כדי שהשיתוף/ההעתקה יקרו מיד בלחיצה
   const fname = ((r.topic_name || "דף") + " - " + (r.title || r.page_no)).replace(/[\\/:*?"<>|]/g, " ") + "." + ((r.storage_path.match(/\.(\w+)$/) || [, "png"])[1]);
   fetch(url).then(x => x.blob()).then(b => { if (WS.idx === i) WS.file = new File([b], fname, { type: b.type || "image/png" }); }).catch(() => {});
