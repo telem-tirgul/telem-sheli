@@ -167,6 +167,9 @@
   .viewer.gal .g-hint{ background:#fff3c4; color:#5c4500; font-size:13px; font-weight:700; text-align:center; padding:6px 10px; } .viewer.gal .g-hint .lnk{ font-weight:800; }
   .viewer.gal.typing .g-slide img{ cursor:text; }
   .viewer.gal .g-slide{ flex:0 0 100%; width:100%; height:100%; scroll-snap-align:center; scroll-snap-stop:always; display:flex; align-items:center; justify-content:center; overflow:hidden; padding:6px; box-sizing:border-box; }
+  /* 1.35.56: בלי תשובות – התחתית של הדף לא מוצגת; בלי לחיצה ארוכה לשמירה */
+  .noans-img{ -webkit-mask-image:linear-gradient(to bottom, #000 90%, transparent 90%); mask-image:linear-gradient(to bottom, #000 90%, transparent 90%); }
+  .viewer.noans img{ -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
   .viewer.gal .g-slide img{ display:block; max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; background:#fff; border-radius:3px; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
   .viewer.gal .g-slide.zoomed{ direction:ltr; overflow:auto; align-items:flex-start; justify-content:flex-start; touch-action:pan-x pan-y; }
   .viewer.gal .g-slide.zoomed img{ max-width:none; max-height:none; height:auto; flex:none; margin:auto; }
@@ -374,7 +377,8 @@
   .sr-q{ width:100%; height:44px; font:inherit; font-size:16px; padding:0 12px; border:1.5px solid var(--border); border-radius:12px; margin-bottom:8px; }
   .sr-list{ max-height:55vh; overflow:auto; } .sr-row{ display:flex; align-items:center; gap:10px; width:100%; text-align:start; font:inherit; color:inherit; background:var(--paper); border:1px solid var(--border); border-radius:12px; padding:8px 10px; margin-bottom:6px; cursor:pointer; }
   .sr-t{ display:flex; flex-direction:column; min-width:0; } .sr-t small{ color:var(--ink-soft); font-size:12.5px; }
-  .crmws .ws-vbot .cb-stu-v{ background:var(--accent); border-color:var(--accent); color:#fff; padding-inline:10px; font-size:13.5px; flex:0 0 auto; } .crmws .ws-vbot .ws-copy{ min-width:70px; } .crmws .ws-vbot .cb-stu-v[hidden]{ display:none; }
+  /* 1.35.56 (נועה: "לא רואים את הבורדו על השחור… אולי זהב?") */
+  .crmws .ws-vbot .cb-stu-v{ background:#E3B765; border-color:#E3B765; color:#3A1A00; font-weight:800; padding-inline:10px; font-size:13.5px; flex:0 0 auto; } .crmws .ws-vbot .ws-copy{ min-width:70px; } .crmws .ws-vbot .cb-stu-v[hidden]{ display:none; }
   .bk-cities button{ flex:1 1 auto; padding-inline:8px !important; white-space:nowrap; }
   body:not(.ws-app-on) .crmws .ws-vbot:has(.cb-stu-v:not([hidden])){ gap:4px; padding-inline:6px; } body .crmws .ws-vbot:has(.cb-stu-v:not([hidden])) .ws-nav{ width:36px; } body .crmws .ws-vbot:has(.cb-stu-v:not([hidden])) #wsDl{ padding-inline:8px; font-size:14px; }
   .bk-ins{ margin:0 0 8px; } .bk-insl{ font-size:13px; margin:0 0 8px; }
@@ -1591,7 +1595,7 @@ body.ws-vopen.v-stm .crmws .ws-stick{top:0;} body.ws-vopen.v-stm .crmws .ws-view
 .crmws .ws-x, .crmws .ws-nav{background:rgba(255,255,255,.15); color:#fff; border:0; border-radius:12px; width:46px; height:44px; font-size:20px; cursor:pointer;}
 .crmws .ws-nav:disabled{opacity:.3;}
 .crmws .ws-vimg{flex:1; overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:4px 10px; -webkit-overflow-scrolling:touch;}
-.crmws .ws-vimg img{max-width:min(100%, 820px); height:auto; background:#fff; border-radius:4px; -webkit-touch-callout:default; transform-origin:center top; transition:transform .05s;}
+.crmws .ws-vimg img{max-width:min(100%, 820px); height:auto; background:#fff; border-radius:4px; -webkit-touch-callout:default;}
 /* 1.24.2 (נועה): הדף כולו בחלון – בלי לגלול (מתאים את עצמו לגובה ולרוחב); בהגדלה – כמו קודם */
 .crmws .ws-vimg{min-height:0; align-items:center;} .crmws .ws-vimg img{max-height:100%; width:auto; object-fit:contain;}
 /* בלי פס לבן למטה באייפון (אפליקציה במסך הבית) – הרקע מתחת לחלון כהה כמו החלון */
@@ -2153,7 +2157,10 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .ac-sheet .ac-task .ac-t{display:flex; align-items:center; gap:8px; margin-top:4px;} .ac-sheet .ac-task .ac-t > span{flex:1; min-width:0;}
 .ac-sheet .ac-task .ac-unrel{flex:none; margin-inline-start:auto; min-width:118px; text-align:center;}
 .old-rq{display:inline-block; font-size:11px; font-weight:800; border-radius:999px; padding:0 7px; background:#eee8de; color:#5a5048;}
+button.ha-chip{border:0; font:inherit; font-size:12px; font-weight:800; cursor:pointer; line-height:1.6;} .ha-chip b{font-size:11px; opacity:.7; margin-inline-start:2px;}
+.ha-chip{display:inline-block; font-size:12px; font-weight:800; border-radius:999px; padding:0 8px; background:#EEF2F7; color:#1E5C9A; margin-inline-start:6px;}
 .na-chip{display:inline-block; font-size:12px; font-weight:800; border-radius:999px; padding:0 8px; background:#FDE8E6; color:var(--bad); margin-inline-start:6px;} .na-set{font-size:12px; color:var(--ink-soft); margin-inline-start:8px;}
+.td-sec.td-zero .td-n{background:#E8E3DC !important; color:var(--ink-soft) !important;}
 .td-sec{margin:0 0 10px; background:var(--card, #fff); border:1.5px solid var(--border); border-radius:14px; overflow:hidden;}
 .td-sec > summary{list-style:none; cursor:pointer; display:flex; align-items:center; gap:8px; padding:12px 14px; font-weight:800; font-size:16px;} .td-sec > summary::-webkit-details-marker{display:none;}
 .td-sec > summary .td-t{flex:1;} .td-sec .td-car{transition:transform .15s; color:var(--ink-soft);} .td-sec[open] .td-car{transform:rotate(180deg);}
@@ -2326,7 +2333,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.55",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.56",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2775,6 +2782,7 @@ async function boot(){
     if (role && role.role === "instructor") { if (fastAdmin) { AD_CACHE.clear(); AD.loaded = false; } store("telem_portal_role", "instructor"); instructorStart(role); return; } }
   if (fastAdmin) { AD_CACHE.clear(); AD.loaded = false; }
   let me;
+  const flagsP = HIDE_ANS_ON ? rpc("portal_my_flags").catch(() => null) : Promise.resolve(null);   // 1.35.56: במקביל ל-portal_me (בלי לחכות פעמיים)
   try { me = await rpc("portal_me"); } catch(e) { showMsg("אין חיבור", "לא הצלחנו להתחבר. כדאי לנסות שוב."); return; }
   if (!me || me.status === "no_account") { showMsg("אין גישה", "המשתמש הזה לא מוגדר כתלמיד/ה. אם זו טעות – לכתוב לנו."); return; }
   // 1.35.45 (נועה): קוד שפג – לבקש קוד חדש, בלחיצה אחת (יציאה ופתיחת "שכחתי את הקוד" עם הטלפון)
@@ -2782,6 +2790,7 @@ async function boot(){
       { label: "בקשת קוד חדש", fn: () => { try { sessionStorage.setItem("telem_portal_forgot", $("lgPhone").value || "1"); } catch(e) {} logout(); } }); return; }
   if (me.status === "inactive") { showMsg("החשבון לא פעיל כרגע", "הגישה למשימות פתוחה רק לתלמידים רשומים. לשאלות – לכתוב לנו בוואטסאפ."); return; }
   ST.me = me;
+  { const f = await flagsP; HIDE_ANS = !!(f && f.hide_answers); }   // 1.35.56 (TS-26; אם לא הורץ – כמו קודם)
   if (me.must_change_code) { showCodeChange(); return; }
   studentStart();
 }
@@ -3111,6 +3120,7 @@ function openGallery(list, startId, keep, task, deck){
     </div></div>`;
   VIEWER = host.firstElementChild; vwLock(true);
   const V = VIEWER, tr = V.querySelector("#gTrack"), slides = [...V.querySelectorAll(".g-slide")];
+  if (HIDE_ANS) { V.classList.add("noans"); slides.forEach(sl => { const im = sl.querySelector("img"); if (im) { im.classList.add("noans-img"); im.addEventListener("contextmenu", e => e.preventDefault()); } }); }   // 1.35.56
   const img = (i) => slides[i] && slides[i].querySelector("img");
   // 1.35.36 (נועה): להקליד תשובות על הדף – נשמר רק בטלפון של הילד/ה (לא בשרת), נמחק לבד אחרי שבועיים
   let typing = false;
@@ -3140,15 +3150,10 @@ function openGallery(list, startId, keep, task, deck){
   const typeMode = (on) => { typing = !!on; V.querySelector("#gType").classList.toggle("on", typing); V.querySelector("#gHint").hidden = !typing;
     tr.classList.toggle("locked", typing || z > 100); V.classList.toggle("typing", typing); ansDraw(cur); };
   // 1.35.34 (נועה): ההגדלה סביב הנקודה שמגדילים (בין שתי האצבעות / איפה שהקישו) – לא קופצת לפינה
-  const setZ = (nz, ax, ay) => { const im = img(cur), sl = slides[cur]; if (!im) return;
-    const r0 = im.getBoundingClientRect(), cl = (v) => Math.max(0, Math.min(1, v));
-    const fx = ax == null || !r0.width ? .5 : cl((ax - r0.left) / r0.width), fy = ay == null || !r0.height ? .5 : cl((ay - r0.top) / r0.height);
-    z = Math.max(100, Math.min(400, nz));
-    sl.classList.toggle("zoomed", z > 100); im.style.width = z > 100 ? z + "%" : ""; tr.classList.toggle("locked", z > 100);
-    if (z > 100) { const r1 = im.getBoundingClientRect(), sr = sl.getBoundingClientRect();
-      const tx = ax == null ? sr.left + sr.width / 2 : ax, ty = ay == null ? sr.top + sr.height / 2 : ay;
-      sl.scrollLeft += (r1.left + fx * r1.width) - tx; sl.scrollTop += (r1.top + fy * r1.height) - ty; }
-    ansDraw(cur); };
+  // 1.35.56: הגדלה – makeZoom (אותה הגדלה כמו במאגר), על הדף הפתוח בלבד
+  const ZM = slides.map((sl, i) => makeZoom(sl, () => [img(i), sl.querySelector(".g-ans")], () => img(i),
+    { enabled: () => i === cur && !typing, onChange: (s1) => { if (i !== cur) return; z = Math.round(s1 * 100); tr.classList.toggle("locked", typing || z > 100); } }));
+  const setZ = (nz, ax, ay) => { const zm = ZM[cur]; if (!zm) return; zm.set(nz / 100, ax, ay); z = Math.round(zm.s * 100); tr.classList.toggle("locked", typing || z > 100); };
   const show = () => { const p = list[cur]; V.querySelector("#gTtl").textContent = p.title || "";
     if (V.querySelector("#gCnt")) V.querySelector("#gCnt").textContent = (cur + 1) + " / " + n;
     V.querySelectorAll("[data-d]").forEach(d => d.classList.toggle("on", Number(d.dataset.d) === cur));
@@ -3167,18 +3172,13 @@ function openGallery(list, startId, keep, task, deck){
   let raf = 0;
   tr.addEventListener("scroll", () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; if (z > 100) return;
     const k = Math.max(0, Math.min(n - 1, Math.round(Math.abs(tr.scrollLeft) / Math.max(1, tr.clientWidth)))); if (k !== cur) { cur = k; show(); } }); }, { passive: true });
-  // הגדלה: שתי אצבעות או הקשה כפולה (כמו בתמונות)
-  let pd = 0, pz = 100;
-  tr.addEventListener("touchstart", (e) => { if (e.touches.length === 2) { pd = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); pz = z; } }, { passive: true });
-  tr.addEventListener("touchmove", (e) => { if (e.touches.length === 2 && pd) { e.preventDefault(); const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); setZ(pz * d / pd, (e.touches[0].clientX + e.touches[1].clientX) / 2, (e.touches[0].clientY + e.touches[1].clientY) / 2); } }, { passive: false });
-  tr.addEventListener("touchend", (e) => { if (e.touches.length < 2) pd = 0; if (z < 115 && z > 100) setZ(100); });
-  ["gesturestart", "gesturechange"].forEach(ev => tr.addEventListener(ev, (e) => e.preventDefault(), { passive: false }));
+  // הגדלה: שתי אצבעות או הקשה כפולה – makeZoom למעלה (1.35.56)
   let lastTap = 0;
   tr.addEventListener("click", (e) => { if (typing) { const im = e.target.closest(".g-slide img"); if (im && Number(im.closest(".g-slide").dataset.k) === cur) ansAdd(cur, e.clientX, e.clientY); return; }
-    if (!e.target.closest("img")) return; const t = Date.now(); if (t - lastTap < 320) { setZ(z > 100 ? 100 : 220, e.clientX, e.clientY); lastTap = 0; } else lastTap = t; });
+    });   // הקשה כפולה – makeZoom
   slides.forEach((s, i) => { const im = s.querySelector("img"); im.onerror = () => { const p = list[i]; if (!im.dataset.retry && p.storage_path) { im.dataset.retry = "1"; delete URLS[p.storage_path]; sign([p.storage_path]).then(g => { im.src = g(p.storage_path); }); } }; });
   V.querySelector("#gType").onclick = () => typeMode(!typing); V.querySelector("#gTypeOff").onclick = () => typeMode(false);
-  addEventListener("resize", () => { if (VIEWER === V) ansDraw(cur); });
+  addEventListener("resize", () => { if (VIEWER === V) { ansDraw(cur); if (ZM[cur]) ZM[cur].refresh(); } });
   V.querySelector("#vClose").onclick = () => closeViewer();
   V.querySelector("#vSave").onclick = () => { const p = list[cur]; saveImage(ST.url(p.storage_path), p.title); };
   if (V.querySelector("#gPrev")) V.querySelector("#gPrev").onclick = () => go(cur - 1, true);
@@ -3310,10 +3310,59 @@ window.addEventListener("popstate", () => {
   if (AD.st && AD.bank.pick) return doCloseBank();   // קודם סוגרים את המאגר
   if (AD.st) { AD.st = null; AD.stTab = null; if (backToAtt()) return; adRender(); window.scrollTo(0, AD.listY || 0); }
 });   // כפתור "חזרה" של הטלפון סוגר את הדף הפתוח
+// 1.35.56 (נועה: "זום בשתי אצבעות מגדיל לא בין האצבעות אלא למעלה… צריך שהזום יהיה אותו דבר"): הגדלה אחת לכולם – אצל הילדים ובמאגר.
+// שתי אצבעות: מגדיל סביב הנקודה שבין האצבעות (והיא נשארת מתחת לאצבעות); אצבע אחת אחרי הגדלה: הזזה; הקשה כפולה: הגדלה בנקודה / חזרה.
+// stage – המסגרת; els() – מה שזז יחד (הדף + שכבת התשובות שהוקלדו); base() – הדף (לגבולות).
+function makeZoom(stage, els, base, o){
+  o = o || {}; const Z = { s: 1, x: 0, y: 0 }; let st = null, lastTap = 0, lastXY = null;
+  const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const mid = (t) => ({ x: (t[0].clientX + t[1].clientX) / 2, y: (t[0].clientY + t[1].clientY) / 2 });
+  const loc = (p) => { const r = stage.getBoundingClientRect(); return { x: p.x - r.left, y: p.y - r.top + stage.scrollTop }; };
+  const clamp = () => { const b = base(); if (!b) return; const L = b.offsetLeft, T = b.offsetTop, W = b.offsetWidth, H = b.offsetHeight, cw = stage.clientWidth, ch = stage.clientHeight, y0 = stage.scrollTop;
+    Z.x = Z.s * W <= cw ? (cw - Z.s * W) / 2 - Z.s * L : Math.min(-Z.s * L, Math.max(cw - Z.s * (L + W), Z.x));
+    Z.y = Z.s * H <= ch ? y0 + (ch - Z.s * H) / 2 - Z.s * T : Math.min(y0 - Z.s * T, Math.max(y0 + ch - Z.s * (T + H), Z.y)); };
+  const apply = () => { (els() || []).forEach(el => { if (!el) return;
+      if (Z.s === 1) { el.style.transform = ""; el.style.transformOrigin = ""; return; }
+      el.style.transformOrigin = `${-el.offsetLeft}px ${-el.offsetTop}px`; el.style.transform = `translate(${Z.x}px, ${Z.y}px) scale(${Z.s})`; });
+    if (o.onChange) o.onChange(Z.s); };
+  const set = (s, cx, cy) => { const ns = Math.max(1, Math.min(5, s)); if (ns === 1) { Z.s = 1; Z.x = 0; Z.y = 0; apply(); return; }
+    const m = cx == null ? { x: stage.clientWidth / 2, y: stage.scrollTop + stage.clientHeight / 2 } : loc({ x: cx, y: cy });
+    const px = (m.x - Z.x) / Z.s, py = (m.y - Z.y) / Z.s; Z.s = ns; Z.x = m.x - ns * px; Z.y = m.y - ns * py; clamp(); apply(); };
+  const reset = () => { Z.s = 1; Z.x = 0; Z.y = 0; apply(); };
+  const on = () => !o.enabled || o.enabled();
+  stage.addEventListener("touchstart", (e) => { if (!on()) { st = null; return; }
+    if (e.touches.length === 2) { const m = loc(mid(e.touches)); st = { mode: "pinch", d: dist(e.touches), s: Z.s, px: (m.x - Z.x) / Z.s, py: (m.y - Z.y) / Z.s }; }
+    else if (e.touches.length === 1 && Z.s > 1) st = { mode: "pan", cx: e.touches[0].clientX, cy: e.touches[0].clientY, x: Z.x, y: Z.y };
+    else st = null;
+    if (e.touches.length === 1) lastXY = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }, { passive: true });
+  stage.addEventListener("touchmove", (e) => { if (!st) return;
+    if (st.mode === "pinch" && e.touches.length === 2) { e.preventDefault(); const m = loc(mid(e.touches));
+      Z.s = Math.max(1, Math.min(5, st.s * dist(e.touches) / st.d)); Z.x = m.x - Z.s * st.px; Z.y = m.y - Z.s * st.py; if (Z.s === 1) { Z.x = 0; Z.y = 0; } else clamp(); apply(); }
+    else if (st.mode === "pan" && e.touches.length === 1) { e.preventDefault(); Z.x = st.x + e.touches[0].clientX - st.cx; Z.y = st.y + e.touches[0].clientY - st.cy; clamp(); apply(); } }, { passive: false });
+  stage.addEventListener("touchend", (e) => { if (Z.s < 1.08 && Z.s !== 1) reset();
+    if (e.touches.length === 0 && e.changedTouches.length === 1 && (!st || st.mode !== "pinch") && on() && !(e.target.closest && e.target.closest("button, textarea, input"))) {
+      const now = Date.now(), t = e.changedTouches[0];
+      if (now - lastTap < 300) { if (Z.s > 1) reset(); else set(2.5, t.clientX, t.clientY); lastTap = 0; if (e.cancelable) e.preventDefault(); }
+      else lastTap = now; }
+    if (e.touches.length === 0) st = null;
+    else if (e.touches.length === 1 && Z.s > 1) st = { mode: "pan", cx: e.touches[0].clientX, cy: e.touches[0].clientY, x: Z.x, y: Z.y }; });
+  ["gesturestart", "gesturechange"].forEach(ev => stage.addEventListener(ev, (e) => e.preventDefault(), { passive: false }));
+  return { get s(){ return Z.s; }, set, reset, refresh(){ if (Z.s > 1) { clamp(); apply(); } } };
+}
+// 1.35.56 (נועה: "יש ילדים שלא מסוגלים לעבוד כשיש שם את התשובות… התשובות תמיד למטה"): ילד/ה מסומן/ת (TS-26) –
+// התחתית של הדף (ANS_FR מהגובה) לא מוצגת ולא נשמרת. הקובץ במאגר לא משתנה.
+const ANS_FR = 0.1;
+const HIDE_ANS_ON = false;   // נועה: "אסור שהמלבן יהיה לפי גודל – למצוא איפה כתוב 'תשובות:'" – כבוי עד שהמיקום בכל דף יימצא (TS-26 ישתנה)
+let HIDE_ANS = false;
+async function maskBlob(blob){
+  const bm = await createImageBitmap(blob), h = Math.round(bm.height * (1 - ANS_FR)), c = document.createElement("canvas");
+  c.width = bm.width; c.height = h; const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, h); x.drawImage(bm, 0, 0);
+  return await new Promise((ok, no) => c.toBlob(b => b ? ok(b) : no(new Error("mask")), "image/png"));
+}
 async function fetchBlob(url){ const r = await fetch(url); if (!r.ok) throw new Error("fetch"); return r.blob(); }
 async function saveImage(url, title){
   try {
-    const blob = await fetchBlob(url);
+    let blob = await fetchBlob(url); if (HIDE_ANS) blob = await maskBlob(blob);   // 1.35.56: בלי התשובות גם בקובץ שנשמר
     const name = (String(title || "page").replace(/[\\/:*?"<>|]/g, "").trim() || "page") + ".png";
     const file = new File([blob], name, { type: blob.type || "image/png" });
     if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; }
@@ -3558,8 +3607,10 @@ async function adLoad(){
       opt(get("portal_code_requests", "select=id,student_id,phone,created_at&handled_at=is.null&matched=is.true&order=created_at")),   // "שכחתי את הקוד"
       opt(getNreq()),   // 1.33: "שלחו לי את המשימה הבאה" (TS-08; אם לא הורץ – כמו קודם)
       loadWs(),
-      opt(get("portal_no_access", "select=student_id,reason"))   // 1.35.45: "🚫 בלי תלם שלי" (TS-22; אם לא הורץ – אף אחד)
-    ]).then(r => { AD.noAcc = new Map((Array.isArray(r[6]) ? r[6] : []).map(x => [String(x.student_id), x.reason || ""])); return r; });
+      opt(get("portal_no_access", "select=student_id,reason")),   // 1.35.45: "🚫 בלי תלם שלי" (TS-22; אם לא הורץ – אף אחד)
+      HIDE_ANS_ON ? opt(get("portal_hide_answers", "select=student_id")) : Promise.resolve(null)   // 1.35.56: "🙈 בלי תשובות" (TS-26; אם לא הורץ – null, בלי הכפתור)
+    ]).then(r => { AD.noAcc = new Map((Array.isArray(r[6]) ? r[6] : []).map(x => [String(x.student_id), x.reason || ""]));
+      AD.hideAns = Array.isArray(r[7]) ? new Set(r[7].map(x => String(x.student_id))) : null; return r; });
     AD.nreq = nreq === undefined ? null : nreq;
     AD.students = (students || []).map(s => Object.assign(s, { student_id: String(s.student_id) }));
     AD.plan = (plan || []).map(planNorm);
@@ -3678,10 +3729,12 @@ function stMine(sid){
 }
 const myReqs = () => [];   // 1.26 (מנ-50): בקשות "שכחתי קוד" – בתיבת 📥 במערכת הניהול, לא כאן
 function insLabel(){ return !AD.waitIns ? "כל המתרגלים" : AD.waitIns === "__me" ? "הקבוצות שלי" : AD.waitIns; }
+// 1.35.56 (נועה: "את הסינון של המתרגלים אולי נקצר?"): על הכפתור – "הכול" / "שלי" / השם הפרטי; בתפריט – השמות המלאים
+function insShort(){ return !AD.waitIns ? "הכול" : AD.waitIns === "__me" ? "שלי" : String(AD.waitIns).trim().split(/\s+/)[0]; }
 function insBtn(){
   const b = $("adIns"); if (!b || AD.role === "instructor") return;
   b.hidden = false;
-  b.innerHTML = `<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="ins-t">${esc(insLabel())}</span><span class="ins-car">▾</span>`;
+  b.innerHTML = `<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="ins-t">${esc(insShort())}</span><span class="ins-car">▾</span>`; b.title = "סינון לפי מתרגל/ת: " + insLabel(); b.setAttribute("aria-label", b.title);
   b.onclick = insSheet;
 }
 // 1.26.1 (נועה): תפריט קטן מתחת לכפתור (לא חלון על כל המסך) – פחות לחיצות בטעות
@@ -3778,7 +3831,15 @@ function noAccOff(s, after){
 const noAccHtml = (s) => AD.role === "instructor" ? (noAcc(s.student_id) ? `<span class="na-chip">🚫 בלי תלם שלי</span>` : "")
   : noAcc(s.student_id) ? `<span class="na-chip" title="${esc(AD.noAcc.get(String(s.student_id)) || "")}">🚫 בלי תלם שלי${AD.noAcc.get(String(s.student_id)) ? " · " + esc(AD.noAcc.get(String(s.student_id))) : ""}</span><button type="button" class="lnk" data-naoff>ביטול</button>`
   : `<button type="button" class="lnk na-set" data-naon>🚫 בלי תלם שלי</button>`;
-const wireNoAcc = (T, s, after) => { T.querySelectorAll("[data-naon]").forEach(b => b.onclick = () => noAccSet(s, after)); T.querySelectorAll("[data-naoff]").forEach(b => b.onclick = () => noAccOff(s, after)); };
+const wireNoAcc = (T, s, after) => { T.querySelectorAll("[data-naon]").forEach(b => b.onclick = () => noAccSet(s, after)); T.querySelectorAll("[data-naoff]").forEach(b => b.onclick = () => noAccOff(s, after));
+  T.querySelectorAll("[data-hans]").forEach(b => b.onclick = async () => { const on = b.dataset.hans === "1", sid = String(s.student_id); b.disabled = true;   // 1.35.56
+    try { if (on) await insert("portal_hide_answers", { student_id: Number(sid) }); else await del("portal_hide_answers", "student_id=eq." + Number(sid));
+      AD.hideAns = AD.hideAns || new Set(); if (on) AD.hideAns.add(sid); else AD.hideAns.delete(sid); if (after) after(); } catch(e) { b.disabled = false; toast(errText(e)); } }); };
+// 1.35.56 (נועה): "🙈 בלי תשובות" – לילדים שלא מסוגלים לעבוד כשהתשובות על הדף (TS-26)
+const hideAns = (sid) => !!(AD.hideAns && AD.hideAns.has(String(sid)));
+const hideAnsHtml = (s) => !AD.hideAns || noAcc(s.student_id) ? "" : AD.role === "instructor" ? (hideAns(s.student_id) ? `<span class="ha-chip">🙈 בלי תשובות</span>` : "")
+  : hideAns(s.student_id) ? `<button type="button" class="ha-chip ha-on" data-hans="0" title="התחתית של הדף (התשובות) מוסתרת אצל הילד/ה. לחיצה – ביטול">🙈 בלי תשובות <b aria-label="ביטול">✕</b></button>`
+  : `<button type="button" class="lnk na-set" data-hans="1" title="להסתיר אצל הילד/ה את התשובות שבתחתית הדף">🙈 בלי תשובות</button>`;
 const todoN = () => { if (!AD.nreq) return 0; try { return waitingKids(waitingList(true).filter(w => alertMine(w) && wHome(w))).length + myReqs().length
   + (AD.students || []).filter(s => s.has_account && codeExpired(s) && stMine(s.student_id) && !noAcc(s.student_id)).length; } catch(e) { return 0; } };
 // 1.33: שורת הפירוט בכרטיס – ביקש/ה מתי, ומה סיים/ה
@@ -3902,23 +3963,25 @@ function todoHtml(g, mine){
   const sh = (x) => x === "מתמטיקה" ? "מת'" : x === "אנגלית" ? "אנג'" : x;
   // 1.35.44 (נועה): כל נושא במסגרת שנפתחת – הכותרות עם המספר זו מתחת לזו, פותחים את מה שצריך (נזכר בטלפון)
   if (!AD.tdOpen) { let o = null; try { o = JSON.parse(store("telem_portal_tdopen") || "null"); } catch(e) {} AD.tdOpen = new Set(Array.isArray(o) ? o : ["td-home"]); }
-  const sec = (ic, t, cnt, note, body, cls) => `<details class="td-sec ${cls}" data-td="${cls}"${AD.tdOpen.has(cls) ? " open" : ""}><summary><span class="td-ic">${ic}</span><span class="td-t">${t}</span><b class="td-n">${cnt}</b><span class="td-car" aria-hidden="true">▾</span></summary><div class="td-b">${note ? `<div class="lb-note">${note}</div>` : ""}${body}</div></details>`;
+  // 1.35.56 (נועה: "תכתוב את כל האפשרויות שם גם אם יש 0 בקשות. שאני אראה"): כל הנושאים תמיד, עם 0 – אפור
+  const none = `<div class="wl-none muted">אין כרגע</div>`;
+  const sec = (ic, t, cnt, note, body, cls) => `<details class="td-sec ${cls}${cnt ? "" : " td-zero"}" data-td="${cls}"${AD.tdOpen.has(cls) ? " open" : ""}><summary><span class="td-ic">${ic}</span><span class="td-t">${t}</span><b class="td-n">${cnt}</b><span class="td-car" aria-hidden="true">▾</span></summary><div class="td-b">${note ? `<div class="lb-note">${note}</div>` : ""}${body}</div></details>`;
   const who = (s, sub) => `<button type="button" class="wl-1" data-open="${esc(s.student_id)}" data-subj="${esc((s.subjects || [])[0] || "")}"><b>${esc(stName(s))}</b>${sub ? `<small>${sub}</small>` : ""}</button>`;
   // 1. ביקשו דף ולא בשיעור (מהבית / מקבוצה אחרת)
   const inL = waitingKids(mine.filter(w => !wHome(w))), home = waitingKids(mine.filter(wHome));
   if (inL.length) h += `<div class="td-att">🙋 ${inL.length === 1 ? esc(stName(inL[0].s)) + " ביקש/ה" : inL.length + " ביקשו"} דף בשיעור – <button type="button" class="lnk" data-goatt>לנוכחות ←</button></div>`;
-  if (home.length) h += sec("🙋", "ביקשו משימה ולא בשיעור", home.length, "מהבית או מקבוצה אחרת – אין צליל ולא נספרים בנוכחות. בקשה מיום קודם – \"ישנה\".", wlRows(home, k => waitLine(g, k, false, "")), "td-home");
+  h += sec("🙋", "ביקשו משימה ולא בשיעור", home.length, "מהבית או מקבוצה אחרת – אין צליל ולא נספרים בנוכחות. בקשה מיום קודם – \"ישנה\".", home.length ? wlRows(home, k => waitLine(g, k, false, "")) : none, "td-home");
   // 2. צריכים קוד חדש
   const reqs = myReqs(), rq = new Set(reqs.map(r => String(r.student_id)));
   const exp = (AD.students || []).filter(s => s.has_account && codeExpired(s) && stMine(s.student_id) && !rq.has(String(s.student_id)) && !noAcc(s.student_id));
   const codeRow = (s, why, r) => `<div class="wl-row">${who(s, why)}<div class="wl-q td-acts"><button class="btn primary sm" data-newcode="${esc(s.student_id)}">${IC.wa} קוד חדש</button>${r ? `<button class="btn sm ghost" data-dismiss="${esc(s.student_id)}">התעלמות</button>` : ""}</div></div>`;
-  if (reqs.length || exp.length) h += sec("🔑", "צריכים קוד חדש", reqs.length + exp.length, "בלי קוד חדש לא יוכלו להיכנס.",
+  h += sec("🔑", "צריכים קוד חדש", reqs.length + exp.length, "בלי קוד חדש לא יוכלו להיכנס.", !(reqs.length || exp.length) ? none :
     `<div class="wrows wl">` + [...reqs.map(r => codeRow(stById(r.student_id), `שכח/ה את הקוד · ${esc(ago(r.created_at))}`, r)),
                                 ...exp.map(s => codeRow(s, `הקוד הראשוני פג${s.code_expires_at ? " · " + esc(fmtDay(s.code_expires_at)) : ""}`))].join("") + `</div>`, "td-code");
   // 3. אין להם "תלם שלי"
   const noA = (AD.students || []).filter(s => !s.has_account && stMine(s.student_id) && !noAcc(s.student_id)).sort((a, b) => stName(a).localeCompare(stName(b), "he"));
   const who0 = (s, sub) => `<div class="wl-1 wl-nolink"><b>${esc(stName(s))}</b>${sub ? `<small>${sub}</small>` : ""}</div>`;   // 1.35.45: בלי חשבון – לא נלחץ
-  if (noA.length) h += sec("🚫", "אין להם \"תלם שלי\"", noA.length, "רשומים לקורס ועוד אין להם חשבון.",
+  h += sec("🚫", "אין להם \"תלם שלי\"", noA.length, "רשומים לקורס ועוד אין להם חשבון.", !noA.length ? none :
     `<div class="wrows wl">` + noA.map(s => `<div class="wl-row">${who0(s, esc((s.subjects || []).map(sh).join(" · ")))}<div class="wl-q td-acts"><button class="btn sm ghost" data-nalist="${esc(s.student_id)}" title="לא מקבל/ת תלם שלי – לא יופיע/תופיע כאן">🚫 לא צריך/ה</button><button class="btn sm" data-mkacc="${esc(s.student_id)}">+ פתיחת חשבון</button></div></div>`).join("") + `</div>`, "td-noacc");
   // 4. אין דפים בתור – לקראת הקבוצות הבאות (היום, ואם אין – היום הבא)
   const up = upcomingGroups(); if (up) { const used = new Set(home.map(k => String(k.s.student_id))); let n = 0;   // מי שכבר למעלה (ביקש/ה) – לא שוב
@@ -3926,7 +3989,8 @@ function todoHtml(g, mine){
         const need = (st.subjects || []).filter(x => !queueOf(st.student_id, x).length); if (!need.length) return ""; used.add(String(st.student_id)); n++;
         return `<div class="wl-row">${who(st, "")}${need.map(x => `<div class="wl-q"><span class="subj-chip ${subjCls(x)} on sm">${esc(sh(x))}</span><span class="wl-t bad-t">אין דפים בתור</span><button class="btn sm wr-rel" data-pick="${esc(st.student_id)}" data-subj="${esc(x)}">+ דפים</button></div>`).join("")}</div>`; }).join("");
       return rows ? `<div class="wl-gh">${esc(up.label)} · <bdi>${esc(gr.start || gr.time || "")}</bdi> · ${esc(gr.city || "")}${gr.loc ? " – " + esc(gr.loc) : ""}</div><div class="wrows wl">${rows}</div>` : ""; }).join("");
-    if (n) h += sec("📭", `אין משימות בתור – ${up.label === "היום" ? "לקבוצות של היום" : "ל" + up.label}`, n, "", body, "td-noq"); }
+    h += sec("📭", `אין משימות בתור – ${up.label === "היום" ? "לקבוצות של היום" : "ל" + up.label}`, n, "", n ? body : none, "td-noq"); }
+  else h += sec("📭", "אין משימות בתור – לקבוצות הבאות", 0, "", none, "td-noq");
   return h || `<div class="wl-none muted">✓ אין מה לטפל</div>`;
 }
 // ---------- ממתינים לפי קבוצות: עיר → מקום תרגול → יום ושעה ----------
@@ -4447,7 +4511,7 @@ async function renderStudentPlan(T, mobile){
           return subs.length > 1 ? `<button class="subj-chip ${subjCls(x)} ${x === AD.subj ? "on" : "off"}" data-subj="${esc(x)}" title="תוכנית ${esc(x)}">${x === AD.subj ? IC.check.replace("<svg", '<svg width="13" height="13"') : ""}${esc(x)}${w ? `<span class="wdot" title="ממתין/ה לדף"></span>` : ""}</button>`
                                  : `<span class="subj-chip ${subjCls(x)} on">${esc(x)}</span>`; }).join("")}</div></div>
         ${waiting ? `<span class="chip new">ממתין/ה לדף</span>` : ""}</div>
-      <div class="acc-line">${acc}${noAccHtml(s)}</div>
+      <div class="acc-line">${acc}${noAccHtml(s)}${hideAnsHtml(s)}</div>
       ${stAttHtml(s)}
     </div>
     <div class="plan-cols" style="margin-top:12px">
@@ -4685,7 +4749,7 @@ async function renderStudentMobile(T, s){
   paint(T, `
     <div class="stm-head${pick ? " picking" : ""}${tabbed ? " has-tabs" : ""}">
       <div class="l1">${gradeBadge(I.grade, I.cls)}<b class="nm">${esc(stName(s))}</b>${scChip(I.school)}${subjMini(subs0)}${accIc}<span style="flex:1"></span><button class="btn small stm-back2" id="stBack">→ חזרה</button></div>
-      ${pick ? "" : `<div class="acc-mini">${acc}${noAccHtml(s)}${lvl.length ? `<span class="lvl">הקבצה ${esc(lvl.join(" · ").replace(/מתמטיקה: /, "מת' ").replace(/אנגלית: /, "אנג' "))}</span>` : ""}</div>`}
+      ${pick ? "" : `<div class="acc-mini">${acc}${noAccHtml(s)}${hideAnsHtml(s)}${lvl.length ? `<span class="lvl">הקבצה ${esc(lvl.join(" · ").replace(/מתמטיקה: /, "מת' ").replace(/אנגלית: /, "אנג' "))}</span>` : ""}</div>`}
       ${exL ? `<div class="ex-icons">${exL}</div>` : ""}
       ${tabbed ? stAttHtml(s, true, null, "info") + subTabs : pick ? "" : stAttHtml(s, true)}
       ${pick ? `<div class="stm-peekbar">${tabs.map(([k, , n]) => `<button type="button" class="pk-${k}${AD.peek === k ? " on" : ""}" data-peek="${esc(k)}"><span>${SEC[k][0]} ${SEC[k][1]}</span><b>${n}</b></button>`).join("")}</div>
@@ -5678,6 +5742,7 @@ async function wsOpen(i, fromPop){
   const sign = await wsSign([r.storage_path]); const url = sign(r.storage_path);
   if (WS.idx !== i) return;
   $("wsVImg").src = url; $("wsCopy").disabled = false;
+  { const pk = typeof AD !== "undefined" && AD.bank && AD.bank.pick; $("wsVImg").classList.toggle("noans-img", !!(pk && hideAns(pk.sid))); }   // 1.35.56: כמו שהילד/ה יראה
   // מכינים את הקובץ מראש - כדי שהשיתוף/ההעתקה יקרו מיד בלחיצה
   const fname = ((r.topic_name || "דף") + " - " + (r.title || r.page_no)).replace(/[\\/:*?"<>|]/g, " ") + "." + ((r.storage_path.match(/\.(\w+)$/) || [, "png"])[1]);
   fetch(url).then(x => x.blob()).then(b => { if (WS.idx === i) WS.file = new File([b], fname, { type: b.type || "image/png" }); }).catch(() => {});
@@ -5685,32 +5750,11 @@ async function wsOpen(i, fromPop){
   $("wsDl").href = url; $("wsDl").setAttribute("download", (r.topic_name || "דף") + " - " + (r.title || r.page_no) + "." + ((r.storage_path.match(/\.(\w+)$/) || [, "png"])[1]));
 }
 // הגדלה בשתי אצבעות בתוך הדף הפתוח (באייקון במסך הבית של האייפון הדפדפן לא מאפשר הגדלה של כל העמוד)
-const WZ = { s: 1, x: 0, y: 0 };
-function wzApply(){ const im = $("wsVImg"); im.style.transform = WZ.s === 1 ? "" : `translate(${WZ.x}px, ${WZ.y}px) scale(${WZ.s})`; im.classList.toggle("zoomed", WZ.s > 1); }
-function wzReset(){ WZ.s = 1; WZ.x = 0; WZ.y = 0; wzApply(); }
-(function(){
-  const box = document.querySelector(".ws-vimg"); let st = null, lastTap = 0;
-  const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
-  box.addEventListener("touchstart", (e) => {
-    if (e.touches.length === 2) st = { mode: "pinch", d: dist(e.touches), s: WZ.s };
-    else if (e.touches.length === 1 && WZ.s > 1) st = { mode: "pan", cx: e.touches[0].clientX, cy: e.touches[0].clientY, x: WZ.x, y: WZ.y };
-    else st = null;
-  }, { passive: true });
-  box.addEventListener("touchmove", (e) => {
-    if (!st) return;
-    if (st.mode === "pinch" && e.touches.length === 2) { e.preventDefault(); WZ.s = Math.min(5, Math.max(1, st.s * dist(e.touches) / st.d)); if (WZ.s === 1) { WZ.x = 0; WZ.y = 0; } wzApply(); }
-    else if (st.mode === "pan" && e.touches.length === 1) { e.preventDefault(); WZ.x = st.x + e.touches[0].clientX - st.cx; WZ.y = st.y + e.touches[0].clientY - st.cy; wzApply(); }
-  }, { passive: false });
-  box.addEventListener("touchend", (e) => {
-    if (WZ.s < 1.05) wzReset();
-    if (e.touches.length === 0 && e.changedTouches.length === 1 && (!st || st.mode !== "pinch")) {
-      const now = Date.now();
-      if (now - lastTap < 300) { if (WZ.s > 1) wzReset(); else { WZ.s = 2.5; WZ.x = 0; WZ.y = 0; wzApply(); } lastTap = 0; }   // לחיצה כפולה: הגדלה / חזרה
-      else lastTap = now;
-    }
-    if (e.touches.length === 0) st = null;
-  });
-})();
+// 1.35.56: אותה הגדלה כמו אצל הילדים (makeZoom) – סביב הנקודה שבין האצבעות
+let WZM = null;
+function wzReset(){ if (WZM) WZM.reset(); }
+(function(){ const box = document.querySelector(".ws-vimg"); if (!box) return; if (getComputedStyle(box).position === "static") box.style.position = "relative";
+  WZM = makeZoom(box, () => [$("wsVImg")], () => $("wsVImg"), { onChange: (s1) => $("wsVImg").classList.toggle("zoomed", s1 > 1) }); })();
 function wsClose(fromPop){
   if (WS.starDirty) { WS.starDirty = false; setTimeout(() => { if (CB_VIS()) renderWs(); }, 50); }
   if (!fromPop && history.state && history.state.ad === "wsv") { AD.skipPop = true; history.back(); }
