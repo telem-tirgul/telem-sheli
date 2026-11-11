@@ -2144,7 +2144,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .sk-mode{font-size:13px; font-weight:800; margin-inline-start:6px; white-space:nowrap;} .sk-mode.on{background:#fff3c4; border-radius:999px; padding:1px 8px; text-decoration:none;}
 .crmatt #shRows .pg-ic.pna{background:#FDE8E6 !important; color:var(--bad) !important; font-weight:800; font-size:11.5px; width:auto !important; padding:0 7px; border-radius:999px; white-space:nowrap;}
 .crmatt #shRows .pg-ic.pret{background:#FFE9D6 !important; color:#8A3B00 !important; font-weight:800; font-size:11.5px; width:auto !important; padding:0 7px; border-radius:999px; white-space:nowrap;}
-.crmatt #shRows .pg-ic.pnoin{background:#EAF0F7 !important; color:#2F5C8A !important; font-weight:800; font-size:14px; width:auto !important; padding:0 7px; border-radius:999px; white-space:nowrap; cursor:pointer;}
+.crmatt #shRows .pg-ic.pnoin{background:#EAF0F7 !important; color:#2F5C8A !important; font-weight:800; font-size:14px; width:auto !important; padding:0 7px; border-radius:999px; white-space:nowrap;}
 .crmatt #shRows .pg-ic.pnoa{background:#EEEBE6 !important; color:#6B635A !important; font-weight:800; font-size:11.5px; width:auto !important; padding:0 7px; border-radius:999px; white-space:nowrap; cursor:pointer;}
 /* 1.35.55 (נועה: "אל תעשה לי ילדים דהויים") – בלי דהייה; רק התגית */
 
@@ -2370,7 +2370,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.62",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.63",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -7149,11 +7149,11 @@ function renderSheetRows(){
         if (x.classList.contains("pna")) { (grp.pna = grp.pna || []).push("בלי תלם שלי"); return; }
         if (x.classList.contains("pnoa")) { (grp.pnoa = grp.pnoa || []).push("אין חשבון עדיין – לחיצה ליצירת קוד"); return; }
         if (x.classList.contains("pret")) { (grp.pret = grp.pret || []).push(x.textContent); return; }
-        if (x.classList.contains("pnoin")) { (grp.pnoin = grp.pnoin || []).push("יש קוד – עוד לא נכנס/ה לאפליקציה. לחיצה – הקוד / קוד חדש"); return; }
+        if (x.classList.contains("pnoin")) { (grp.pnoin = grp.pnoin || []).push("יש קוד – עוד לא נכנס/ה לאפליקציה"); return; }
         const k = x.classList.contains("pn") ? "pn" : x.classList.contains("pw") ? "pw" : "px", full = (pre ? pre + ": " : "") + x.textContent.replace(/\s+/g, " ").trim();
         (grp[k] = grp[k] || []).push(full); pre = ""; });
       Object.entries(grp).forEach(([k, l]) => { const c = document.createElement("span"); c.className = "pg-ic " + k; c.dataset.tip = l.join(" · "); c.title = l.join("\n");
-        if (k === "pnoa" || k === "pnoin") { const r1 = A.rows[Number(li.dataset.i)]; if (r1 && ME.role !== "instructor") c.dataset.mkacc = r1.student_id; }
+        if (k === "pnoa") {   /* 1.35.63 (נועה): 📵 ממש ליד השליחה – רק סימון, לחיצה = הדף של הילד/ה (שם הקוד) */ const r1 = A.rows[Number(li.dataset.i)]; if (r1 && ME.role !== "instructor") c.dataset.mkacc = r1.student_id; }
         c.innerHTML = k === "pret" ? "↩ החזיר/ה" : k === "pnoin" ? "📵" : k === "pnoa" ? "🔑 אין חשבון" : k === "pna" ? "🚫 בלי תלם שלי" : k === "pw" ? "⏳" : k === "pn" ? PG_SVG_ON : k === "p1" ? `<b class="p1n">1</b>` : PG_SVG_OFF; c.setAttribute("aria-label", l.join(" · ")); row.appendChild(c); });   // נועה: רק אייקון; דף צבוע = יש, דף ריק = אין
       pr.querySelectorAll("button").forEach(bt => { bt.classList.add("ic-btn"); if (bt.hasAttribute("data-trk")) { bt.textContent = "📌+"; ch.appendChild(bt); } else if (bt.hasAttribute("data-addp")) bt.remove(); });   // 1.35.25 (נועה): הוספת דפים – רק ב"ממתינים לדף"; כאן רק הסטטוס, לידיעה
       // 1.35.49 (נועה): "חייבת אופציה לשחרר את הדף הבא מהנוכחות… כמשימה ולא כדף. גם אם מישהו עוד עובד" – כפתור לכל מקצוע שיש בו תור
