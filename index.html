@@ -2370,7 +2370,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.63",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.64",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -4466,7 +4466,7 @@ function relTaskExpand(ids){
 async function releaseItems(ids){
   if (!ids.length) return;
   ids = relTaskExpand(ids);
-  const rel0 = AD.plan.filter(p => ids.includes(p.id)), rq0 = (AD.nreq || []).filter(r => rel0.some(p => String(p.student_id) === String(r.student_id) && p.subject === r.subject));   // 1.35.29: לביטול – הבקשות שייסגרו
+  const rel0 = AD.plan.filter(p => ids.includes(p.id)), rq0 = (AD.nreq || []).filter(r => rel0.some(p => String(p.student_id) === String(r.student_id)));   // 1.35.64 (TS-29): כל שליחה סוגרת את הבקשות של הילד/ה בכל מקצוע   // 1.35.29: לביטול – הבקשות שייסגרו
   // 1.35.53 (נועה: "למה לוקח לזה שניה להופיע?"): המסך מתעדכן מיד, והשמירה בשרת אחר כך; אם נכשלה – חוזר למה שהיה + הודעת שגיאה
   const now = new Date().toISOString(), was = AD.plan.filter(p => ids.includes(p.id) && p.status === "מתוכנן").map(p => ({ p, b: { status: p.status, released_at: p.released_at, released_by: p.released_by, done_at: p.done_at, seen_at: p.seen_at } }));
   const nreq0 = AD.nreq ? AD.nreq.slice() : AD.nreq;
@@ -4487,7 +4487,8 @@ async function releaseItems(ids){
 }
 // חישוב מחדש של "ממתין" בלי לטעון מהשרת
 function refreshWaitingLocal(){
-  if (AD.nreq) AD.nreq = AD.nreq.filter(r => !planOf(r.student_id, r.subject).some(p => p.status === "נשלח"));   // שוחרר דף – הבקשה נסגרת (גם בשרת)
+  if (AD.nreq) AD.nreq = AD.nreq.filter(r => !planOf(r.student_id, r.subject).some(p => p.status === "נשלח")
+    && !(AD.plan || []).some(p => String(p.student_id) === String(r.student_id) && p.status === "נשלח" && p.released_at && r.requested_at && Date.parse(p.released_at) >= Date.parse(r.requested_at)));   // 1.35.64 (נועה): שליחה בכל מקצוע אחרי הבקשה – סוגרת אותה   // שוחרר דף – הבקשה נסגרת (גם בשרת)
   AD.students.forEach(s => {
     s.waiting_subjects = (s.subjects || []).filter(subj => { const pl = planOf(s.student_id, subj); return !pl.some(p => p.status === "נשלח") && pl.some(p => p.status === "הושלם"); });
     s.planned = planOf(s.student_id).filter(p => p.status === "מתוכנן").length;
