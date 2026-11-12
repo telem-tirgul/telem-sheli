@@ -2199,7 +2199,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .tcard .tc-h{display:flex; align-items:center; gap:8px; min-height:24px;} .tcard .tc-top{flex:1; min-width:0; font-size:15px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .tcard .tc-h .lv{flex:none; font-style:normal; font-size:15px; margin-inline-start:auto;}
 .tcard .tc-b{flex:none; min-width:24px; height:24px; padding:0 6px; border-radius:999px; background:#EFEAE3; color:var(--ink); font-weight:800; font-size:13px; display:inline-flex; align-items:center; justify-content:center;}
-.tcard .tc-b.go{background:var(--accent); color:#fff;} .ts-off{ filter:grayscale(1); opacity:.45; } .vap-k{ display:flex; align-items:center; gap:6px; margin:4px 0; } .vap-k span{ font-weight:800; flex:none; } .vap-k code{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; background:#f4efe8; padding:2px 6px; border-radius:6px; font-size:11px; } .tcard .tc-b.pin{background:#FBF1D6; padding:0 3px;} .pin-ic{vertical-align:-3px; flex:none;} .tcard.tc-pin{border-color:#E3C26F; background:#FFFBEF;} .tcard.tc-pin b:not(.tc-top){color:#8A6414;} .tcard .tc-b.ok{background:#E3F2DF; color:#1F6B17;}
+.tcard .tc-b.go{background:var(--accent); color:#fff;} .ts-off{ filter:grayscale(1); opacity:.45; } .kpush{ display:flex; align-items:center; gap:8px; background:#FFF3D1; color:#5E4C00; border-radius:12px; padding:8px 12px; margin:0 0 10px; font-weight:700; font-size:14px; } .kpush span{ flex:1; } .kpush .kp-x{ background:none; border:none; font-size:16px; color:#8a7a50; cursor:pointer; padding:4px; } .vap-k{ display:flex; align-items:center; gap:6px; margin:4px 0; } .vap-k span{ font-weight:800; flex:none; } .vap-k code{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; background:#f4efe8; padding:2px 6px; border-radius:6px; font-size:11px; } .tcard .tc-b.pin{background:#FBF1D6; padding:0 3px;} .pin-ic{vertical-align:-3px; flex:none;} .tcard.tc-pin{border-color:#E3C26F; background:#FFFBEF;} .tcard.tc-pin b:not(.tc-top){color:#8A6414;} .tcard .tc-b.ok{background:#E3F2DF; color:#1F6B17;}
 .tcard .tc-t{font-size:14px; color:var(--ink); margin:2px 0 0; cursor:zoom-in;} .tcard .tc-h{cursor:zoom-in;} .tcard .tc-m{color:var(--ink-soft); font-size:12.5px;}
 .tcard .tc-s{display:flex; align-items:center; gap:8px; margin-top:7px; padding-top:6px; border-top:1px dashed var(--border); font-size:12.5px; color:var(--ink-soft); min-height:30px;}
 .tcard .tc-st{flex:1; min-width:0;} .tcard .tc-st b{color:#A3261D;}
@@ -2360,6 +2360,7 @@ button.na-chip{border:0; font:inherit; font-size:12px; font-weight:800; cursor:p
       <button class="btn sm primary" id="installHow">איך?</button>
     </div>
     <div class="seg" id="stSeg" hidden></div>
+    <div class="kpush" id="stPush" hidden></div>
     <div id="stBody"></div>
   </main>
 </section>
@@ -2403,7 +2404,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.70",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.71",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2871,7 +2872,7 @@ async function boot(){
   ST.me = me;
   { const f = await flagsP; HIDE_ANS = !!(f && f.hide_answers); ANS_BOXES = (f && f.boxes) || {}; ST.canReturn = !!(f && f.can_return); ST.canPin = !!(f && f.can_pin); }   // 1.35.60: "לא מתאים לי" (TS-28)   // 1.35.57 (TS-26; אם לא הורץ – כמו קודם)
   if (me.must_change_code) { showCodeChange(); return; }
-  studentStart();
+  studentStart(); pushClear(); setTimeout(kidPushBar, 1500);   // 1.35.71 (TS-32)
 }
 
 // ---------- החלפת קוד ----------
@@ -5290,11 +5291,30 @@ async function pushUi(sh){
 }
 // אצל הילד/ה בלבד: אחרי "סיימתי" / "לא מתאים" / "לאחר כך" – בדיקת "אין עבודה" (פעם אחת, אחרי רגע); אחרי בקשה – "ביקש/ה"
 let pushIdleT = null;
-function pushHook(fn, b, r){ if (typeof ST === "undefined" || !ST.me) return;
+function pushHook(fn, b, r){
+  // TS-32 (נועה: "2 רעיון טוב"): הצוות שחרר משימה → התראה לטלפון של הילד/ה (אם הפעיל/ה)
+  if (fn === "portal_release" && r && typeof AD !== "undefined" && AD.plan) { const set = new Set((b.p_items || []).map(String));
+    const kids = [...new Set(AD.plan.filter(p => set.has(String(p.id))).map(p => String(p.student_id)))]; if (kids.length) setTimeout(() => pushPing("rel", null, kids), 300); return; }
+  if (typeof ST === "undefined" || !ST.me) return;
   if (fn === "portal_request_next" && b.p_on && !(r && r.ok === false)) { pushPing("req", b.p_subject); return; }
   if ((fn === "portal_mark_done" && b.p_done) || fn === "portal_return_items" || (fn === "portal_pin_items" && b.p_pin)) { clearTimeout(pushIdleT); pushIdleT = setTimeout(() => pushPing("idle"), 1500); } }
 // הילד/ה "מצלצל/ת" לשרת – והשרת בודק לבד אם צריך התראה (אין עבודה / בקשה) ובלי כפולות
-function pushPing(event, subject){ try { token().then(t => { if (!t) return; fetch(PUSH_FN(), { method: "POST", keepalive: true, headers: Object.assign(baseHeaders(), { "Authorization": "Bearer " + t, "Content-Type": "application/json" }), body: JSON.stringify({ event, subject: subject || null }) }).catch(() => {}); }); } catch(e) {} }
+function pushPing(event, subject, students){ try { token().then(t => { if (!t) return; fetch(PUSH_FN(), { method: "POST", keepalive: true, headers: Object.assign(baseHeaders(), { "Authorization": "Bearer " + t, "Content-Type": "application/json" }), body: JSON.stringify({ event, subject: subject || null, students: students || null }) }).catch(() => {}); }); } catch(e) {} }
+// אצל הילד/ה: "🔔 לקבל הודעה כשמגיעה משימה חדשה?" – פעם אחת, בראש המסך (עד הפעלה או ✕). באייפון – רק מהאייקון במסך הבית
+const KPUSH_K = "telem_portal_kpush";
+async function kidPushBar(){ const el = $("stPush"); if (!el) return;
+  let hide = !pushOk() || Notification.permission === "denied" || store(KPUSH_K) === "no"; if (!hide) { const sub = await pushSub(); hide = !!sub && Notification.permission === "granted"; }
+  el.hidden = hide; if (hide) return;
+  el.innerHTML = `<span>🔔 לקבל הודעה בטלפון כשמגיעה משימה חדשה?</span><button type="button" class="btn sm primary" id="kpOn">כן</button><button type="button" class="kp-x" id="kpNo" aria-label="לא עכשיו">✕</button>`;
+  el.querySelector("#kpNo").onclick = () => { store(KPUSH_K, "no"); el.hidden = true; };
+  el.querySelector("#kpOn").onclick = async () => { const b = el.querySelector("#kpOn"); b.disabled = true;
+    try { if (await Notification.requestPermission() !== "granted") { el.hidden = true; return; }
+      const tk = await token(), k = await fetch(PUSH_FN(), { headers: Object.assign(baseHeaders(), tk ? { "Authorization": "Bearer " + tk } : {}) }).then(r => r.json()).catch(() => ({}));
+      if (!k.public) throw new Error("x");
+      const r = await navigator.serviceWorker.ready, ns = await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: fromB64u(k.public) }), j = ns.toJSON();
+      await rpc("portal_push_subscribe_kid", { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_ua: navigator.userAgent });
+      el.innerHTML = `<span>✓ מעולה! נודיע לך כשמגיעה משימה.</span>`; setTimeout(() => { el.hidden = true; }, 2500);
+    } catch(e) { b.disabled = false; toast("לא הצלחנו להפעיל – אפשר לנסות שוב אחר כך."); } }; }
 // פותחים את האפליקציה / "לטיפול" – המספר על האייקון וההתראות שבמגירה נמחקים
 async function pushClear(){ try { if (navigator.clearAppBadge) navigator.clearAppBadge(); const r = await navigator.serviceWorker.getRegistration(); if (r) (await r.getNotifications()).forEach(n => n.close()); } catch(e) {} }
 try { navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", (e) => { if (e.data && e.data.push === "todo" && typeof todoOpen === "function" && AD && AD.students) { pushClear(); todoOpen(); } }); } catch(e) {}

@@ -2,6 +2,7 @@
 // התראות פוש לטלפון של הצוות כשילד/ה נשאר/ה בלי עבודה, או ביקש/ה משימה.
 //   GET  → המפתח הציבורי (VAPID_PUBLIC) – לרישום הטלפון.
 //   POST {event: "idle" | "req", subject?} – נקרא מהאפליקציה של הילד/ה (עם הכניסה שלו/ה).
+//   POST {event: "rel", students: [id…]} – נקרא מהאפליקציה של הצוות אחרי "שחרור" (TS-32): התראה לטלפון של הילד/ה.
 //        הפונקציה בודקת לבד במסד אם באמת אין עבודה / יש בקשה פתוחה, ובלי כפולות (portal_push_log).
 // סודות (Supabase → Edge Functions → Secrets): VAPID_PUBLIC, VAPID_PRIVATE, VAPID_SUBJECT (mailto:…).
 // SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY – קיימים לבד.
@@ -21,10 +22,12 @@ Deno.serve(async (req) => {
   if (!PUB || !PRIV) return J({ skip: "no keys" });
   try {
     const body = await req.json().catch(() => ({}));
-    const ev = body.event === "req" ? "req" : "idle";
+    const ev = body.event === "req" ? "req" : body.event === "rel" ? "rel" : "idle";
     const user = await createClient(URL_, ANON, { global: { headers: { Authorization: req.headers.get("Authorization") || "" } } }).auth.getUser();
     const uid = user.data.user?.id; if (!uid) return J({ error: "auth" }, 401);
     const svc = createClient(URL_, SRK);
+    webpush.setVapidDetails(SUBJ, PUB, PRIV);
+    if (ev === "rel") return J(await relPush(svc, uid, body.students));
     const acc = await svc.from("portal_accounts").select("student_id").eq("user_id", uid).maybeSingle();
     const sid = acc.data?.student_id; if (!sid) return J({ skip: "not a kid" });
 
@@ -47,8 +50,7 @@ Deno.serve(async (req) => {
     const text = ev === "req" ? `${nm} ביקש/ה משימה ב${SUBJ_SHORT[subj] || subj}` : `${nm} – אין משימה בעבודה`;
     await svc.from("portal_push_log").insert({ student_id: sid, kind: ev, subject: subj || null });
 
-    webpush.setVapidDetails(SUBJ, PUB, PRIV);
-    const subs = (await svc.from("portal_push_subs").select("id,endpoint,p256dh,auth,fails")).data || [];
+    const subs = (await svc.from("portal_push_subs").select("id,endpoint,p256dh,auth,fails").is("student_id", null)).data || [];   // רק הצוות
     const payload = JSON.stringify({ title: "תלם שלי", body: text, tag: "telem-" + sid, url: "./?todo=1" });
     let ok = 0;
     await Promise.all(subs.map(async (s) => {
@@ -61,3 +63,31 @@ Deno.serve(async (req) => {
     return J({ sent: ok, of: subs.length });
   } catch (e) { return J({ error: String((e as Error).message || e) }, 500); }
 });
+
+// TS-32: נשלחה משימה חדשה → התראה לטלפון של הילד/ה. רק מנהל/ת (staff, role admin); רק דפים שנשלחו ב-10 הדקות האחרונות; פעם ב-3 דקות לכל ילד/ה
+async function relPush(svc: ReturnType<typeof createClient>, uid: string, students: unknown) {
+  const me = (await svc.from("staff").select("role").eq("id", uid).maybeSingle()).data;
+  if (!me || (me.role || "admin") !== "admin") return { error: "not staff" };
+  const ids = [...new Set((Array.isArray(students) ? students : []).map((x) => String(x)).filter((x) => /^\d+$/.test(x)))].slice(0, 60);
+  let sent = 0;
+  for (const sid of ids) {
+    const subs = (await svc.from("portal_push_subs").select("id,endpoint,p256dh,auth,fails").eq("student_id", sid)).data || [];
+    if (!subs.length) continue;
+    const since = new Date(Date.now() - 10 * 60e3).toISOString();
+    const fresh = (await svc.from("portal_plan_items").select("subject").eq("student_id", sid).eq("status", "נשלח").gte("released_at", since)).data || [];
+    if (!fresh.length) continue;
+    const last = (await svc.from("portal_push_log").select("sent_at").eq("student_id", sid).eq("kind", "rel").order("sent_at", { ascending: false }).limit(1)).data?.[0];
+    if (last && Date.now() - Date.parse(last.sent_at) < 3 * 60e3) continue;
+    const subjs = [...new Set(fresh.map((p) => SUBJ_SHORT[p.subject] || p.subject))];
+    await svc.from("portal_push_log").insert({ student_id: sid, kind: "rel", subject: fresh[0].subject });
+    const payload = JSON.stringify({ title: "תלם שלי", body: `📄 יש לך משימה חדשה${subjs.length === 1 ? " ב" + subjs[0] : ""}!`, tag: "telem-new", url: "./" });
+    await Promise.all(subs.map(async (s) => {
+      try { await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 86400, urgency: "high" }); sent++;
+        await svc.from("portal_push_subs").update({ last_ok_at: new Date().toISOString(), fails: 0 }).eq("id", s.id); }
+      catch (e) { const code = (e as { statusCode?: number }).statusCode;
+        if (code === 404 || code === 410 || (s.fails || 0) >= 9) await svc.from("portal_push_subs").delete().eq("id", s.id);
+        else await svc.from("portal_push_subs").update({ fails: (s.fails || 0) + 1 }).eq("id", s.id); }
+    }));
+  }
+  return { sent };
+}
