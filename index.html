@@ -486,7 +486,15 @@
   .dr.sm .dd2{ display:block; font-size:12px; color:var(--ok); font-weight:700; margin-top:2px; }
   .g-bar .g-done2{ display:flex; gap:8px; flex:1; min-width:0; }
   .g-nofit{ flex:none; font-size:13px; padding:5px 9px; }   /* 1.35.60 */
-  .g-pin{ flex:none; font-size:13px; padding:5px 9px; display:inline-flex; align-items:center; gap:3px; }   /* 1.35.65 */
+  /* 1.35.67 (נועה, אפשרות ב): "לאחר כך" · "✓ סיימתי" (רחב) · "לא מתאים" – שורה אחת, מקומות קבועים */
+  .viewer.gal .g3{ flex-wrap:nowrap; align-items:stretch; gap:8px; }
+  .g3 .g3b{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; background:none; border:none; color:#ddd; font:inherit; font-size:13px; font-weight:700; padding:6px 2px; cursor:pointer; }
+  .g3 .g3b[hidden]{ display:flex; visibility:hidden; } .g3 .g3i{ font-size:22px; line-height:1; height:24px; display:flex; align-items:center; } .g3 .g3i .pin-ic{ width:24px; height:24px; }
+  .g3 .g-pin{ color:#F2D27A; }
+  .viewer.gal .g3 > .g-act, .viewer.gal .g3 > .btn, .viewer.gal .g3 > .g-done2{ flex:3 1 0; min-width:0; } .g3 .g-act .btn, .g3 > .btn{ flex:1; min-height:58px; font-size:17px; border-radius:16px; }
+  .g-ovl{ position:absolute; top:46%; z-index:5; width:40px; height:40px; border-radius:50%; border:none; background:rgba(0,0,0,.5); color:#fff; font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .g-ovl.g-r{ right:8px; } .g-ovl.g-l{ left:8px; } .g-ovl:disabled{ display:none; }
+  .g-old:has(.g-oldchip){ background:none; padding:0 12px 6px; } .g-old .g-oldchip{ flex:none !important; background:#FFF3D1; color:#6B4E0E; border-radius:20px; padding:4px 10px; font-size:13px; font-weight:700; }
   .pin-row{ display:flex; align-items:center; gap:10px; width:100%; text-align:start; background:#FFFBEF; border:1.5px solid #E3C26F; border-radius:12px; padding:8px 10px; margin:0 0 8px; font:inherit; color:inherit; cursor:pointer; }
   .pin-row .mi{ width:44px; height:56px; flex:none; border-radius:6px; border:1px solid var(--border); background:#fff center top / cover no-repeat; }
   .pin-row .nm{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; } .pin-row .nm small{ color:#6B4E0E; display:inline-flex; align-items:center; gap:3px; }
@@ -2385,7 +2393,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.66",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.67",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -3201,8 +3209,6 @@ function openGallery(list, startId, keep, task, deck){
       <button class="icon-btn" id="vClose" aria-label="חזרה">${IC.back}</button>
       <div class="ttl" id="gTtl"></div>${task ? `<span class="g-task">📎 משימה</span>` : deck ? `<span class="g-task" id="gTaskChip" hidden>📎 משימה</span>` : ""}
       ${n > 1 ? `<span class="g-cnt" id="gCnt"></span>` : ""}
-      <button class="btn sm ghost g-nofit" id="gNoFit" title="המשימה לא מתאימה לי – להחזיר" hidden>😕 לא מתאים</button>
-      <button class="btn sm ghost g-pin" id="gPin" title="לשמור לאחר כך – אמשיך אותה בפעם אחרת" hidden>${PIN_SVG} לאחר כך</button>
       <button class="icon-btn g-type" id="gType" aria-label="לכתוב על הדף" title="לכתוב על הדף" hidden>⌨️</button>
       <button class="icon-btn" id="vSave" aria-label="שמירה בטלפון">${IC.save}</button>
     </div>
@@ -3210,11 +3216,12 @@ function openGallery(list, startId, keep, task, deck){
     <div class="g-hint" id="gHint" hidden>לגעת במקום בדף ולהקליד · נשמר רק בטלפון הזה · <button type="button" class="lnk" id="gTypeOff">סיום</button></div>
     <div class="g-track" id="gTrack" dir="${ltr ? "ltr" : "rtl"}">${list.map((p, i) => `<div class="g-slide" data-k="${esc(i)}"><img alt="${esc(p.title)}" src="${esc(ST.url(p.storage_path))}" ${Math.abs(i - cur) > 1 ? 'loading="lazy"' : ""} draggable="false"></div>`).join("")}</div>
     ${n > 1 ? `<div class="g-dots" aria-hidden="true" dir="${ltr ? "ltr" : "rtl"}">${list.map((_, i) => `<i data-d="${esc(i)}"></i>`).join("")}</div>` : ""}
-    <div class="vbar g-bar" dir="${ltr ? "ltr" : "rtl"}">
-      ${n > 1 ? `<button class="btn ghost g-nav" id="gPrev" aria-label="הדף הקודם">${ltr ? "←" : "→"}</button>` : ""}
+    ${n > 1 ? `<button class="g-nav g-ovl ${ltr ? "g-l" : "g-r"}" id="gPrev" aria-label="הדף הקודם">${ltr ? "←" : "→"}</button><button class="g-nav g-ovl ${ltr ? "g-r" : "g-l"}" id="gNext" aria-label="הדף הבא">${ltr ? "→" : "←"}</button>` : ""}
+    <!-- 1.35.67 (נועה, אפשרות ב): שורה אחת – "לאחר כך" · "סיימתי" (רחב, באמצע) · "לא מתאים". כל כפתור תמיד באותו מקום; החיצים – על הדף -->
+    <div class="vbar g-bar g3" dir="rtl">
+      <button class="g3b g-pin" id="gPin" title="לשמור לאחר כך – אמשיך אותה בפעם אחרת" hidden><span class="g3i">${PIN_SVG}</span>לאחר כך</button>
       ${deck ? `<div class="g-act" id="gAct" dir="rtl"></div>` : isOpen ? (canAsk ? `<div class="g-done2" dir="rtl"><button class="btn ok" id="gNextReq">📨 סיימתי – שלחו לי את הבאה</button><button class="btn ok-soft" id="gDoneOnly">${IC.check} סיימתי</button></div>` : task ? `<button class="btn ok" id="gTask">${IC.check} סיימתי את המשימה</button>` : `<button class="btn ok" id="gDone">${IC.check} סיימתי את המשימה</button>`) : `<button class="btn ghost" id="gUndo">${IC.undo} עוד לא סיימתי</button>`}
-      ${n > 1 ? `<button class="btn ghost g-nav" id="gNext" aria-label="הדף הבא">${ltr ? "→" : "←"}</button>` : ""}
-      <!-- 1.28 (נועה): בלי "סיימתי את כל הדפים" – יבוא "סיימתי את המשימה" כשהמשימות יוגדרו במאגר (של-43) -->
+      <button class="g3b g-nofit" id="gNoFit" title="המשימה לא מתאימה לי – להחזיר" hidden><span class="g3i">😕</span>לא מתאים</button>
     </div></div>`;
   VIEWER = host.firstElementChild; vwLock(true);
   const V = VIEWER, tr = V.querySelector("#gTrack"), slides = [...V.querySelectorAll(".g-slide")];
@@ -3320,6 +3327,7 @@ function oldNote(V, list, cur){ const el = V.querySelector("#gOld"), p = list[cu
   let keep = {}; try { keep = JSON.parse(store(OLD_K) || "{}") || {}; } catch(e) {}
   const old = p && isWork(p) && p.released_at && Date.now() - Date.parse(p.released_at) > 7 * 864e5 && !(keep[p.item_id] && Date.now() - keep[p.item_id] < 7 * 864e5);
   el.hidden = !old; if (!old) return; const grp = deckGrp(p), multi = grp.length > 1;
+  el.innerHTML = `<span class="g-oldchip">⏳ פתוח מעל שבוע</span>`; return;   // 1.35.67 (נועה): רק תווית – הפעולות למטה
   el.innerHTML = `<span>⏳ ${multi ? "המשימה הזו פתוחה" : "הדף הזה פתוח"} כבר יותר משבוע. סיימת?</span><button type="button" class="btn sm ok" id="goDone">${IC.check} סיימתי</button><button type="button" class="btn sm ghost" id="goKeep">להשאיר</button>`;
   el.querySelector("#goKeep").onclick = () => { grp.forEach(x => keep[x.item_id] = Date.now()); store(OLD_K, JSON.stringify(keep)); el.hidden = true; };
   el.querySelector("#goDone").onclick = () => { const b = V.querySelector("#gDone, #gDoneOnly, #gTask"); if (b) b.click(); else el.hidden = true; }; }
@@ -3898,7 +3906,7 @@ function stMine(sid){
   for (const g of AD.groups) if (g.kids.has(k)) { inAny = true; if (g.ins.includes(w)) return true; }
   return !inAny;
 }
-const myReqs = () => [];   // 1.26 (מנ-50): בקשות "שכחתי קוד" – בתיבת 📥 במערכת הניהול, לא כאן
+const myReqs = () => (AD.codeReqs || []).filter(r => stById(r.student_id) && stMine(r.student_id));   // 1.35.67 (נועה: "בקשת קוד חדש לא מגיעה אלי לתלם שלי") – גם כאן, וגם בתיבה 📥 במערכת הניהול (טיפול באחד – "טופל" בשני)   // 1.26 (מנ-50): בקשות "שכחתי קוד" – בתיבת 📥 במערכת הניהול, לא כאן
 function insLabel(){ return !AD.waitIns ? "כל המתרגלים" : AD.waitIns === "__me" ? "הקבוצות שלי" : AD.waitIns; }
 // 1.35.56 (נועה: "את הסינון של המתרגלים אולי נקצר?"): על הכפתור – "הכול" / "שלי" / השם הפרטי; בתפריט – השמות המלאים
 function insShort(){ return !AD.waitIns ? "הכול" : AD.waitIns === "__me" ? "שלי" : String(AD.waitIns).trim().split(/\s+/)[0]; }
@@ -7212,7 +7220,7 @@ function renderSheetRows(){
       </div>
     <div class="att-ctl">
       ${subjGrp(rowSubj(r)) === 2 && r.present !== false ? `<span class="att-sj2${r.present && !r.did_math && !r.did_english ? " need" : ""}" title="משולב - לסמן מה עשה/תה היום"><label><input type="checkbox" data-m ${r.did_math ? "checked" : ""} ${can ? "" : "disabled"}>מת'</label><label><input type="checkbox" data-e ${r.did_english ? "checked" : ""} ${can ? "" : "disabled"}>אנג'</label></span>` : subjMini(rowSubj(r))}
-      ${can && r.in_group && A.hasPlan && A.skipMode ? `<button type="button" class="skip-b skip-ctl" data-skip title="לא מגיע/ה היום - הסרה מהשיעור הזה בלבד (השיבוץ הקבוע לא משתנה)" aria-label="לא מגיע/ה היום – הסרה מהשיעור">⊘</button>` : ""}${can && !r.in_group && r.added ? `<button type="button" class="skip-b skip-ctl" data-rm="1" title="הסרה מהשיעור" aria-label="הסרה מהשיעור">⊘</button>` : ""}
+      ${can && r.in_group && A.hasPlan && A.skipMode ? `<button type="button" class="skip-b skip-ctl" data-skip title="לא מגיע/ה היום - הסרה מהשיעור הזה בלבד (השיבוץ הקבוע לא משתנה)" aria-label="לא מגיע/ה היום – הסרה מהשיעור">⊘</button>` : ""}${can && !r.in_group && r.added && A.skipMode ? `<button type="button" class="skip-b skip-ctl" data-rm="1" title="הסרה מהשיעור" aria-label="הסרה מהשיעור">⊘</button>` : ""}
       <div class="seg" role="group" aria-label="נוכחות">
         <button type="button" class="no ${r.present === false ? "on" : ""}" data-p="0" ${can ? "" : "disabled"} aria-label="חסר/ה"><span class="lg">חסר/ה</span><span class="sm">✗</span></button>
         <button type="button" class="yes ${r.present === true ? "on" : ""}" data-p="1" ${can ? "" : "disabled"} aria-label="נוכח/ת"><span class="lg">נוכח/ת</span><span class="sm">✓</span></button>
@@ -7355,7 +7363,7 @@ function renderSheetCx(){
     catch(e) { toast(/set_lesson_cancelled|404/.test(e.message + e.status) ? "צריך להריץ את קובץ 46" : "לא נשמר: " + e.message); } };
   // 1.35.49 (נועה: "יש לי גם מי לא מגיע היום וגם לא התקיים למעלה"): כפתור אחד – ובו שתי האפשרויות
   { const mb = box.querySelector("[data-cxmenu]"); if (mb) mb.onclick = () => window.openSheet(`<h2>⊘ ביטולים</h2>
-      <button type="button" class="btn block" id="cxmKids" style="margin-bottom:10px; flex-direction:column; gap:2px">ילדים שלא מגיעים היום<br><small class="muted">מסמנים ⊘ ליד כל ילד/ה – רק לשיעור הזה</small></button>
+      <button type="button" class="btn block" id="cxmKids" style="margin-bottom:10px; flex-direction:column; gap:2px">ילדים שלא מגיעים היום<br><small class="muted">מסמנים ⊘ ליד כל ילד/ה – רק לשיעור הזה (ילד/ה שהוספת – יוסר/תוסר מהשיעור)</small></button>
       <button type="button" class="btn block" id="cxmLesson" style="flex-direction:column; gap:2px">התרגול לא התקיים<br><small class="muted">חג, אירוע…</small></button>`, (sh2) => {
       sh2.querySelector("#cxmKids").onclick = () => { closeSheet(); A.skipMode = true; renderSheetRows(); };
       sh2.querySelector("#cxmLesson").onclick = () => { closeSheet(); const o = box.querySelector('[data-cx="open"]'); if (o) o.click(); }; }); }
