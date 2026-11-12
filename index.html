@@ -2403,7 +2403,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.69",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.70",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -3732,7 +3732,7 @@ function renderNav(){
   // 1.35.43 (נועה): המספר על "נוכחות" – מי שביקש/ה דף בשיעור; על "לטיפול" – ביקשו מהבית + קוד שפג
   // 1.35.55 (נועה: "כשנכנסים יש התראות בלטיפול שנעלמות אחרי שניה. הן לא נכונות"): עד שהנתונים מהשרת מגיעים (מוצג מהזיכרון) – בלי מספרים
   // 1.35.57 (נועה: "למה יש לי תזכורת על הלשונית של הנוכחות? זה מיותר ממש"): בלי מספר על "נוכחות" – רואים בשורה (צהוב + 🙋)
-  const fresh = !AD.fromCache, nt = fresh ? todoN() : 0, n = nt, B = { wait: nt };
+  const fresh = !AD.fromCache && (!insWant() || !!AD.groups), nt = fresh ? todoN() : 0, n = nt, B = { wait: nt };   // 1.35.70 (נועה: "נפתחה עם 123… אחרי ריפרש 47"): עם "שלי" – רק אחרי שהקבוצות נטענו (לפני כן נספרו כל הילדים)
   try { if (AD.loaded) document.title = (n ? `(${n}) ` : "") + "תלם שלי"; } catch(e) {}
   $("adNav").innerHTML = NAV.map(([v, l, ic, sl]) => `<button data-v="${esc(v)}" data-sl="${esc(sl)}" ${AD.view === v ? 'aria-current="page"' : ""}>${ic}<span>${l}</span>${B[v] ? `<span class="badge">${B[v]}</span>` : ""}</button>`).join("");
   // 1.35.60 (נועה: "אני בנוכחות אצל ילד ואז עוברת למאגר בתפריט – היא מנסה לשלוח לילד שפתוח בנוכחות. אם עברתי למאגר זה כדי לשלוח לילד אחר"):
@@ -4072,7 +4072,8 @@ function todoOpen(){ if (TODO_OPEN) { todoClose(); return; } TODO_OPEN = true; p
 function todoLeave(){ todoClose(); try { if (typeof ATTM !== "undefined" && ATTM.isOpen) ATTM.detach(); } catch(e) {} }
 function todoClose(){ TODO_OPEN = false; const d = $("todoDrop"); if (d) d.hidden = true; renderNav(); }
 async function renderWait(){
-  await loadGroups();
+  // 1.35.70 (נועה: "לוקח לו אינסוף זמן לטעון את לטיפול"): לא מחכים לכל הקבוצות של השנה – עד שנייה וחצי, וכשהן מגיעות grRefresh מצייר שוב (רק אם השתנה)
+  await Promise.race([loadGroups(), new Promise(r => setTimeout(r, 1500))]);
   if (AD.nreq) await Promise.race([presentAllToday(), new Promise(r => setTimeout(r, 400))]);
   let list = waitingList();
   let fresh = AD.students.filter(s => s.has_account && stMine(s.student_id) && !planOf(s.student_id).some(p => p.status !== "מתוכנן"));
@@ -6345,7 +6346,7 @@ function grRefresh(){
 async function loadGroups(){
   if (!AD.groups) grLoadCache();
   // 1.35: בלי שמירה בטלפון – קודם הקבוצות של היום (מהר), וכל השנה ברקע
-  if (!AD.groups && !GR_P) { try { const t = await grFetch(true); if (!AD.groups) { AD.groups = t; AD.groupsAt = 0; } grRefresh(); return AD.groups; } catch(e) {} }
+  if (!AD.groups) { try { const t = await grFetch(true);   /* 1.35.70: גם כשטעינת כל השנה כבר רצה – קודם של היום (מהר) */ if (!AD.groups) { AD.groups = t; AD.groupsAt = 0; } grRefresh(); return AD.groups; } catch(e) {} }
   if (AD.groups) { if (Date.now() - (AD.groupsAt || 0) > 10 * 60e3) grRefresh(); return AD.groups; }   // יש – מיד; ישן – מתעדכן ברקע
   return grRefresh();
 }
