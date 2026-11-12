@@ -2404,7 +2404,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.72",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.73",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2872,7 +2872,7 @@ async function boot(){
   ST.me = me;
   { const f = await flagsP; HIDE_ANS = !!(f && f.hide_answers); ANS_BOXES = (f && f.boxes) || {}; ST.canReturn = !!(f && f.can_return); ST.canPin = !!(f && f.can_pin); }   // 1.35.60: "לא מתאים לי" (TS-28)   // 1.35.57 (TS-26; אם לא הורץ – כמו קודם)
   if (me.must_change_code) { showCodeChange(); return; }
-  studentStart(); pushClear(); setTimeout(kidPushBar, 1500);   // 1.35.71 (TS-32)
+  studentStart(); pushClear(); if (KID_PUSH) setTimeout(kidPushBar, 1500);   // 1.35.71 (TS-32)
 }
 
 // ---------- החלפת קוד ----------
@@ -3642,6 +3642,7 @@ function adminStart(fast){
   if (fast && AD.loaded) { adRender(); adBusy(true); }
   adLoad();
   pushClear();   // 1.35.69: פתחתי את האפליקציה – המספר על האייקון מתאפס
+  { const km = /[?&]kid=(\d+)/.exec(location.search); if (km) { try { history.replaceState(null, "", location.pathname); } catch(e) {} const wk = () => { if (AD.students && stById(km[1])) alertOpenKid(km[1]); else setTimeout(wk, 400); }; setTimeout(wk, 600); } }   // 1.35.73
   if (/[?&]todo=1/.test(location.search)) { try { history.replaceState(null, "", location.pathname); } catch(e) {} setTimeout(() => { if (!TODO_OPEN) todoOpen(); }, 1200); }   // לחיצה על התראת פוש
   // 1.34.7 (נועה): אם יצאתי באמצע דף נוכחות (של היום) – חוזרים אליו
   if (!EMBED && AD.view === "att" && typeof ATTM !== "undefined") { const m = ATTM.last(); if (m) loadGroups().then(gs => { if (AD.view === "att" && !ATTM.isOpen && !SHEET) ATTM.open(m.sid, m.date, (gs || []).find(g => g.id === String(m.sid))); }).catch(() => {}); }
@@ -5290,7 +5291,7 @@ let pushIdleT = null;
 function pushHook(fn, b, r){
   // TS-32 (נועה: "2 רעיון טוב"): הצוות שחרר משימה → התראה לטלפון של הילד/ה (אם הפעיל/ה)
   if (fn === "portal_release" && r && typeof AD !== "undefined" && AD.plan) { const set = new Set((b.p_items || []).map(String));
-    const kids = [...new Set(AD.plan.filter(p => set.has(String(p.id))).map(p => String(p.student_id)))]; if (kids.length) { setTimeout(() => pushPing("rel", null, kids), 300); pushClearKids(kids); } return; }
+    const kids = [...new Set(AD.plan.filter(p => set.has(String(p.id))).map(p => String(p.student_id)))]; if (kids.length) { if (KID_PUSH) setTimeout(() => pushPing("rel", null, kids), 300); pushClearKids(kids); } return; }
   if (typeof ST === "undefined" || !ST.me) return;
   if (fn === "portal_request_next" && b.p_on && !(r && r.ok === false)) { pushPing("req", b.p_subject); return; }
   if ((fn === "portal_mark_done" && b.p_done) || fn === "portal_return_items" || (fn === "portal_pin_items" && b.p_pin)) { clearTimeout(pushIdleT); pushIdleT = setTimeout(() => pushPing("idle"), 1500); } }
@@ -5298,6 +5299,8 @@ function pushHook(fn, b, r){
 function pushPing(event, subject, students){ try { token().then(t => { if (!t) return; fetch(PUSH_FN(), { method: "POST", keepalive: true, headers: Object.assign(baseHeaders(), { "Authorization": "Bearer " + t, "Content-Type": "application/json" }), body: JSON.stringify({ event, subject: subject || null, students: students || null }) }).catch(() => {}); }); } catch(e) {} }
 // אצל הילד/ה: "🔔 לקבל הודעה כשמגיעה משימה חדשה?" – פעם אחת, בראש המסך (עד הפעלה או ✕). באייפון – רק מהאייקון במסך הבית
 const KPUSH_K = "telem_portal_kpush";
+// 1.35.73 (נועה: "אולי נוותר על ההתראות אצל הילדים שלא יציף להם את הנייד? נשאיר רק אצלנו המנהלים") – כבוי. הקוד נשאר (TS-32, portal-push "rel") – להדליק = true
+const KID_PUSH = false;
 async function kidPushBar(){ const el = $("stPush"); if (!el) return;
   let hide = !pushOk() || Notification.permission === "denied" || store(KPUSH_K) === "no"; if (!hide) { const sub = await pushSub(); hide = !!sub && Notification.permission === "granted"; }
   el.hidden = hide; if (hide) return;
@@ -5327,7 +5330,9 @@ async function pushClearKids(kids){ try { const r = await navigator.serviceWorke
   const n = (await r.getNotifications()).length; if (navigator.setAppBadge) n ? navigator.setAppBadge(n) : navigator.clearAppBadge(); } catch(e) {} }
 // פותחים את האפליקציה / "לטיפול" – המספר על האייקון וההתראות שבמגירה נמחקים
 async function pushClear(){ try { if (navigator.clearAppBadge) navigator.clearAppBadge(); const r = await navigator.serviceWorker.getRegistration(); if (r) (await r.getNotifications()).forEach(n => n.close()); } catch(e) {} }
-try { navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", (e) => { if (e.data && e.data.push === "todo" && typeof todoOpen === "function" && AD && AD.students) { pushClear(); todoOpen(); } }); } catch(e) {}
+try { navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", (e) => { if (!e.data || !AD || !AD.students) return;
+  if (e.data.push === "kid" && e.data.sid) { pushClear(); if (TODO_OPEN) todoClose(); alertOpenKid(String(e.data.sid)); }   // 1.35.73: לחיצה על התראה – הדף של הילד/ה
+  else if (e.data.push === "todo" && typeof todoOpen === "function") { pushClear(); if (!TODO_OPEN) todoOpen(); } }); } catch(e) {}
 // 1.24 (נועה): ייבוא דפים מהמחשב – הועבר מהמאגר להגדרות (⚙). אותו קוד כמו במערכת הניהול (5.19.90).
 async function wsImportFolder(input, msg){
   const files = [...input.files].filter(f => /\.(png|jpe?g)$/i.test(f.name));

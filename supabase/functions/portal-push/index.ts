@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     const text = ev === "req" ? `${nm} ביקש/ה משימה ב${SUBJ_SHORT[subj] || subj}` : `${nm} – אין משימה בעבודה`;
     await svc.from("portal_push_log").insert({ student_id: sid, kind: ev, subject: subj || null });
 
-    const subs = (await svc.from("portal_push_subs").select("id,endpoint,p256dh,auth,fails").is("student_id", null)).data || [];   // רק הצוות
+    const subs = await staffSubs(svc, sid);   // רק הצוות – פר מנהל/ת (1.35.73)
     const payload = JSON.stringify({ title: "תלם שלי", body: text, tag: "telem-" + sid, url: "./?todo=1" });
     let ok = 0;
     await Promise.all(subs.map(async (s) => {
@@ -90,4 +90,24 @@ async function relPush(svc: ReturnType<typeof createClient>, uid: string, studen
     }));
   }
   return { sent };
+}
+
+// 1.35.73 (נועה: "כן תבנה פר מנהל"): כל מנהל/ת מקבל/ת רק על הילדים בקבוצות שלו/ה (מתרגל/ת הקבוצה, או חלוקה שעוד בתוקף) – כמו "שלי ▾".
+// ילד/ה שאף מנהל/ת שהפעיל/ה התראות לא בקבוצה שלו/ה – לכל המנהלים.
+const YEAR = 'תשפ"ז';
+async function staffSubs(svc: ReturnType<typeof createClient>, sid: string | number) {
+  const all = (await svc.from("portal_push_subs").select("id,user_id,endpoint,p256dh,auth,fails").is("student_id", null)).data || [];
+  if (!all.length) return all;
+  try {
+    const asg = (await svc.from("assignments").select("session_id,session:sessions!inner(school_year)").eq("student_id", sid).in("status", ["משובץ", "ממתין"]).eq("session.school_year", YEAR)).data || [];
+    const ses = [...new Set(asg.map((a) => a.session_id))];
+    if (!ses.length) return all;
+    const today = new Date().toISOString().slice(0, 10);
+    const [ins, spl] = await Promise.all([
+      svc.from("session_instructors").select("staff_id").in("session_id", ses),
+      svc.from("session_splits").select("staff_id,date_to").in("session_id", ses)]);
+    const mine = new Set([...(ins.data || []).map((x) => x.staff_id), ...(spl.data || []).filter((x) => !x.date_to || x.date_to >= today).map((x) => x.staff_id)].filter(Boolean).map(String));
+    const pick = all.filter((s) => mine.has(String(s.user_id)));
+    return pick.length ? pick : all;
+  } catch (_e) { return all; }
 }

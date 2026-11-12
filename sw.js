@@ -3,7 +3,7 @@
 //  - קבצי האפליקציה – קודם מהשמור (נפתח מיד), ובמקביל בודקים ברשת. גרסה חדשה מגיעה עם sw חדש (CACHE חדש) → רענון אוטומטי.
 //  - תמונות הדפים (Supabase Storage, קישור חתום) – קודם מהשמור; בלי אינטרנט / בפעם השנייה – מיד. עד ~600 תמונות.
 //  - הנתונים עצמם (רשימות, תוכנית, נוכחות) – תמיד מהשרת, לא נשמרים כאן.
-const CACHE = "telem-portal-1.35.72";   // לשנות יחד עם הגרסה ב-index.html
+const CACHE = "telem-portal-1.35.73";   // לשנות יחד עם הגרסה ב-index.html
 const IMG = "telem-img-v1";          // תמונות הדפים – לא נמחק בכל גרסה
 const IMG_MAX = 600;
 const SHELL = ["./", "index.html", "manifest.webmanifest", "logo.png", "favicon.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png"];
@@ -40,10 +40,12 @@ self.addEventListener("push", (e) => {
   })());
 });
 self.addEventListener("notificationclick", (e) => {
-  e.notification.close(); const url = new URL((e.notification.data && e.notification.data.url) || "./?todo=1", self.registration.scope).href;
+  // 1.35.73 (נועה: "כשאני לוחצת על התראה… זה לא פותח לי את המסך של הילד"): התראה על ילד/ה (tag "telem-<id>") – ישר לדף שלו/ה
+  e.notification.close(); const m = /^telem-(\d+)$/.exec(e.notification.tag || ""), kid = m ? m[1] : "";
+  const url = new URL(kid ? "./?kid=" + kid : ((e.notification.data && e.notification.data.url) || "./?todo=1"), self.registration.scope).href;
   e.waitUntil((async () => {
     const all = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    for (const c of all) { if (c.url.startsWith(self.registration.scope)) { await c.focus(); c.postMessage({ push: "todo" }); return; } }
+    for (const c of all) { if (c.url.startsWith(self.registration.scope)) { await c.focus(); c.postMessage(kid ? { push: "kid", sid: kid } : { push: "todo" }); return; } }
     await self.clients.openWindow(url);
   })());
 });
