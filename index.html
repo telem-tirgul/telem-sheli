@@ -1418,6 +1418,9 @@ body.ws-vopen .crmws .ws-quick .gseg button[aria-pressed="true"]{background:#fff
 body.ws-vopen .crmws .ws-viewer{top:calc(var(--side-h, 0px) + var(--wsqv, 48px));}
 /* 1.24 (נועה): בכרטיס תלמיד/ה – הדף הפתוח מכסה גם את הכותרת של הילד/ה, כדי שהדף ייראה במלואו כמו במערכת הניהול */
 body.ws-vopen.v-stm .crmws .ws-stick{top:0;} body.ws-vopen.v-stm .crmws .ws-viewer{top:var(--wsqv, 48px);}
+/* 1.35.66 (נועה): "להשאיר את החלק העליון… לראות את החלק של התלמיד" – הכותרת של הילד/ה נשארת, הדף הפתוח מתחתיה */
+body.ws-vopen.v-stm.ws-keephead .crmws .ws-stick{top:var(--stmh, 0px);} body.ws-vopen.v-stm.ws-keephead .crmws .ws-viewer{top:calc(var(--stmh, 0px) + var(--wsqv, 48px));}
+body.ws-vopen.v-stm.ws-keephead .stm-head{position:fixed; top:0; left:0; right:0; margin:0; z-index:210;}
 }
 .crmws .ws-pop{position:fixed; inset:0; z-index:220; background:rgba(0,0,0,.35); display:flex; align-items:flex-end; justify-content:center;}
 .crmws .ws-pop[hidden]{display:none;}
@@ -2182,7 +2185,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .ac-sheet .ac-next{border:1.5px dashed #cfc6b8; border-radius:10px; padding:6px 8px; display:flex; flex-direction:column; gap:4px; background:rgba(255,255,255,.5);}
 .st-unrel{font-size:12.5px !important; padding:3px 8px !important; white-space:nowrap;}
 .pk-to{position:sticky; top:0; z-index:25; background:#fff3c4; color:#5c4500; border:1.5px solid #e9cf62; border-radius:12px; padding:6px 12px; margin:0 0 8px; font-size:14px;} .pk-to b{font-weight:900;}
-.pk-who{color:var(--accent); font-weight:900; margin-inline-end:4px;} .ac-sheet .ac-unrel{font-size:11.5px; font-weight:800;}
+.pk-who{color:var(--accent); font-weight:900; margin-inline-end:4px;} .td-bulk{display:flex; justify-content:flex-end; margin:0 0 8px;} .ca-list{display:flex; flex-direction:column; gap:6px; max-height:46vh; overflow:auto; margin:6px 0 10px;} .ca-row{display:flex; align-items:center; gap:8px; padding:6px 8px; border:1px solid var(--border); border-radius:10px; background:#fff;} .ca-row span{flex:1; font-weight:700;} .ca-row .btn{flex:none;} .ca-row a.btn{color:var(--accent); text-decoration:none;} .ac-sheet .ac-unrel{font-size:11.5px; font-weight:800;}
 /* 1.35.61: כרטיס משימה אחיד */
 .tcard{display:block !important; background:#fff; border:1.5px solid var(--border); border-radius:14px; padding:9px 12px 8px !important; margin:6px 0 !important; text-align:start;}
 .tcard .tc-h{display:flex; align-items:center; gap:8px; min-height:24px;} .tcard .tc-top{flex:1; min-width:0; font-size:15px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
@@ -2382,7 +2385,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.65",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.66",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -4110,6 +4113,7 @@ async function renderWait(){
   if (LR) { const u = B.querySelector("[data-undorel]"); if (u) u.onclick = () => { u.disabled = true; LR.undo(); };
     clearTimeout(renderWait._u); renderWait._u = setTimeout(() => { const el = document.querySelector(".wl-undo"); if (el) el.remove(); }, LR.at + 120e3 - Date.now()); }
   B.querySelectorAll("[data-newcode]").forEach(b => b.onclick = () => accountSheet(stById(b.dataset.newcode), true));
+  { const ca = B.querySelector("#tdCodeAll"); if (ca) ca.onclick = () => codeAllSheet((AD.codeAllL || []).filter(Boolean)); }
   B.querySelectorAll("[data-mkacc]").forEach(b => b.onclick = () => accountSheet(stById(b.dataset.mkacc), false));   // 1.35.43
   B.querySelectorAll("[data-nalist]").forEach(b => b.onclick = () => { const st = stById(b.dataset.nalist); if (st) noAccSet(st, renderWait); });   // 1.35.45
   B.querySelectorAll("[data-goatt]").forEach(b => b.onclick = () => adGo("att"));
@@ -4171,8 +4175,10 @@ function todoHtml(g, mine){
   // 2. צריכים קוד חדש
   const reqs = myReqs(), rq = new Set(reqs.map(r => String(r.student_id)));
   const exp = (AD.students || []).filter(s => s.has_account && codeExpired(s) && stMine(s.student_id) && !rq.has(String(s.student_id)) && !noAcc(s.student_id));
+  AD.codeAllL = [...reqs.map(r => stById(r.student_id)), ...exp];   // 1.35.66: "קוד חדש לכולם"
   const codeRow = (s, why, r) => `<div class="wl-row">${who(s, why)}<div class="wl-q td-acts"><button class="btn primary sm" data-newcode="${esc(s.student_id)}">${IC.wa} קוד חדש</button>${r ? `<button class="btn sm ghost" data-dismiss="${esc(s.student_id)}">התעלמות</button>` : ""}</div></div>`;
   h += sec("🔑", "צריכים קוד חדש", reqs.length + exp.length, "בלי קוד חדש לא יוכלו להיכנס.", !(reqs.length || exp.length) ? none :
+    (reqs.length + exp.length > 1 ? `<div class="td-bulk"><button type="button" class="btn primary sm" id="tdCodeAll">${IC.key} קוד חדש לכולם (${reqs.length + exp.length})</button></div>` : "") +   /* 1.35.66 (נועה) */
     `<div class="wrows wl">` + [...reqs.map(r => codeRow(stById(r.student_id), `שכח/ה את הקוד · ${esc(ago(r.created_at))}`, r)),
                                 ...exp.map(s => codeRow(s, `הקוד הראשוני פג${s.code_expires_at ? " · " + esc(fmtDay(s.code_expires_at)) : ""}`))].join("") + `</div>`, "td-code");
   // 3. אין להם "תלם שלי"
@@ -5101,6 +5107,36 @@ async function codeReqDone(sid, quiet){
   if (!quiet && TODO_OPEN) renderWait(); else if (!quiet && AD.view === "wait") adRender();
 }
 const randCode = () => { let c; do { const a = new Uint32Array(1); crypto.getRandomValues(a); c = String(a[0] % 1000000).padStart(6, "0"); } while (/^(\d)\1{5}$/.test(c) || ["123456", "654321"].includes(c)); return c; };
+// 1.35.66 (נועה: "לתת קוד חדש לכל אלה הרוצים קוד חדש? לקבוע את הקוד כמובן") – קוד אחד שאת קובעת, לכל המסומנים; אחר כך שליחה בוואטסאפ לכל אחד/ת (לחיצה לכל ילד/ה – וואטסאפ לא מאפשר שליחה אוטומטית)
+function codeAllSheet(L){
+  const code = (AD.settings && AD.settings.initial_code) || randCode();
+  openSheet(`<h2>קוד חדש לכולם</h2>
+    <label class="field"><span>הקוד (6 ספרות)</span><input id="caCode" inputmode="numeric" maxlength="6" class="code-input" value="${esc(code)}"></label>
+    <p class="muted small" style="margin-top:-6px">כל אחד/ת יתבקש/תתבקש לבחור קוד אישי בכניסה הראשונה.</p>
+    <div class="ca-list">${L.map(s => `<label class="ca-row"><input type="checkbox" checked data-ca="${esc(s.student_id)}"><span>${esc(stName(s))}</span><small class="muted ltr">${esc(fmtPhone(s.login_phone || s.phone || ""))}</small></label>`).join("")}</div>
+    <div class="err" id="caErr"></div>
+    <button class="btn primary block" id="caGo">שמירת הקוד לכולם</button>`, (sh) => {
+      sh.querySelector("#caGo").onclick = async () => {
+        const cd = sh.querySelector("#caCode").value.trim(), er = sh.querySelector("#caErr");
+        if (!/^\d{6}$/.test(cd)) { er.textContent = "הקוד צריך להיות 6 ספרות."; return; }
+        const ids = [...sh.querySelectorAll("[data-ca]:checked")].map(x => x.dataset.ca); if (!ids.length) { er.textContent = "לא סומן אף אחד/ת."; return; }
+        sh.querySelector("#caGo").disabled = true; const ok = [], bad = [];
+        for (const id of ids) { const s = stById(id), ph = normPhone(s && (s.login_phone || s.phone) || "");
+          if (!s || !/^05\d{8}$/.test(ph)) { bad.push(s ? stName(s) : id); continue; }
+          try { const r = await rpc("portal_create_account", { p_student: s.student_id, p_phone: ph, p_code: cd });
+            s.has_account = true; s.login_phone = r.phone; s.must_change_code = true;
+            if (AD.settings) s.code_expires_at = new Date(Date.now() + (AD.settings.initial_days || 5) * 864e5).toISOString();
+            codeReqDone(s.student_id, true); ok.push({ s, ph: r.phone }); } catch(e) { bad.push(stName(s)); } }
+        if (TODO_OPEN) renderWait(); else if (AD.view === "wait" && !AD.st) adRender();
+        const Lk = await appLink();
+        const wa = (s, ph) => "https://wa.me/972" + normPhone(ph).slice(1) + "?text=" + encodeURIComponent(`שלום ${s.first_name || ""}! הנה קוד חדש לאפליקציה "תלם שלי" 🔑\n${Lk}\nטלפון: ${fmtPhone(ph)}\nקוד: ${cd}\nבכניסה תתבקש/י לבחור קוד אישי חדש.`);
+        sh.innerHTML = `<button type="button" class="sheet-x" aria-label="סגירה">${IC.x}</button><h2>✓ נשמר קוד חדש ל-${ok.length}</h2>
+          <p class="muted small" style="margin-top:0">עכשיו שולחים לכל אחד/ת בוואטסאפ (לחיצה לכל ילד/ה).${bad.length ? `<br><b class="bad-t">לא נשמר ל: ${esc(bad.join(", "))}</b> – בלי טלפון נייד תקין.` : ""}</p>
+          <div class="ca-list">${ok.map(({ s, ph }) => `<div class="ca-row"><span>${esc(stName(s))}</span><a class="btn sm" target="_blank" rel="noopener" href="${esc(wa(s, ph))}" data-casent>${IC.wa} שליחה</a></div>`).join("")}</div>`;
+        sh.querySelectorAll("[data-casent]").forEach(a => a.addEventListener("click", () => { a.textContent = "✓ נשלח"; a.classList.add("ghost"); }));
+      };
+    });
+}
 function accountSheet(s, reset){
   const code = (AD.settings && AD.settings.initial_code) || randCode();
   openSheet(`<h2>${reset ? "קוד חדש ל" : "חשבון ל"}${esc(stName(s))}</h2>
@@ -5769,7 +5805,7 @@ function wsLock(on){
 }
 function wsViewerOff(){
   if ($("wsViewer").hidden) return;
-  $("wsViewer").hidden = true; wsLock(false); document.body.classList.remove("ws-vopen");
+  $("wsViewer").hidden = true; wsLock(false); document.body.classList.remove("ws-vopen", "ws-keephead");
   if (history.state && history.state.ad === "wsv") { AD.skipPop = true; history.back(); }
 }
 // שליחת הדפים שנבחרו יחד: בטלפון - חלון השיתוף עם כל הקבצים (וואטסאפ...), במחשב - קובץ ZIP
@@ -5976,7 +6012,7 @@ function wzReset(){ if (WZM) WZM.reset(); }
 function wsClose(fromPop){
   if (WS.starDirty) { WS.starDirty = false; setTimeout(() => { if (CB_VIS()) renderWs(); }, 50); }
   if (!fromPop && history.state && history.state.ad === "wsv") { AD.skipPop = true; history.back(); }
-  $("wsViewer").hidden = true; wsLock(false); document.body.classList.remove("ws-vopen");
+  $("wsViewer").hidden = true; wsLock(false); document.body.classList.remove("ws-vopen", "ws-keephead");
 }
 
 $("wsClose").addEventListener("click", () => wsClose());
@@ -6060,7 +6096,12 @@ CB.onOpen = (r) => { const box = document.getElementById("wsAppBtns"); if (!box)
   const tt = document.getElementById("wsVTitle"), lv = lvOf(r) ? " " + ((LV[r.level] || [""])[0] + (r.is_word ? "📖" : "")) : "";
   if (tt && lv && !tt.textContent.endsWith(lv)) tt.textContent += lv;
   // 1.35.48 (נועה): "כשלוחצים על הדף במאגר בתוך הילד אני לא רואה למי אני שולחת" – השם תמיד למעלה בדף הפתוח
-  { const top = document.querySelector(".crmws-v .ws-vtop"), who = cbWho(); let w = document.getElementById("cbWhoV");
+  // 1.35.66 (נועה): בנייד, בתוך הילד/ה – הדף נפתח מתחת לפרטי הילד/ה (הכותרת נשארת), בלי השם בצד
+  const sh = document.body.classList.contains("v-stm") && document.querySelector(".stm-head");
+  document.body.classList.toggle("ws-keephead", !!sh); if (sh) document.documentElement.style.setProperty("--stmh", sh.offsetHeight + "px");
+  if (sh && !sh.dataset.vx) { sh.dataset.vx = "1"; sh.addEventListener("click", (e) => { if (!document.body.classList.contains("ws-vopen")) return;   // לחיצה בכותרת כשהדף פתוח – קודם סוגרת את הדף
+    e.preventDefault(); e.stopPropagation(); const x = document.querySelector(".crmws-v .ws-x"); if (x) x.click(); }, true); }
+  { const top = document.querySelector(".crmws-v .ws-vtop"), who = sh ? null : cbWho(); let w = document.getElementById("cbWhoV");
     if (who && top) { if (!w) { w = document.createElement("div"); w.id = "cbWhoV"; w.className = "ws-who"; top.appendChild(w); } w.innerHTML = `📤 ל<b>${esc(who)}</b>`; }
     else if (w) w.remove(); }
   document.body.classList.toggle("ws-app-on", CB.ctx !== "browse" || r.type === "page");
