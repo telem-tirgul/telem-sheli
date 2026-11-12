@@ -2404,7 +2404,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.73",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.74",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -4085,8 +4085,8 @@ async function renderWait(){
   const sp = nexts.map(p => (AD.wsById.get(String(p.worksheet_id)) || {}).storage_path), gP = sign(sp);
   let g = await Promise.race([gP, new Promise(r => setTimeout(() => r(null), 250))]);
   if (!g) { g = (p) => URLS[p] ? URLS[p].url + (WS_VER[p] ? "&v=" + WS_VER[p] : "") : ""; gP.then(() => { if ((TODO_OPEN || AD.view === "wait" && !AD.st) && !SHEET) renderWait(); }); }
-  if (AD.view !== "wait" && AD.view !== "att") return;
-  if (AD.st && !isDesk()) return;
+  if (!TODO_OPEN && AD.view !== "wait" && AD.view !== "att") return;   // 1.35.74 (נועה: "עדיין לטיפול לוקח המון זמן"): החלונית פתוחה מעל המאגר / דף ילד/ה – תמיד מציירים (קודם נשארה "טוען…")
+  if (!TODO_OPEN && AD.st && !isDesk()) return;
   const byGroup = AD.view === "att" && !TODO_OPEN;   // 1.20.1: נוכחות = הקבוצות של היום; ממתינים = הרשימה; 1.35.61: החלונית "לטיפול" – תמיד הרשימה
   const kpi = (v, l, cls) => `<span class="kpi ${cls}"><b>${v}</b> ${l}</span>`;   // שורת דוח – בלי מעבר מסך
   let h = byGroup ? `<div class="page-h"><div style="flex:1;min-width:200px"><h1>נוכחות</h1><p>הקבוצות של היום לפי השעה – סימון נוכחות, מי ממתין/ה ומה הבא בתור.</p></div></div>
