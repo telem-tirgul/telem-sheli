@@ -2404,7 +2404,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.74",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.75",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -4143,6 +4143,7 @@ async function renderWait(){
     clearTimeout(renderWait._u); renderWait._u = setTimeout(() => { const el = document.querySelector(".wl-undo"); if (el) el.remove(); }, LR.at + 120e3 - Date.now()); }
   B.querySelectorAll("[data-newcode]").forEach(b => b.onclick = () => accountSheet(stById(b.dataset.newcode), true));
   { const ca = B.querySelector("#tdCodeAll"); if (ca) ca.onclick = () => codeAllSheet((AD.codeAllL || []).filter(Boolean)); }
+  { const aa = B.querySelector("#tdAccAll"); if (aa) aa.onclick = () => accAllSheet((AD.accAllL || []).filter(Boolean)); }
   B.querySelectorAll("[data-mkacc]").forEach(b => b.onclick = () => accountSheet(stById(b.dataset.mkacc), false));   // 1.35.43
   B.querySelectorAll("[data-nalist]").forEach(b => b.onclick = () => { const st = stById(b.dataset.nalist); if (st) noAccSet(st, renderWait); });   // 1.35.45
   B.querySelectorAll("[data-goatt]").forEach(b => b.onclick = () => adGo("att"));
@@ -4213,7 +4214,9 @@ function todoHtml(g, mine){
   // 3. אין להם "תלם שלי"
   const noA = (AD.students || []).filter(s => !s.has_account && stMine(s.student_id) && !noAcc(s.student_id)).sort((a, b) => stName(a).localeCompare(stName(b), "he"));
   const who0 = (s, sub) => `<div class="wl-1 wl-nolink"><b>${esc(stName(s))}</b>${sub ? `<small>${sub}</small>` : ""}</div>`;   // 1.35.45: בלי חשבון – לא נלחץ
+  AD.accAllL = noA;   // 1.35.75 (נועה): "פתיחת חשבון לכולם"
   h += sec("🚫", "אין להם \"תלם שלי\"", noA.length, "רשומים לקורס ועוד אין להם חשבון.", !noA.length ? none :
+    (noA.length > 1 ? `<div class="td-bulk"><button type="button" class="btn primary sm" id="tdAccAll">+ פתיחת חשבון לכולם (${noA.length})</button></div>` : "") +
     `<div class="wrows wl">` + noA.map(s => `<div class="wl-row">${who0(s, esc((s.subjects || []).map(sh).join(" · ")))}<div class="wl-q td-acts"><button class="btn sm ghost" data-nalist="${esc(s.student_id)}" title="לא מקבל/ת תלם שלי – לא יופיע/תופיע כאן">🚫 לא צריך/ה</button><button class="btn sm" data-mkacc="${esc(s.student_id)}">+ פתיחת חשבון</button></div></div>`).join("") + `</div>`, "td-noacc");
   // 4. אין דפים בתור – לקראת הקבוצות הבאות (היום, ואם אין – היום הבא)
   const up = upcomingGroups(); if (up) { const used = new Set(home.map(k => String(k.s.student_id))); let n = 0;   // מי שכבר למעלה (ביקש/ה) – לא שוב
@@ -5162,6 +5165,31 @@ function codeAllSheet(L){
         sh.innerHTML = `<button type="button" class="sheet-x" aria-label="סגירה">${IC.x}</button><h2>✓ נשמר קוד חדש ל-${ok.length}</h2>
           <p class="muted small" style="margin-top:0">עכשיו שולחים לכל אחד/ת בוואטסאפ (לחיצה לכל ילד/ה).${bad.length ? `<br><b class="bad-t">לא נשמר ל: ${esc(bad.join(", "))}</b> – בלי טלפון נייד תקין.` : ""}</p>
           <div class="ca-list">${ok.map(({ s, ph }) => `<div class="ca-row"><span>${esc(stName(s))}</span><a class="btn sm" target="_blank" rel="noopener" href="${esc(wa(s, ph))}" data-casent>${IC.wa} שליחה</a></div>`).join("")}</div>`;
+        sh.querySelectorAll("[data-casent]").forEach(a => a.addEventListener("click", () => { a.textContent = "✓ נשלח"; a.classList.add("ghost"); }));
+      };
+    });
+}
+// 1.35.75 (נועה: "כן תעשה"): פתיחת חשבון לכמה ילדים ביחד – עם הקוד הראשוני (⚙), ואז "שליחה" בוואטסאפ לכל אחד/ת
+function accAllSheet(L){
+  const st = AD.settings || {}; if (!st.initial_code) { initialCodeSheet(); return; }
+  openSheet(`<h2>פתיחת חשבון לכולם</h2>
+    <p class="muted small" style="margin-top:0">עם הנייד שבכרטיס והקוד הראשוני <b class="code ltr">${esc(st.initial_code)}</b> (תקף ${esc(st.initial_days || 5)} ימים). בכניסה הראשונה בוחרים קוד אישי.</p>
+    <div class="ca-list">${L.map(s => `<label class="ca-row"><input type="checkbox" checked data-ca="${esc(s.student_id)}"><span>${esc(stName(s))}</span><small class="muted ltr">${esc(fmtPhone(s.phone || ""))}</small></label>`).join("")}</div>
+    <div class="err" id="caErr"></div>
+    <button class="btn primary block" id="caGo">פתיחת החשבונות</button>`, (sh) => {
+      sh.querySelector("#caGo").onclick = async () => {
+        const ids = [...sh.querySelectorAll("[data-ca]:checked")].map(x => x.dataset.ca), er = sh.querySelector("#caErr"); if (!ids.length) { er.textContent = "לא סומן אף אחד/ת."; return; }
+        const b = sh.querySelector("#caGo"); b.disabled = true; b.textContent = "פותח…";
+        let r; try { r = await rpc("portal_create_accounts", { p_students: ids, p_code: null }); } catch(e) { b.disabled = false; b.textContent = "פתיחת החשבונות"; er.textContent = errText(e); return; }
+        const ok = (r && r.created) || [], sk = (r && r.skipped) || [];
+        ok.forEach(x => { const s = stById(String(x.student_id)); if (s) { s.has_account = true; s.login_phone = x.phone; s.must_change_code = true; s.code_expires_at = new Date(Date.now() + (st.initial_days || 5) * 864e5).toISOString(); } });
+        if (TODO_OPEN) renderWait();
+        const Lk = await appLink(), cd = st.initial_code;
+        const wa = (x) => "https://wa.me/972" + normPhone(x.phone).slice(1) + "?text=" + encodeURIComponent(`שלום ${(stById(String(x.student_id)) || {}).first_name || ""}! 👋\nדפי התרגול של תלם מגיעים עכשיו באפליקציה "תלם שלי":\n${Lk}\nטלפון: ${fmtPhone(x.phone)}\nקוד: ${cd}\nבכניסה הראשונה בוחרים קוד אישי.`);
+        sh.innerHTML = `<button type="button" class="sheet-x" aria-label="סגירה">${IC.x}</button><h2>✓ ${ok.length === 1 ? "נפתח חשבון אחד" : "נפתחו " + ok.length + " חשבונות"}</h2>
+          <p class="muted small" style="margin-top:0">עכשיו שולחים לכל אחד/ת בוואטסאפ (לחיצה לכל ילד/ה).</p>
+          ${sk.length ? `<p class="small" style="margin:0"><b class="bad-t">לא נפתחו (${sk.length}):</b> ${sk.map(x => esc((x.name || x.student_id) + " – " + x.reason)).join(" · ")}</p>` : ""}
+          <div class="ca-list">${ok.map(x => `<div class="ca-row"><span>${esc(x.name || stName(stById(String(x.student_id)) || {}))}</span><a class="btn sm" target="_blank" rel="noopener" href="${esc(wa(x))}" data-casent>${IC.wa} שליחה</a></div>`).join("")}</div>`;
         sh.querySelectorAll("[data-casent]").forEach(a => a.addEventListener("click", () => { a.textContent = "✓ נשלח"; a.classList.add("ghost"); }));
       };
     });
