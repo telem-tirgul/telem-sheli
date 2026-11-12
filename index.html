@@ -2199,7 +2199,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .tcard .tc-h{display:flex; align-items:center; gap:8px; min-height:24px;} .tcard .tc-top{flex:1; min-width:0; font-size:15px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .tcard .tc-h .lv{flex:none; font-style:normal; font-size:15px; margin-inline-start:auto;}
 .tcard .tc-b{flex:none; min-width:24px; height:24px; padding:0 6px; border-radius:999px; background:#EFEAE3; color:var(--ink); font-weight:800; font-size:13px; display:inline-flex; align-items:center; justify-content:center;}
-.tcard .tc-b.go{background:var(--accent); color:#fff;} .ts-off{ filter:grayscale(1); opacity:.45; } .tcard .tc-b.pin{background:#FBF1D6; padding:0 3px;} .pin-ic{vertical-align:-3px; flex:none;} .tcard.tc-pin{border-color:#E3C26F; background:#FFFBEF;} .tcard.tc-pin b:not(.tc-top){color:#8A6414;} .tcard .tc-b.ok{background:#E3F2DF; color:#1F6B17;}
+.tcard .tc-b.go{background:var(--accent); color:#fff;} .ts-off{ filter:grayscale(1); opacity:.45; } .vap-k{ display:flex; align-items:center; gap:6px; margin:4px 0; } .vap-k span{ font-weight:800; flex:none; } .vap-k code{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; background:#f4efe8; padding:2px 6px; border-radius:6px; font-size:11px; } .tcard .tc-b.pin{background:#FBF1D6; padding:0 3px;} .pin-ic{vertical-align:-3px; flex:none;} .tcard.tc-pin{border-color:#E3C26F; background:#FFFBEF;} .tcard.tc-pin b:not(.tc-top){color:#8A6414;} .tcard .tc-b.ok{background:#E3F2DF; color:#1F6B17;}
 .tcard .tc-t{font-size:14px; color:var(--ink); margin:2px 0 0; cursor:zoom-in;} .tcard .tc-h{cursor:zoom-in;} .tcard .tc-m{color:var(--ink-soft); font-size:12.5px;}
 .tcard .tc-s{display:flex; align-items:center; gap:8px; margin-top:7px; padding-top:6px; border-top:1px dashed var(--border); font-size:12.5px; color:var(--ink-soft); min-height:30px;}
 .tcard .tc-st{flex:1; min-width:0;} .tcard .tc-st b{color:#A3261D;}
@@ -2403,7 +2403,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.68",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.69",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -2644,7 +2644,7 @@ async function getAll(table, q){
 const patch = (table, filter, v) => api("PATCH", "/rest/v1/" + table + "?" + filter, v, { "Prefer": "return=minimal" });
 const insert = (table, v) => api("POST", "/rest/v1/" + table, v, { "Prefer": "return=representation" });
 const del = (table, filter) => api("DELETE", "/rest/v1/" + table + "?" + filter, undefined, { "Prefer": "return=minimal" });
-const rpc = (fn, body) => api("POST", "/rest/v1/rpc/" + fn, body || {});
+const rpc = (fn, body) => api("POST", "/rest/v1/rpc/" + fn, body || {}).then(r => { try { pushHook(fn, body || {}, r); } catch(e) {} return r; });   // 1.35.69: התראות פוש
 const errText = (e) => { const m = String(e && e.message || ""); return /[֐-׿]/.test(m) ? m : "משהו השתבש. כדאי לנסות שוב."; };
 
 // קישורים זמניים לתמונות (שעה)
@@ -3640,6 +3640,8 @@ function adminStart(fast){
   if (!AD.waitTab) AD.waitTab = store("telem_portal_waittab") || "req";
   if (fast && AD.loaded) { adRender(); adBusy(true); }
   adLoad();
+  pushClear();   // 1.35.69: פתחתי את האפליקציה – המספר על האייקון מתאפס
+  if (/[?&]todo=1/.test(location.search)) { try { history.replaceState(null, "", location.pathname); } catch(e) {} setTimeout(() => { if (!TODO_OPEN) todoOpen(); }, 1200); }   // לחיצה על התראת פוש
   // 1.34.7 (נועה): אם יצאתי באמצע דף נוכחות (של היום) – חוזרים אליו
   if (!EMBED && AD.view === "att" && typeof ATTM !== "undefined") { const m = ATTM.last(); if (m) loadGroups().then(gs => { if (AD.view === "att" && !ATTM.isOpen && !SHEET) ATTM.open(m.sid, m.date, (gs || []).find(g => g.id === String(m.sid))); }).catch(() => {}); }
   rtStart("portal:staff", () => adPoll());
@@ -4061,7 +4063,7 @@ function idleFilter(){ const now = new Date(), want = insWant();
   const gs = AD.waitLive === "*" ? live : live.filter(gr => gr.id === AD.waitLive); return new Set(gs.flatMap(gr => [...grNowKids(gr, now)])); }
 // 1.35.61 (נועה: "לטיפול מוצג על המסך כמסך ולא כמסך שיורד מהתפריט למעלה"): חלונית שיורדת מהאייקון, מעל המסך הנוכחי (לא מחליפה אותו)
 let TODO_OPEN = false;
-function todoOpen(){ if (TODO_OPEN) { todoClose(); return; } TODO_OPEN = true;
+function todoOpen(){ if (TODO_OPEN) { todoClose(); return; } TODO_OPEN = true; pushClear();
   let d = $("todoDrop"); if (!d) { d = document.createElement("div"); d.id = "todoDrop"; d.innerHTML = `<div class="td-bk" data-tdclose></div><div class="td-pan" role="dialog" aria-label="לטיפול"><div class="td-ph"><b>לטיפול</b><button type="button" class="icon-btn" data-tdclose aria-label="סגירה">✕</button></div><div class="td-pb" id="todoDropB"><div class="muted">טוען…</div></div></div>`;
     $("adminView").appendChild(d); d.querySelectorAll("[data-tdclose]").forEach(x => x.onclick = todoClose); }
   const hd = document.querySelector("#adminView header.side"); d.style.setProperty("--tdtop", (hd ? Math.round(hd.getBoundingClientRect().bottom) : 60) + "px");
@@ -5238,6 +5240,10 @@ function toolsSheet(){
       ${isDesk() ? `<label class="btn sm ic-pick">📁 בחירת תיקייה…<input type="file" id="wsFolderP" webkitdirectory directory multiple hidden></label><div id="wsImportMsgP" class="small" style="margin-top:6px"></div>` : `<p class="small"><b>אפשר רק מהמחשב.</b></p>`}
     </details>
     ${Object.keys(TM).length ? `<div class="ic-line small muted">⏱ טעינה אחרונה: ${Object.entries(TM).map(([k, v]) => esc(k) + " " + v + " שנ'").join(" · ")}</div>` : ""}
+    ${AD.settings ? `<div class="ic-line" id="pushLine">🔔 <span>התראות לטלפון הזה:</span><b id="pushSt">…</b><button class="btn sm" id="pushGo" hidden></button></div>
+    <details class="ic-line ic-det"><summary>🔐 <span>מפתחות להתראות (פעם אחת)</span><span class="ic-car">▾</span></summary>
+      <p class="muted small">יוצרים כאן זוג מפתחות, ומעתיקים אותם ל-Supabase ← Edge Functions ← Secrets: <b class="ltr">VAPID_PUBLIC</b>, <b class="ltr">VAPID_PRIVATE</b>, ו-<b class="ltr">VAPID_SUBJECT</b> = mailto: והמייל שלך. המפתח הפרטי נוצר כאן בטלפון/במחשב ולא נשמר בשום מקום אחר – לא לשלוח אותו בצ'אט.</p>
+      <button class="btn sm" id="vapGen">יצירת מפתחות</button><div id="vapOut" class="small" style="margin-top:6px"></div></details>` : ""}
     <button type="button" class="ic-line ic-row" id="tsRefresh">🔄 <span>רענון האפליקציה</span><span class="muted small">· או למשוך את המסך למטה</span></button>
     <button type="button" class="ic-line ic-row" id="tsOut">🚪 <span>יציאה מהחשבון</span></button>
     <p class="muted small" style="text-align:center;margin:10px 0 0">תלם שלי · גרסה ${esc(CONFIG.version)}</p>`, (sh) => {
@@ -5248,8 +5254,49 @@ function toolsSheet(){
       sh.querySelector("#tsLinkCp").onclick = async () => { const L = await appLink(); try { await navigator.clipboard.writeText(L); toast("הקישור הועתק: " + L.replace(/^https?:\/\//, "")); } catch(e) { toast(L); } };
       if (sh.querySelector("#wsFolderP")) sh.querySelector("#wsFolderP").onchange = (e) => wsImportFolder(e.target, sh.querySelector("#wsImportMsgP"));
       if (sh.querySelector("#icEdit")) sh.querySelector("#icEdit").onclick = initialCodeSheet;
+      if (sh.querySelector("#pushLine")) pushUi(sh);
+      if (sh.querySelector("#vapGen")) sh.querySelector("#vapGen").onclick = async () => { const o = sh.querySelector("#vapOut");
+        try { const k = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+          const pub = b64u(new Uint8Array(await crypto.subtle.exportKey("raw", k.publicKey))), jw = await crypto.subtle.exportKey("jwk", k.privateKey);
+          o.innerHTML = `<div class="vap-k"><span>VAPID_PUBLIC</span><code class="ltr">${esc(pub)}</code><button class="btn sm" data-cp="${esc(pub)}">${IC.copy} העתקה</button></div>
+            <div class="vap-k"><span>VAPID_PRIVATE</span><code class="ltr">${esc(jw.d)}</code><button class="btn sm" data-cp="${esc(jw.d)}">${IC.copy} העתקה</button></div>`;
+          o.querySelectorAll("[data-cp]").forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.cp); b.textContent = "✓ הועתק"; } catch(e) { toast("לא הצלחנו להעתיק – לסמן ולהעתיק ידנית"); } });
+        } catch(e) { o.textContent = "לא הצלחנו ליצור מפתחות בדפדפן הזה."; } };
     });
 }
+// ===== 1.35.69 (נועה 11–12.11, TS-31): התראות פוש לטלפון של הצוות =====
+const b64u = (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const fromB64u = (s) => { const b = atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+const PUSH_FN = () => CONFIG.supabaseUrl + "/functions/v1/portal-push";
+const pushOk = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+async function pushSub(){ try { const r = await navigator.serviceWorker.ready; return await r.pushManager.getSubscription(); } catch(e) { return null; } }
+async function pushUi(sh){
+  const st = sh.querySelector("#pushSt"), go = sh.querySelector("#pushGo");
+  const ios = /iphone|ipad/i.test(navigator.userAgent), standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  if (!pushOk()) { st.textContent = ios && !standalone ? "צריך לפתוח מהאייקון במסך הבית (שיתוף ← הוספה למסך הבית)" : "הטלפון / הדפדפן הזה לא תומך"; return; }
+  const sub = await pushSub(), on = !!sub && Notification.permission === "granted";
+  st.textContent = on ? "✓ פעיל" : Notification.permission === "denied" ? "חסום בהגדרות הטלפון" : "כבוי";
+  go.hidden = Notification.permission === "denied"; go.textContent = on ? "כיבוי" : "הפעלה"; go.className = on ? "btn sm" : "btn sm primary";
+  go.onclick = async () => { go.disabled = true;
+    try { if (on) { await rpc("portal_push_unsubscribe", { p_endpoint: sub.endpoint }).catch(() => {}); await sub.unsubscribe(); }
+      else { if (await Notification.requestPermission() !== "granted") throw new Error("לא אושרו התראות");
+        const tk = await token(), k = await fetch(PUSH_FN(), { headers: Object.assign(baseHeaders(), tk ? { "Authorization": "Bearer " + tk } : {}) }).then(r => r.json()).catch(() => ({}));
+        if (!k.public) throw new Error("עוד אין מפתחות בשרת (🔐 למטה) או שהפונקציה portal-push לא הותקנה");
+        const r = await navigator.serviceWorker.ready, ns = await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: fromB64u(k.public) }), j = ns.toJSON();
+        await rpc("portal_push_subscribe", { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_ua: navigator.userAgent }); }
+    } catch(e) { toast(/[֐-׿]/.test(e.message) ? e.message : "לא הצלחנו: " + e.message); }
+    go.disabled = false; pushUi(sh); };
+}
+// אצל הילד/ה בלבד: אחרי "סיימתי" / "לא מתאים" / "לאחר כך" – בדיקת "אין עבודה" (פעם אחת, אחרי רגע); אחרי בקשה – "ביקש/ה"
+let pushIdleT = null;
+function pushHook(fn, b, r){ if (typeof ST === "undefined" || !ST.me) return;
+  if (fn === "portal_request_next" && b.p_on && !(r && r.ok === false)) { pushPing("req", b.p_subject); return; }
+  if ((fn === "portal_mark_done" && b.p_done) || fn === "portal_return_items" || (fn === "portal_pin_items" && b.p_pin)) { clearTimeout(pushIdleT); pushIdleT = setTimeout(() => pushPing("idle"), 1500); } }
+// הילד/ה "מצלצל/ת" לשרת – והשרת בודק לבד אם צריך התראה (אין עבודה / בקשה) ובלי כפולות
+function pushPing(event, subject){ try { token().then(t => { if (!t) return; fetch(PUSH_FN(), { method: "POST", keepalive: true, headers: Object.assign(baseHeaders(), { "Authorization": "Bearer " + t, "Content-Type": "application/json" }), body: JSON.stringify({ event, subject: subject || null }) }).catch(() => {}); }); } catch(e) {} }
+// פותחים את האפליקציה / "לטיפול" – המספר על האייקון וההתראות שבמגירה נמחקים
+async function pushClear(){ try { if (navigator.clearAppBadge) navigator.clearAppBadge(); const r = await navigator.serviceWorker.getRegistration(); if (r) (await r.getNotifications()).forEach(n => n.close()); } catch(e) {} }
+try { navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", (e) => { if (e.data && e.data.push === "todo" && typeof todoOpen === "function" && AD && AD.students) { pushClear(); todoOpen(); } }); } catch(e) {}
 // 1.24 (נועה): ייבוא דפים מהמחשב – הועבר מהמאגר להגדרות (⚙). אותו קוד כמו במערכת הניהול (5.19.90).
 async function wsImportFolder(input, msg){
   const files = [...input.files].filter(f => /\.(png|jpe?g)$/i.test(f.name));
