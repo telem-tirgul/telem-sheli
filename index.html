@@ -2199,7 +2199,7 @@ body[data-att] .toast, body:has(#attListV) .toast{ bottom:auto; top:calc(12px + 
 .tcard .tc-h{display:flex; align-items:center; gap:8px; min-height:24px;} .tcard .tc-top{flex:1; min-width:0; font-size:15px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .tcard .tc-h .lv{flex:none; font-style:normal; font-size:15px; margin-inline-start:auto;}
 .tcard .tc-b{flex:none; min-width:24px; height:24px; padding:0 6px; border-radius:999px; background:#EFEAE3; color:var(--ink); font-weight:800; font-size:13px; display:inline-flex; align-items:center; justify-content:center;}
-.tcard .tc-b.go{background:var(--accent); color:#fff;} .tcard .tc-b.pin{background:#FBF1D6; padding:0 3px;} .pin-ic{vertical-align:-3px; flex:none;} .tcard.tc-pin{border-color:#E3C26F; background:#FFFBEF;} .tcard.tc-pin b:not(.tc-top){color:#8A6414;} .tcard .tc-b.ok{background:#E3F2DF; color:#1F6B17;}
+.tcard .tc-b.go{background:var(--accent); color:#fff;} .ts-off{ filter:grayscale(1); opacity:.45; } .tcard .tc-b.pin{background:#FBF1D6; padding:0 3px;} .pin-ic{vertical-align:-3px; flex:none;} .tcard.tc-pin{border-color:#E3C26F; background:#FFFBEF;} .tcard.tc-pin b:not(.tc-top){color:#8A6414;} .tcard .tc-b.ok{background:#E3F2DF; color:#1F6B17;}
 .tcard .tc-t{font-size:14px; color:var(--ink); margin:2px 0 0; cursor:zoom-in;} .tcard .tc-h{cursor:zoom-in;} .tcard .tc-m{color:var(--ink-soft); font-size:12.5px;}
 .tcard .tc-s{display:flex; align-items:center; gap:8px; margin-top:7px; padding-top:6px; border-top:1px dashed var(--border); font-size:12.5px; color:var(--ink-soft); min-height:30px;}
 .tcard .tc-st{flex:1; min-width:0;} .tcard .tc-st b{color:#A3261D;}
@@ -2260,6 +2260,16 @@ button.na-chip{border:0; font:inherit; font-size:12px; font-weight:800; cursor:p
 .crmatt #shRows .pg-row > .pg-ic.px{background:#FDE8E6; color:var(--bad);}
 .crmatt #shRows .pg-row > .ic-btn{all:unset; display:inline-flex; align-items:center; min-height:24px; padding:1px 10px; border-radius:999px; border:1.5px solid var(--accent); color:var(--accent); font-size:13px; font-weight:800; cursor:pointer; box-sizing:border-box; background:var(--paper);}
 .crmatt #shRows .att-chips > .ic-btn.ap-trk{border-color:#e9cf62 !important; background:#fffbe8; color:#5c4500;}
+
+/* ===== 1.35.68 – כללי הכפתורים (CLAUDE.md, נועה 12.11) בצד הצוות של "תלם שלי". בלי המסך של הילדים. =====
+   כפתור בתוך המסך – 28px, טקסט 12.5; ראשי = בורדו מלא; רגיל = לבן, טקסט ומסגרת בורדו.
+   חריגים (נועה: "בזה משתמשים בעיקר בנייד – נוח וקל"): "הוספת דפים מהמאגר" הקבוע למטה, וכפתור ראשי לכל רוחב החלון – נשארים גדולים. */
+#attSheet .btn.small, #attView .btn.small, .crmatt .btn.small, .crmatt .att-date-row .btn, #attSheet .cx-btn, .crmatt .cx-btn, .stm-back2, #adminView .wrows .btn.sm, #adminView .td-bulk .btn.sm, .tcard .tc-a,
+#todoDrop .wrows .btn.sm, #todoDrop .td-bulk .btn.sm, .wd-bar .btn, .stm .na-set, .na-set{ min-height:28px !important; height:28px !important; padding:0 10px !important; font-size:12.5px !important; line-height:1 !important; border-radius:8px !important; display:inline-flex; align-items:center; justify-content:center; gap:4px; }
+#attSheet .btn.small:not(.primary), #attView .btn.small:not(.primary), .crmatt .btn.small:not(.primary), .crmatt .att-date-row .btn, #attSheet .cx-btn, .crmatt .cx-btn, .stm-back2, #adminView .wrows .btn.sm:not(.primary), #todoDrop .wrows .btn.sm:not(.primary),
+.tcard .tc-a:not(.pri), .wd-bar .btn, .na-set{ background:#fff !important; color:var(--accent) !important; border:1.5px solid var(--accent) !important; border-style:solid !important; }
+.tcard .tc-a{ min-width:0; }
+.crmatt #shRows .att-rel{ height:28px; line-height:28px; padding:0 10px; border-radius:8px; }
 </style>
 </head>
 <body>
@@ -2393,7 +2403,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.67",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.68",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -3652,6 +3662,7 @@ async function adPoll(){
     const beforeW = new Set(waitingList(true).map(w => w.s.student_id + "|" + w.subj)), beforeR = new Set(myReqs().map(r => r.id));
     const beforeDone = new Set((AD.plan || []).filter(p => p.status === "הושלם").map(p => String(p.id)));   // 1.35.59: מי סיים/ה דף
     const beforeRet = new Set((AD.plan || []).filter(p => p.returned_at).map(p => p.id + "|" + p.returned_at));   // 1.35.60: מי החזיר/ה
+    const beforePin = new Set((AD.plan || []).filter(isPin).map(p => p.id + "|" + p.pinned_at));   // 1.35.68: מי נעץ/ה
     AD.plan = plan; AD.codeReqs = reqs; AD.nreq = nreq; refreshWaitingLocal();
     loadMgrs();
     // 1.35.49 (נועה: "ההתראות לא עובדות טוב… קופץ בכל מיני מקומות"): הודעה + צליל רק על ילד/ה בקבוצה שפתוחה עכשיו בנוכחות. כל השאר – רק המספר על "נוכחות" והשורה הצהובה
@@ -3667,7 +3678,12 @@ async function adPoll(){
       // 1.35.60: "😕 לא מתאים לי" – בזמן השיעור: הודעה + צליל (מחוץ לשיעור – ב"לטיפול")
       const retN = [], rs = new Set(); plan.filter(p => p.returned_at && p.status === "מתוכנן" && !beforeRet.has(p.id + "|" + p.returned_at) && kidsNow.has(String(p.student_id))).forEach(p => {
         const k = p.student_id + "|" + (planTaskKey(p) || p.id); if (!rs.has(k)) { rs.add(k); retN.push(p); } });
-      if (retN.length) { const p = retN[0], nm = stName(stById(String(p.student_id)) || {}).trim(), sid = String(p.student_id);
+      // 1.35.68 (נועה: "1 כן"): "לאחר כך" (נעץ) ונשאר/ה בלי משימה בעבודה בשום מקצוע – הודעה + צליל, כמו "סיים/ה"
+      const pinN = [], ps = new Set(); plan.filter(p => isPin(p) && !beforePin.has(p.id + "|" + p.pinned_at) && kidsNow.has(String(p.student_id)) && !wk.has(String(p.student_id))
+          && !plan.some(x => isWork(x) && String(x.student_id) === String(p.student_id))).forEach(p => { const k = String(p.student_id); if (!ps.has(k)) { ps.add(k); pinN.push(p); } });
+      if (pinN.length && !retN.length) { const p = pinN[0], nm = stName(stById(String(p.student_id)) || {}).trim(), sid = String(p.student_id);
+        toastActs(pinN.length === 1 ? `${nm} שמר/ה "לאחר כך" – אין משימה בעבודה` : `${pinN.length} שמרו "לאחר כך" – אין משימה בעבודה`, pinN.length === 1 ? [["לדף ←", () => alertOpenKid(sid)], ["✓ שמעתי", () => {}]] : [["✓ שמעתי", () => {}]], 9000); beep(); }
+      else if (retN.length) { const p = retN[0], nm = stName(stById(String(p.student_id)) || {}).trim(), sid = String(p.student_id);
         toastActs(retN.length === 1 ? `↩ ${nm} החזיר/ה: ${ptTitle(p)}${p.return_reason ? " (" + p.return_reason + ")" : ""}` : `↩ ${retN.length} משימות הוחזרו`, retN.length === 1 ? [["לדף ←", () => alertOpenKid(sid)], ["✓ שמעתי", () => {}]] : [["✓ שמעתי", () => {}]], 9000); beep(); }
       else if (fin.length && !newW.length) { const nm = (p) => stName(stById(String(p.student_id)) || {}).trim();
         const msg = fin.length === 1 ? `✓ ${nm(fin[0])} סיים/ה: ${ptTitle(fin[0])}` : `✓ סיימו משימה: ${[...new Set(fin.map(nm))].join(", ")}`;
@@ -4290,7 +4306,7 @@ function doneChip(sid, doneAt, gr){
 function workingHtml(gr, g){
   const rows = [];
   gr.kids.forEach(sid => { const s = stById(sid); if (!s) return;
-    planOf(sid).filter(p => p.status === "נשלח").sort((a, b) => String(b.released_at).localeCompare(String(a.released_at))).forEach(p => rows.push({ s, p })); });
+    planOf(sid).filter(isWork).sort((a, b) => String(b.released_at).localeCompare(String(a.released_at))).forEach(p => rows.push({ s, p })); });
   if (!rows.length) return "";
   const pres = AD.present && AD.present.set;
   rows.sort((a, b) => ((pres && pres.has(b.s.student_id + "|" + gr.id)) - (pres && pres.has(a.s.student_id + "|" + gr.id))) || stName(a.s).localeCompare(stName(b.s)));
@@ -4576,7 +4592,7 @@ const stRowHtml = (s) => {
   const subs = s.subjects || [], multi = subs.length > 1, sh = (x) => /מתמטיקה/.test(x) ? "מת'" : /אנגלית/.test(x) ? "אנג'" : x;
   // ימין (קבוע): בית ספר · מקצוע · חשבון
   let acc = "";
-  if (!s.has_account) acc = `<i class="si si-noacc" title="בלי חשבון">🚫</i>`;
+  if (!s.has_account) acc = `<i class="si si-noacc" title="בלי חשבון">🔑</i>`;   // 1.35.68: כמו בנוכחות
   else if (s.must_change_code) acc = codeExpired(s) ? `<i class="si si-bad" title="הקוד הראשוני פג">🔑</i>` : `<i class="si si-key" title="עוד לא נכנס/ה${s.code_expires_at ? " · עד " + esc(fmtDay(s.code_expires_at)) : ""}">🔑</i>`;
   // שמאל (של היום): נוכחות (+ במשולב מה עשה/תה היום, באפור) · מבחן · 📓 · בעבודה / ממתין/ה / בתור
   const ic = [];
@@ -4972,7 +4988,7 @@ async function renderStudentMobile(T, s){
   const I = infoOf(s), exL = exLines(I, true);
   const lvl = [I.math_level && (s.subjects || []).includes("מתמטיקה") ? "מתמטיקה: " + I.math_level : "", I.english_level && (s.subjects || []).includes("אנגלית") ? "אנגלית: " + I.english_level : ""].filter(Boolean);
   // פרטים בשורה אחת: בית ספר · כיתה · הקבצה
-  const accIc = noAcc(s.student_id) ? `<i class="si si-noacc" title="בלי תלם שלי">🚫</i>` : !s.has_account ? `<i class="si si-noacc" title="בלי חשבון">🚫</i>` : s.must_change_code ? `<i class="si ${codeExpired(s) ? "si-bad" : "si-key"}" title="${codeExpired(s) ? "הקוד הראשוני פג" : "עוד לא נכנס/ה"}">🔑</i>` : "";
+  const accIc = noAcc(s.student_id) ? `<i class="si si-noacc ts-off" title="בלי תלם שלי">📱</i>` : !s.has_account ? `<i class="si si-noacc" title="בלי חשבון">🔑</i>` : s.must_change_code ? `<i class="si ${codeExpired(s) ? "si-bad" : "si-key"}" title="${codeExpired(s) ? "הקוד הראשוני פג" : "עוד לא נכנס/ה"}">🔑</i>` : "";
   const det = `<div class="st-det">${[I.school ? esc(I.school) + (I.city ? `<span class="muted">, ${esc(I.city)}</span>` : "") : "",
     I.grade ? "כיתה " + esc(gradeKey(I.grade) + "'" + (I.cls || "")) : "", lvl.length ? "הקבצה " + esc(lvl.join(" · ").replace(/מתמטיקה: /, "מת' ").replace(/אנגלית: /, "אנג' ")) : ""].filter(Boolean).join(" · ") || `<span class="muted">אין פרטים בכרטיס</span>`}</div>`;
   paint(T, `
@@ -7133,7 +7149,8 @@ async function attSave(quiet){
     A.rows = A.rows.filter(r => !rem.includes(r.student_id)); A.removed = (A.removed || []).filter(id => !rem.includes(id));
     A.base = snap; if (attSnap() === snap) attDraftClear(); else A.again = true;
     $("shMeta").textContent = "✓ נשמר " + new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
-    renderSheetRows(); loadAttGroups();
+    if (!quiet || rem.length) renderSheetRows(); else updateCount();   // 1.35.68 (כלל "בלי ריפרוש"): שמירה בלייב – לא מציירים מחדש את הרשימה תוך כדי סימון
+    loadAttGroups();
     return true;
   } catch(e2) {
     err.textContent = /only save attendance for today/.test(e2.message) ? "אפשר לשמור נוכחות רק ביום השיעור." : (/fetch|network|Failed/i.test(e2.message) ? "אין חיבור לאינטרנט – הסימון שמור בטלפון ויישמר לבד כשהקליטה תחזור." : "השמירה נכשלה: " + e2.message);
@@ -7262,7 +7279,7 @@ function renderSheetRows(){
         (grp[k] = grp[k] || []).push(full); pre = ""; });
       Object.entries(grp).forEach(([k, l]) => { const c = document.createElement("span"); c.className = "pg-ic " + k; c.dataset.tip = l.join(" · "); c.title = l.join("\n");
         if (k === "pnoa") {   /* 1.35.63 (נועה): 📵 ממש ליד השליחה – רק סימון, לחיצה = הדף של הילד/ה (שם הקוד) */ const r1 = A.rows[Number(li.dataset.i)]; if (r1 && ME.role !== "instructor") c.dataset.mkacc = r1.student_id; }
-        c.innerHTML = k === "ppin" ? PIN_SVG : k === "pret" ? "↩ החזיר/ה" : k === "pnoin" ? "📵" : k === "pnoa" ? "🔑 אין חשבון" : k === "pna" ? "🚫 בלי תלם שלי" : k === "pw" ? "⏳" : k === "pn" ? PG_SVG_ON : k === "p1" ? `<b class="p1n">1</b>` : PG_SVG_OFF; c.setAttribute("aria-label", l.join(" · ")); row.appendChild(c); });   // נועה: רק אייקון; דף צבוע = יש, דף ריק = אין
+        c.innerHTML = k === "ppin" ? PIN_SVG : k === "pret" ? "↩ החזיר/ה" : k === "pnoin" ? "📵" : k === "pnoa" ? "🔑" : k === "pna" ? `<span class="ts-off">📱</span>` :   /* 1.35.68 (נועה): בלי מילים; "בלי תלם שלי" – האייקון של מערכת הניהול (📱 אפור) */ k === "pw" ? "⏳" : k === "pn" ? PG_SVG_ON : k === "p1" ? `<b class="p1n">1</b>` : PG_SVG_OFF; c.setAttribute("aria-label", l.join(" · ")); if (!c.title) c.title = l.join(" · "); row.appendChild(c); });   // נועה: רק אייקון; דף צבוע = יש, דף ריק = אין
       pr.querySelectorAll("button").forEach(bt => { bt.classList.add("ic-btn"); if (bt.hasAttribute("data-trk")) { bt.textContent = "📌+"; ch.appendChild(bt); } else if (bt.hasAttribute("data-addp")) bt.remove(); });   // 1.35.25 (נועה): הוספת דפים – רק ב"ממתינים לדף"; כאן רק הסטטוס, לידיעה
       // 1.35.49 (נועה): "חייבת אופציה לשחרר את הדף הבא מהנוכחות… כמשימה ולא כדף. גם אם מישהו עוד עובד" – כפתור לכל מקצוע שיש בו תור
       { const r0 = A.rows[Number(li.dataset.i)], st0 = r0 && stById(String(r0.student_id));
