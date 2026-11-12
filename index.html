@@ -2404,7 +2404,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.71",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.72",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -5281,11 +5281,7 @@ async function pushUi(sh){
   go.hidden = Notification.permission === "denied"; go.textContent = on ? "כיבוי" : "הפעלה"; go.className = on ? "btn sm" : "btn sm primary";
   go.onclick = async () => { go.disabled = true;
     try { if (on) { await rpc("portal_push_unsubscribe", { p_endpoint: sub.endpoint }).catch(() => {}); await sub.unsubscribe(); }
-      else { if (await Notification.requestPermission() !== "granted") throw new Error("לא אושרו התראות");
-        const tk = await token(), k = await fetch(PUSH_FN(), { headers: Object.assign(baseHeaders(), tk ? { "Authorization": "Bearer " + tk } : {}) }).then(r => r.json()).catch(() => ({}));
-        if (!k.public) throw new Error("עוד אין מפתחות בשרת (🔐 למטה) או שהפונקציה portal-push לא הותקנה");
-        const r = await navigator.serviceWorker.ready, ns = await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: fromB64u(k.public) }), j = ns.toJSON();
-        await rpc("portal_push_subscribe", { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_ua: navigator.userAgent }); }
+      else { const r = await pushSubscribe("portal_push_subscribe"); if (r !== true) throw new Error(r === "denied" ? "לא אושרו התראות" : r === "מפתח" ? "עוד אין מפתחות בשרת או שהפונקציה portal-push לא עונה" : "לא הצלחנו (" + r + ")"); }
     } catch(e) { toast(/[֐-׿]/.test(e.message) ? e.message : "לא הצלחנו: " + e.message); }
     go.disabled = false; pushUi(sh); };
 }
@@ -5294,7 +5290,7 @@ let pushIdleT = null;
 function pushHook(fn, b, r){
   // TS-32 (נועה: "2 רעיון טוב"): הצוות שחרר משימה → התראה לטלפון של הילד/ה (אם הפעיל/ה)
   if (fn === "portal_release" && r && typeof AD !== "undefined" && AD.plan) { const set = new Set((b.p_items || []).map(String));
-    const kids = [...new Set(AD.plan.filter(p => set.has(String(p.id))).map(p => String(p.student_id)))]; if (kids.length) setTimeout(() => pushPing("rel", null, kids), 300); return; }
+    const kids = [...new Set(AD.plan.filter(p => set.has(String(p.id))).map(p => String(p.student_id)))]; if (kids.length) { setTimeout(() => pushPing("rel", null, kids), 300); pushClearKids(kids); } return; }
   if (typeof ST === "undefined" || !ST.me) return;
   if (fn === "portal_request_next" && b.p_on && !(r && r.ok === false)) { pushPing("req", b.p_subject); return; }
   if ((fn === "portal_mark_done" && b.p_done) || fn === "portal_return_items" || (fn === "portal_pin_items" && b.p_pin)) { clearTimeout(pushIdleT); pushIdleT = setTimeout(() => pushPing("idle"), 1500); } }
@@ -5307,14 +5303,28 @@ async function kidPushBar(){ const el = $("stPush"); if (!el) return;
   el.hidden = hide; if (hide) return;
   el.innerHTML = `<span>🔔 לקבל הודעה בטלפון כשמגיעה משימה חדשה?</span><button type="button" class="btn sm primary" id="kpOn">כן</button><button type="button" class="kp-x" id="kpNo" aria-label="לא עכשיו">✕</button>`;
   el.querySelector("#kpNo").onclick = () => { store(KPUSH_K, "no"); el.hidden = true; };
-  el.querySelector("#kpOn").onclick = async () => { const b = el.querySelector("#kpOn"); b.disabled = true;
-    try { if (await Notification.requestPermission() !== "granted") { el.hidden = true; return; }
-      const tk = await token(), k = await fetch(PUSH_FN(), { headers: Object.assign(baseHeaders(), tk ? { "Authorization": "Bearer " + tk } : {}) }).then(r => r.json()).catch(() => ({}));
-      if (!k.public) throw new Error("x");
-      const r = await navigator.serviceWorker.ready, ns = await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: fromB64u(k.public) }), j = ns.toJSON();
-      await rpc("portal_push_subscribe_kid", { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_ua: navigator.userAgent });
-      el.innerHTML = `<span>✓ מעולה! נודיע לך כשמגיעה משימה.</span>`; setTimeout(() => { el.hidden = true; }, 2500);
-    } catch(e) { b.disabled = false; toast("לא הצלחנו להפעיל – אפשר לנסות שוב אחר כך."); } }; }
+  // 1.35.72 (נועה: "אחרי שעשיתי כן… ההודעה לא נעלמה. היא נהייתה דהויה"): כל שלב עם הגבלת זמן; השורה נעלמת מיד אחרי "כן", ובשגיאה – הודעה עם השלב
+  el.querySelector("#kpOn").onclick = async () => { el.innerHTML = `<span>רגע…</span>`;
+    const r = await pushSubscribe("portal_push_subscribe_kid");
+    if (r === true) { el.innerHTML = `<span>✓ מעולה! נודיע לך כשמגיעה משימה.</span>`; setTimeout(() => { el.hidden = true; }, 2500); }
+    else { el.hidden = true; if (r !== "denied") toast("לא הצלחנו להפעיל התראות (" + r + "). השאלה תחזור בכניסה הבאה."); } }; }
+// רישום הטלפון להתראות – משותף לצוות ולילדים. מחזיר true, "denied", או שם השלב שנכשל
+const withTO = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
+async function pushSubscribe(fn){
+  let step = "אישור";
+  try { if (await withTO(Notification.requestPermission(), 60e3) !== "granted") return "denied";
+    step = "מפתח"; const tk = await token(), k = await withTO(fetch(PUSH_FN(), { headers: Object.assign(baseHeaders(), tk ? { "Authorization": "Bearer " + tk } : {}) }).then(r => r.json()), 12e3);
+    if (!k || !k.public) return "מפתח";
+    step = "שירות"; let reg = await navigator.serviceWorker.getRegistration(); if (!reg) reg = await withTO(navigator.serviceWorker.register("sw.js"), 12e3);
+    reg = await withTO(navigator.serviceWorker.ready, 12e3);
+    step = "רישום"; let ns = await reg.pushManager.getSubscription(); if (!ns) ns = await withTO(reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: fromB64u(k.public) }), 20e3);
+    const j = ns.toJSON(); step = "שמירה"; await withTO(rpc(fn, { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_ua: navigator.userAgent }), 12e3);
+    return true;
+  } catch(e) { return step; } }
+// 1.35.72 (נועה: "ברגע ששלחתי משימה צריך להוריד אצלי את ההתראה. גם אם הילד לא פתח אותה"): שלחתי לילד/ה – ההתראה שלו/ה נמחקת מהטלפון הזה, והמספר על האייקון מתעדכן
+async function pushClearKids(kids){ try { const r = await navigator.serviceWorker.getRegistration(); if (!r) return;
+  for (const k of kids) (await r.getNotifications({ tag: "telem-" + k })).forEach(n => n.close());
+  const n = (await r.getNotifications()).length; if (navigator.setAppBadge) n ? navigator.setAppBadge(n) : navigator.clearAppBadge(); } catch(e) {} }
 // פותחים את האפליקציה / "לטיפול" – המספר על האייקון וההתראות שבמגירה נמחקים
 async function pushClear(){ try { if (navigator.clearAppBadge) navigator.clearAppBadge(); const r = await navigator.serviceWorker.getRegistration(); if (r) (await r.getNotifications()).forEach(n => n.close()); } catch(e) {} }
 try { navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", (e) => { if (e.data && e.data.push === "todo" && typeof todoOpen === "function" && AD && AD.students) { pushClear(); todoOpen(); } }); } catch(e) {}
