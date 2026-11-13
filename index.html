@@ -1452,7 +1452,7 @@ body.ws-vopen.v-stm.ws-keephead .stm-head{position:fixed; top:0; left:0; right:0
 .crmws .ws-st .cp.cp2{height:auto; min-height:44px; display:flex; flex-direction:column; gap:1px;}
 .crmws .ws-st .cp.cp2 b{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:12.5px;}
 .crmws .ws-st .cp.cp2 span{color:var(--ink-soft); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-.crmws .ws-st button.go{margin:4px 6px 6px; padding:5px 0; border:0; border-radius:8px; background:#25d366; color:#0b2b17; font-weight:800; font-size:13.5px; cursor:pointer;}
+.crmws .ws-st button.go{margin:4px 6px 6px; height:28px; padding:0; border:0; border-radius:8px; background:var(--accent); color:#fff; font-weight:800; font-size:12.5px; cursor:pointer;}   /* 1.35.77: כפתור ראשי (כללי הכפתורים) – לא ירוק */
 .crmws .ws-seg button{padding:7px 16px; font-size:14.5px;}
 .crmws .ws-seg button[aria-pressed="true"]{background:var(--accent); color:#fff; box-shadow:none;}
 @media (max-width:760px){
@@ -2270,6 +2270,15 @@ button.na-chip{border:0; font:inherit; font-size:12px; font-weight:800; cursor:p
 .tcard .tc-a:not(.pri), .wd-bar .btn, .na-set{ background:#fff !important; color:var(--accent) !important; border:1.5px solid var(--accent) !important; border-style:solid !important; }
 .tcard .tc-a{ min-width:0; }
 .crmatt #shRows .att-rel{ height:28px; line-height:28px; padding:0 10px; border-radius:8px; }
+
+/* ===== 1.35.77 (נועה: "ככה זה נראה במחשב… אפשר לסדר קצת יותר יפה") – המאגר במחשב: עמודה אחת ממורכזת, הכרטיסים ממלאים את הרוחב ===== */
+@media (min-width: 900px){
+  .crmws #view-ws{ max-width:1180px; margin-inline:auto; }
+  .crmws .ws-albums{ grid-template-columns:repeat(auto-fill, minmax(176px, 1fr)); gap:14px; }
+  .crmws .ws-stars-row{ display:grid; grid-template-columns:repeat(auto-fill, minmax(132px, 1fr)); gap:10px; overflow:visible; }
+  .crmws .ws-stars-row .ws-st, .crmws .ws-stars-row .ws-st-g{ width:auto; }
+  .crmws .ws-stars-row .ws-st .th{ height:150px; }
+}
 </style>
 </head>
 <body>
@@ -2404,7 +2413,7 @@ if (window.__telemFramed) throw new Error("telem-sheli: נפתח בתוך אתר
 // הגדרות
 // ======================================================================
 const CONFIG = {
-  version: "1.35.76",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
+  version: "1.35.77",                                               // גרסת האפליקציה – עולה בכל גרסה חדשה
   supabaseUrl: "https://oulivucqbpmbavbavfvy.supabase.co",
   anonKey: "sb_publishable_M8wEF2-9fXMmX0U97nfENw_AfZw9wNz",   // מפתח ציבורי - מותר שיהיה גלוי (ההרשאות נבדקות בשרת)
   appUrl: "https://telem-tirgul.github.io/telem-sheli/",           // הכתובת של האפליקציה (לשליחה לתלמידים)
@@ -5143,12 +5152,13 @@ async function codeReqDone(sid, quiet){
 }
 const randCode = () => { let c; do { const a = new Uint32Array(1); crypto.getRandomValues(a); c = String(a[0] % 1000000).padStart(6, "0"); } while (/^(\d)\1{5}$/.test(c) || ["123456", "654321"].includes(c)); return c; };
 // 1.35.66 (נועה: "לתת קוד חדש לכל אלה הרוצים קוד חדש? לקבוע את הקוד כמובן") – קוד אחד שאת קובעת, לכל המסומנים; אחר כך שליחה בוואטסאפ לכל אחד/ת (לחיצה לכל ילד/ה – וואטסאפ לא מאפשר שליחה אוטומטית)
-function codeAllSheet(L){
+function codeAllSheet(L, isOn, title){
   const code = (AD.settings && AD.settings.initial_code) || randCode();
-  openSheet(`<h2>קוד חדש לכולם</h2>
+  openSheet(`<h2>${esc(title || "קוד חדש לכולם")}</h2>
     <label class="field"><span>הקוד (6 ספרות)</span><input id="caCode" inputmode="numeric" maxlength="6" class="code-input" value="${esc(code)}"></label>
     <p class="muted small" style="margin-top:-6px">כל אחד/ת יתבקש/תתבקש לבחור קוד אישי בכניסה הראשונה.</p>
-    <div class="ca-list">${L.map(s => `<label class="ca-row"><input type="checkbox" checked data-ca="${esc(s.student_id)}"><span>${esc(stName(s))}</span><small class="muted ltr">${esc(fmtPhone(s.login_phone || s.phone || ""))}</small></label>`).join("")}</div>
+    <div class="ca-list">${L.map(s => `<label class="ca-row"><input type="checkbox"${!isOn || isOn(s) ? " checked" : ""} data-ca="${esc(s.student_id)}"><span>${esc(stName(s))}${isOn ? ` <small class="muted">· ${isOn(s) ? "ביקש/ה קוד" : s.last_seen_at ? "כבר נכנס/ה" : "עוד לא נכנס/ה"}</small>` : ""}</span><small class="muted ltr">${esc(fmtPhone(s.login_phone || s.phone || ""))}</small></label>`).join("")}</div>
+    ${isOn ? `<p class="muted small" style="margin:-4px 0 8px">מסומנים מי שביקשו קוד. קוד חדש מבטל את הקוד האישי שהילד/ה בחר/ה.</p>` : ""}
     <div class="err" id="caErr"></div>
     <button class="btn primary block" id="caGo">שמירת הקוד לכולם</button>`, (sh) => {
       sh.querySelector("#caGo").onclick = async () => {
@@ -7485,7 +7495,7 @@ function renderSheetCx(){
   box.hidden = false;
   if (cx) box.innerHTML = `<div class="cx-on"><b>התרגול לא התקיים</b>${cx.reason ? " · " + esc(cx.reason) : ""}${cx.auto ? ` <span class="muted">(לפי לוח החגים)</span>` : ""}</div>
     ${adm ? `<button type="button" class="btn small" data-cx="held">התקיים בכל זאת</button>${cx.auto ? "" : `<button type="button" class="btn small" data-cx="auto" title="חזרה ללוח החגים">ביטול הסימון</button>`}` : ""}`;
-  else box.innerHTML = `<button type="button" class="btn small cx-btn" data-cxmenu title="מי לא מגיע היום / התרגול לא התקיים">⊘ ביטולים ▾</button><button type="button" data-cx="open" hidden></button>
+  else box.innerHTML = `<button type="button" class="btn small cx-btn" data-cxmenu title="מי לא מגיע היום / התרגול לא התקיים">⊘ ביטולים ▾</button>${grpActsN() ? `<button type="button" class="btn small cx-btn" data-grpacts title="קוד חדש / פתיחת חשבונות / בלי תלם שלי – לכל הקבוצה">⚙ פעולות ▾</button>` : ""}<button type="button" data-cx="open" hidden></button>
     <span class="cx-form" hidden><select id="cxReason">${CX_REASONS.map(r => `<option>${esc(r)}</option>`).join("")}<option value="">אחר...</option></select>
     <input id="cxOther" placeholder="סיבה" hidden><button type="button" class="btn small primary" data-cx="save">שמירה</button></span>
     ${L0.cancelled === false ? `<span class="muted" style="font-size:12.5px;">סומן "התקיים" למרות החג.</span>` : ""}`;
@@ -7493,7 +7503,7 @@ function renderSheetCx(){
       sh.lesson = Object.assign({}, sh.lesson || {}, { cancelled: v, cancel_reason: v ? reason : null }); toast(v ? "סומן: לא התקיים" : "נשמר"); renderSheetCx(); embPost({ saved: { sid: sh.session_id, date: A.date } }); }
     catch(e) { toast(/set_lesson_cancelled|404/.test(e.message + e.status) ? "צריך להריץ את קובץ 46" : "לא נשמר: " + e.message); } };
   // 1.35.76 (נועה: "לסמן קבוצה בנוכחות, למשל במרתון… שהם כולם לא צריכים תלם שלי (רק למי שאין)"): כל ילדי הקבוצה בלי חשבון → "🚫 בלי תלם שלי"
-  const grpNoAccL = () => (A.rows || []).filter(r => r.in_group).map(r => typeof stById === "function" && stById(String(r.student_id))).filter(st => st && !st.has_account && !(typeof noAcc === "function" && noAcc(st.student_id)));
+  function grpNoAccL(){ return (A.rows || []).filter(r => r.in_group).map(r => typeof stById === "function" && stById(String(r.student_id))).filter(st => st && !st.has_account && !(typeof noAcc === "function" && noAcc(st.student_id))); }
   const grpNoAccSheet = () => { const L = grpNoAccL(); if (!L.length) return; const why0 = (sh.kind === "מרתון" ? "מרתון" : "") || "";
     window.openSheet(`<h2>🚫 בלי "תלם שלי"</h2><p class="muted small" style="margin-top:0">הילדים בקבוצה שאין להם חשבון לא יופיעו ב"אין להם תלם שלי". אפשר לבטל לכל ילד/ה מהדף שלו/ה.</p>
       <label class="field"><span>סיבה (לא חובה)</span><input id="naWhy" value="${esc(why0)}" placeholder="למשל: מרתון"></label>
@@ -7508,13 +7518,25 @@ function renderSheetCx(){
             try { renderNav(); updateTitle(); } catch(e) {} renderSheetRows(); }
           catch(e) { b.disabled = false; toast("לא נשמר: " + (e.message || e)); } };
       }); };
+  // 1.35.77 (נועה: "כפתור 'פעולות' – לתת למי שצריך קוד חדש, להוריד לכולם תלם שלי, או ליצור לכולם חשבון")
+  function grpKids(){ return (A.rows || []).filter(r => r.in_group).map(r => typeof stById === "function" && stById(String(r.student_id))).filter(Boolean); }
+  function grpAccL(){ return grpKids().filter(st => st.has_account && !noAcc(st.student_id)); }
+  function grpNewL(){ return grpNoAccL(); }   // בלי חשבון ולא סומנו "בלי תלם שלי"
+  function grpActsN(){ try { return grpAccL().length + grpNewL().length; } catch(e) { return 0; } }
+  { const ab = box.querySelector("[data-grpacts]"); if (ab) ab.onclick = () => { const acc = grpAccL(), nw = grpNewL(), rq = new Set((AD.codeReqs || []).map(r => String(r.student_id))), asked = (st) => rq.has(String(st.student_id)), nAsk = acc.filter(asked).length;   // נועה: "יבחר את אלה שביקשו קוד"
+      window.openSheet(`<h2>⚙ פעולות לקבוצה</h2>
+        ${acc.length ? `<button type="button" class="btn block" id="gaCode" style="margin-bottom:10px; flex-direction:column; gap:2px">🔑 קוד חדש (${acc.length})<br><small class="muted">מסומנים מראש מי שביקשו קוד (${nAsk}) – אפשר לסמן עוד</small></button>` : ""}
+        ${nw.length ? `<button type="button" class="btn block" id="gaAcc" style="margin-bottom:10px; flex-direction:column; gap:2px">+ פתיחת חשבון לכולם (${nw.length})<br><small class="muted">מי שעוד אין לו/ה "תלם שלי"</small></button>` : ""}
+        ${nw.length ? `<button type="button" class="btn block" id="gaNo" style="flex-direction:column; gap:2px">🚫 הקבוצה לא צריכה "תלם שלי" (${nw.length})<br><small class="muted">רק מי שאין לו/ה חשבון – מי שיש לו/ה (למשל מתרגול שוטף) לא משתנה</small></button>` : ""}`, (sh4) => {
+          const go = (id, f) => { const b = sh4.querySelector(id); if (b) b.onclick = () => { closeSheet(); setTimeout(f, 0); }; };
+          go("#gaCode", () => codeAllSheet(acc.slice().sort((a, b) => asked(b) - asked(a)), asked, "קוד חדש לקבוצה"));
+          go("#gaAcc", () => accAllSheet(nw));
+          go("#gaNo", grpNoAccSheet); }); }; }
   // 1.35.49 (נועה: "יש לי גם מי לא מגיע היום וגם לא התקיים למעלה"): כפתור אחד – ובו שתי האפשרויות
   { const mb = box.querySelector("[data-cxmenu]"); if (mb) mb.onclick = () => window.openSheet(`<h2>⊘ ביטולים</h2>
       <button type="button" class="btn block" id="cxmKids" style="margin-bottom:10px; flex-direction:column; gap:2px">ילדים שלא מגיעים היום<br><small class="muted">מסמנים ⊘ ליד כל ילד/ה – רק לשיעור הזה (ילד/ה שהוספת – יוסר/תוסר מהשיעור)</small></button>
-      <button type="button" class="btn block" id="cxmLesson" style="flex-direction:column; gap:2px">התרגול לא התקיים<br><small class="muted">חג, אירוע…</small></button>
-      ${(() => { const L = grpNoAccL(); return L.length ? `<button type="button" class="btn block" id="cxmNoTs" style="margin-top:10px; flex-direction:column; gap:2px">🚫 הקבוצה לא צריכה "תלם שלי" (${L.length})<br><small class="muted">רק מי שאין לו/ה חשבון – מי שיש לו/ה (למשל מתרגול שוטף) לא משתנה</small></button>` : ""; })()}`, (sh2) => {
+      <button type="button" class="btn block" id="cxmLesson" style="flex-direction:column; gap:2px">התרגול לא התקיים<br><small class="muted">חג, אירוע…</small></button>`, (sh2) => {
       sh2.querySelector("#cxmKids").onclick = () => { closeSheet(); A.skipMode = true; renderSheetRows(); };
-      if (sh2.querySelector("#cxmNoTs")) sh2.querySelector("#cxmNoTs").onclick = () => { closeSheet(); setTimeout(grpNoAccSheet, 0); };
       sh2.querySelector("#cxmLesson").onclick = () => { closeSheet(); const o = box.querySelector('[data-cx="open"]'); if (o) o.click(); }; }); }
   box.querySelectorAll("[data-cx]").forEach(b => b.onclick = () => {
     const a = b.dataset.cx;
